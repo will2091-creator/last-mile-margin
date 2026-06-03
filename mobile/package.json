@@ -1,0 +1,27 @@
+{
+  "name": "final-mile-margin-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo start --ios",
+    "android": "expo start --android",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@supabase/supabase-js": "^2.107.0",
+    "expo": "^56.0.8",
+    "expo-constants": "^56.0.16",
+    "expo-file-system": "^56.0.7",
+    "expo-image-picker": "^56.0.15",
+    "expo-status-bar": "^56.0.4",
+    "react": "^19.2.6",
+    "react-native": "^0.82.0",
+    "react-native-url-polyfill": "^3.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.0"
+  }
+}

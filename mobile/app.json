@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Final Mile Margin",
+    "slug": "final-mile-margin-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "finalmilemargin",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.finalmilemargin.mobile",
+      "jsEngine": "jsc"
+    },
+    "android": {
+      "package": "com.finalmilemargin.mobile",
+      "jsEngine": "jsc"
+    },
+    "extra": {
+      "supabaseUrl": "https://eptoyxshbwglnnklqebl.supabase.co",
+      "supabaseAnonKey": "sb_publishable_bI57bDDDzxtEIyU9VXuGwg_Hf-aq4HL"
+    }
+  }
+}
