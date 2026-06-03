@@ -15,9 +15,9 @@ import {
 
 function LoginPage({ onLogin, isDark, setAppSettings }) {
   const [loginForm, setLoginForm] = useState({
-    identifier: "william.mckoy",
+    identifier: "",
     password: "",
-    remember: true,
+    remember: false,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState("");
@@ -165,9 +165,9 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
             <div className={`rounded-xl p-3 text-xs ${isDark ? "bg-white/5 text-slate-400" : "bg-white/65 text-slate-600"}`}>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                <p className="font-bold">Real Supabase login is enabled.</p>
+                <p className="font-bold">Secure Supabase login is enabled.</p>
               </div>
-              <p className="mt-2">Use your owner username after the Supabase Auth user is created.</p>
+              <p className="mt-2">Enter the email or username connected to your account.</p>
             </div>
           </form>
         </section>
