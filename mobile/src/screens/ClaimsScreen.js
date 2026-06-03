@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { currency, theme } from "../theme";
-import { loadOpenClaims, updateClaimStatus } from "../lib/mobileRepository";
+import { loadOpenClaims, loadTeamMembership, updateClaimStatus } from "../lib/mobileRepository";
+import { getRoleCapabilities, getRoleLabel, normalizeRole } from "../lib/roles";
 
 export default function ClaimsScreen({ refreshToken, onDataChange }) {
   const [claims, setClaims] = useState([]);
+  const [membership, setMembership] = useState(null);
   const [status, setStatus] = useState("Loading claims...");
   const [isUpdating, setIsUpdating] = useState("");
 
   useEffect(() => {
     let isMounted = true;
-    loadOpenClaims().then((result) => {
+    Promise.all([loadOpenClaims(), loadTeamMembership()]).then(([result, membershipResult]) => {
       if (!isMounted) return;
       if (result.ok) {
         setClaims(result.claims);
@@ -18,6 +20,7 @@ export default function ClaimsScreen({ refreshToken, onDataChange }) {
       } else {
         setStatus(result.error);
       }
+      if (membershipResult.ok) setMembership(membershipResult.membership);
     });
     return () => {
       isMounted = false;
@@ -25,6 +28,11 @@ export default function ClaimsScreen({ refreshToken, onDataChange }) {
   }, [refreshToken]);
 
   const setStatusForClaim = async (claimId, nextStatus) => {
+    if (!allowedStatuses.includes(nextStatus)) {
+      setStatus(`${roleLabel} cannot move claims to ${nextStatus}.`);
+      return;
+    }
+
     setIsUpdating(claimId);
     const result = await updateClaimStatus(claimId, nextStatus);
     setIsUpdating("");
@@ -35,9 +43,20 @@ export default function ClaimsScreen({ refreshToken, onDataChange }) {
     }
   };
 
+  const role = normalizeRole(membership?.role);
+  const roleLabel = getRoleLabel(role);
+  const capabilities = getRoleCapabilities(role);
+  const allowedStatuses = capabilities.claimStatuses;
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.status}>{status}</Text>
+      <View style={styles.roleNotice}>
+        <Text style={styles.roleNoticeTitle}>{roleLabel} claim controls</Text>
+        <Text style={styles.roleNoticeCopy}>
+          You can move claims to {allowedStatuses.join(", ")}.
+        </Text>
+      </View>
       {claims.map((claim) => (
         <View key={claim.id} style={styles.card}>
           <View style={styles.cardHeader}>
@@ -53,7 +72,7 @@ export default function ClaimsScreen({ refreshToken, onDataChange }) {
             <Text style={styles.badge}>{claim.preventable || "Unknown"}</Text>
           </View>
           <View style={styles.actions}>
-            {["Under Review", "Open", "Closed"].map((nextStatus) => (
+            {allowedStatuses.map((nextStatus) => (
               <TouchableOpacity key={nextStatus} style={styles.actionButton} onPress={() => setStatusForClaim(claim.id, nextStatus)}>
                 {isUpdating === claim.id ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionText}>{nextStatus}</Text>}
               </TouchableOpacity>
@@ -73,6 +92,23 @@ const styles = StyleSheet.create({
   status: {
     color: theme.colors.muted,
     fontWeight: "800",
+  },
+  roleNotice: {
+    borderColor: "#bfdbfe",
+    borderRadius: 18,
+    borderWidth: 1,
+    backgroundColor: "#eff6ff",
+    padding: 14,
+  },
+  roleNoticeTitle: {
+    color: theme.colors.blue,
+    fontWeight: "900",
+  },
+  roleNoticeCopy: {
+    color: theme.colors.muted,
+    fontWeight: "800",
+    lineHeight: 20,
+    marginTop: 4,
   },
   card: {
     borderColor: theme.colors.border,

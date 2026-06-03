@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { currency, theme } from "../theme";
 import { loadOpenClaims, loadTeamMembership } from "../lib/mobileRepository";
+import { getRoleDescription, getRoleLabel, normalizeRole } from "../lib/roles";
 
 export default function HomeScreen({ refreshToken }) {
   const [claims, setClaims] = useState([]);
@@ -29,6 +30,9 @@ export default function HomeScreen({ refreshToken }) {
 
   const totalExposure = claims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
   const highRiskClaims = claims.filter((claim) => claim.risk === "High").length;
+  const role = normalizeRole(membership?.role);
+  const roleLabel = getRoleLabel(role);
+  const roleDescription = getRoleDescription(role);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -36,7 +40,14 @@ export default function HomeScreen({ refreshToken }) {
       <View style={styles.grid}>
         <MetricCard title="Open Claims" value={claims.length} note={currency.format(totalExposure)} />
         <MetricCard title="High Risk" value={highRiskClaims} note="Needs packet review" />
-        <MetricCard title="Role" value={membership?.role || "User"} note={membership?.status || "active"} />
+        <MetricCard title="Role" value={roleLabel} note={membership?.status || "active"} />
+      </View>
+      <View style={styles.roleCard}>
+        <Text style={styles.roleTitle}>{roleLabel} mobile access</Text>
+        <Text style={styles.roleCopy}>{roleDescription}</Text>
+        {membership?.isFallbackOwner && (
+          <Text style={styles.roleHint}>Owner fallback is active because this login owns the workspace but does not have a linked team membership row yet.</Text>
+        )}
       </View>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Today’s field focus</Text>
@@ -101,6 +112,31 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: theme.colors.muted,
     fontWeight: "800",
+  },
+  roleCard: {
+    borderColor: "#bfdbfe",
+    borderRadius: 20,
+    borderWidth: 1,
+    backgroundColor: "#eff6ff",
+    padding: 16,
+  },
+  roleTitle: {
+    color: theme.colors.blue,
+    fontSize: 17,
+    fontWeight: "900",
+  },
+  roleCopy: {
+    color: theme.colors.ink,
+    fontWeight: "800",
+    lineHeight: 21,
+    marginTop: 6,
+  },
+  roleHint: {
+    color: theme.colors.muted,
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 18,
+    marginTop: 10,
   },
   card: {
     borderColor: theme.colors.border,

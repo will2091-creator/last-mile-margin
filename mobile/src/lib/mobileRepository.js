@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { normalizeRole } from "./roles";
 
 export async function getCurrentUser() {
   const { data, error } = await supabase.auth.getUser();
@@ -43,7 +44,7 @@ export async function loadOpenClaims() {
 
   let query = supabase
     .from("claims")
-    .select("id,app_claim_id,category,type,team,driver,route,amount,status,preventable,date,risk,owner_id")
+    .select("id,app_claim_id,category,type,team,driver,route,amount,status,preventable,claim_date,risk,owner_id")
     .neq("status", "Closed")
     .order("created_at", { ascending: false });
 
@@ -58,6 +59,7 @@ export async function loadOpenClaims() {
       ...claim,
       id: claim.app_claim_id || claim.id,
       amount: Number(claim.amount || 0),
+      date: claim.claim_date,
     })),
   };
 }
@@ -92,7 +94,29 @@ export async function loadTeamMembership() {
     .maybeSingle();
 
   if (error) return { ok: false, membership: null, error: error.message };
-  return { ok: true, membership: data };
+  if (!data) {
+    return {
+      ok: true,
+      membership: {
+        email: user.email,
+        display_name: user.user_metadata?.display_name || user.email,
+        role: "owner",
+        status: "active",
+        owner_id: user.id,
+        user_id: user.id,
+        isFallbackOwner: true,
+      },
+    };
+  }
+
+  return {
+    ok: true,
+    membership: {
+      ...data,
+      role: normalizeRole(data.role),
+      status: data.status || "active",
+    },
+  };
 }
 
 export async function saveRouteCheckIn({ routeName, truck, notes, photoUrl }) {
