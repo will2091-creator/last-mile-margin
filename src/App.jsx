@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import lastMileMarginLogo from "./assets/last-mile-margin-logo-transparent.svg";
+import lastMileMarginLogoDark from "./assets/last-mile-margin-logo-transparent-dark.svg";
 import LoginPage from "./pages/LoginPage";
 import DashboardHome from "./pages/DashboardHome";
 import ClaimsDashboard from "./pages/ClaimsDashboard";
@@ -39,8 +41,6 @@ import {
   Users,
 } from "./shared";
 
-const lastMileMarginLogo = "/assets/last-mile-margin-logo.png";
-const lastMileMarginLogoDark = "/assets/last-mile-margin-logo-transparent-dark.svg";
 const usernameEmailMap = {
   "william.mckoy": "william.mckoy2@gmail.com",
 };
@@ -774,7 +774,7 @@ export default function App() {
     return (
       <div className={isDark ? "flex min-h-screen items-center justify-center bg-slate-950 text-white" : "flex min-h-screen items-center justify-center bg-slate-100 text-slate-950"}>
         <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900 p-6 text-center shadow-xl" : "rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl"}>
-          <img src={isDark ? lastMileMarginLogoDark : lastMileMarginLogo} alt="Last Mile Margin" className="mx-auto h-24 w-24 object-contain" />
+          <img src={isDark ? lastMileMarginLogoDark : lastMileMarginLogo} alt="Last Mile Margin" className="mx-auto h-20 w-40 object-contain" />
           <p className="mt-4 text-sm font-black">Checking your session...</p>
         </div>
       </div>

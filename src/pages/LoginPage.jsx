@@ -1,5 +1,7 @@
 import { useState } from "react";
 import loginRoadLakeTruck from "../assets/login-road-lake-truck-branded.png?truck-logo-liftgate";
+import lastMileMarginLogo from "../assets/last-mile-margin-logo-transparent.svg";
+import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-transparent-dark.svg";
 import {
   ArrowRight,
   Eye,
@@ -10,9 +12,6 @@ import {
   ShieldCheck,
   Sun,
 } from "lucide-react";
-
-const lastMileMarginLogo = "/assets/last-mile-margin-logo.png";
-const lastMileMarginLogoDark = "/assets/last-mile-margin-logo-transparent-dark.svg";
 
 function LoginPage({ onLogin, isDark, setAppSettings }) {
   const [loginForm, setLoginForm] = useState({
@@ -81,11 +80,7 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
             <img
               src={isDark ? lastMileMarginLogoDark : lastMileMarginLogo}
               alt="Last Mile Margin"
-              className={
-                isDark
-                  ? "mx-auto h-32 w-32 object-contain sm:h-36 sm:w-36"
-                  : "mx-auto h-32 w-32 object-contain sm:h-36 sm:w-36"
-              }
+              className="mx-auto h-28 w-56 object-contain sm:h-32 sm:w-64"
             />
             <h1 className={isDark ? "mt-5 text-2xl font-black tracking-tight text-white" : "mt-5 text-2xl font-black tracking-tight text-slate-950"}>
               Last Mile Margin
