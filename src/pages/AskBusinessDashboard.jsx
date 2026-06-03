@@ -17,15 +17,58 @@ const quickQuestions = [
   "Which driver or team is costing me the most?",
   "Which claims should I dispute?",
   "How much should I make to break even?",
+  "What should I charge per stop?",
   "Why is my profit down?",
   "Which contract looks risky?",
   "What should my dashboard show first?",
 ];
 
+const riskWeight = { High: 3, Medium: 2, Low: 1 };
+
+const getClaimDriver = (claim, teams) => {
+  if (claim.driver) return claim.driver;
+  const team = teams.find((item) => item.name === claim.team);
+  return team?.lead || "Unassigned";
+};
+
+const getClaimTeam = (claim, teams) => {
+  if (claim.team) return claim.team;
+  const driver = getClaimDriver(claim, teams);
+  const team = teams.find((item) => item.lead === driver || item.helper === driver);
+  return team?.name || "Unassigned";
+};
+
+const getMissingEvidence = (claim, teams) => {
+  const assignedTeam = teams.find((team) => team.name === getClaimTeam(claim, teams));
+  const amount = Number(claim.amount || 0);
+  const isHighValue = amount >= 500 || claim.risk === "High";
+  const gaps = [];
+
+  if (!assignedTeam || assignedTeam.photoStatus !== "Uploaded") gaps.push("daily route photo");
+  if (isHighValue) gaps.push("damage photos");
+  if (claim.preventable !== "No") gaps.push("driver statement");
+  if (claim.status === "Open") gaps.push("packet owner");
+
+  return gaps;
+};
+
+const getDisputeScore = (claim, teams) => {
+  const amount = Number(claim.amount || 0);
+  const gaps = getMissingEvidence(claim, teams).length;
+  const preventablePenalty = claim.preventable === "Yes" ? -10 : claim.preventable === "Maybe" ? 12 : 18;
+  return Math.max(0, Math.round(amount / 25 + (riskWeight[claim.risk] || 1) * 14 + gaps * 8 + preventablePenalty));
+};
+
+const formatList = (items) => {
+  if (!items.length) return "none";
+  if (items.length === 1) return items[0];
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+};
+
 function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSettings, isDark, navigateToTab }) {
   const [question, setQuestion] = useState("");
   const [conversation, setConversation] = useState([]);
-  const [isAskingAi, setIsAskingAi] = useState(false);
+  const [isAnswering, setIsAnswering] = useState(false);
   const [aiStatus, setAiStatus] = useState("");
 
   const titleText = isDark ? "text-white" : "text-slate-950";
@@ -46,44 +89,111 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
     const highClaims = openClaims.filter((claim) => claim.risk === "High");
     const preventableClaims = openClaims.filter((claim) => claim.preventable === "Yes");
     const missingPhotoTeams = teams.filter((team) => team.photoStatus !== "Uploaded");
+    const totalClaimExposure = claims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
+    const preventableExposure = openClaims
+      .filter((claim) => claim.preventable === "Yes")
+      .reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
+    const rankedClaims = openClaims
+      .map((claim) => ({
+        ...claim,
+        amountValue: Number(claim.amount || 0),
+        driver: getClaimDriver(claim, teams),
+        team: getClaimTeam(claim, teams),
+        missingEvidence: getMissingEvidence(claim, teams),
+        disputeScore: getDisputeScore(claim, teams),
+      }))
+      .sort((a, b) => b.disputeScore - a.disputeScore || b.amountValue - a.amountValue);
     const teamExposure = teams.map((team) => ({
       team: team.name,
       driver: team.lead,
+      helper: team.helper,
+      status: team.status,
+      complianceScore: Number(team.complianceScore || 0),
+      photoStatus: team.photoStatus,
       exposure: openClaims
         .filter((claim) => claim.team === team.name || claim.driver === team.lead || claim.driver === team.helper)
         .reduce((sum, claim) => sum + Number(claim.amount || 0), 0),
       claims: openClaims.filter((claim) => claim.team === team.name || claim.driver === team.lead || claim.driver === team.helper).length,
-    }));
-    const riskiestTeam = teamExposure.slice().sort((a, b) => b.exposure - a.exposure)[0] || { team: "No team", exposure: 0, claims: 0 };
+      highClaims: openClaims.filter((claim) => (claim.team === team.name || claim.driver === team.lead || claim.driver === team.helper) && claim.risk === "High").length,
+    })).sort((a, b) => b.exposure - a.exposure || a.complianceScore - b.complianceScore);
+    const typeExposure = Object.values(
+      openClaims.reduce((acc, claim) => {
+        const key = claim.type || "Unknown";
+        acc[key] ||= { type: key, exposure: 0, claims: 0 };
+        acc[key].exposure += Number(claim.amount || 0);
+        acc[key].claims += 1;
+        return acc;
+      }, {})
+    ).sort((a, b) => b.exposure - a.exposure);
+    const riskiestTeam = teamExposure[0] || { team: "No team", exposure: 0, claims: 0, driver: "None", complianceScore: 0 };
     const worstClaim = openClaims.slice().sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0))[0];
     const dashboardWidgets = appSettings?.dashboardWidgets || {};
     const visibleDashboardWidgets = Object.values(dashboardWidgets).filter(Boolean).length;
+    const stops = Math.max(Number(form?.stops || 0), 0);
+    const miles = Math.max(Number(form?.miles || 0), 0);
+    const routeHours = Math.max(Number(form?.routeHours || 0), 0);
+    const revenueGap = Math.max(Number(results?.requiredRevenue || 0) - Number(results?.totalRevenue || 0), 0);
+    const breakEvenPerStop = stops ? Number(results?.totalCost || 0) / stops : 0;
+    const targetPerStop = stops ? Number(results?.requiredRevenue || 0) / stops : 0;
+    const revenuePerStop = stops ? Number(results?.totalRevenue || 0) / stops : 0;
+    const costPerStop = stops ? Number(results?.totalCost || 0) / stops : 0;
+    const laborCosts = Number(form?.driverPay || 0) + Number(form?.helperPay || 0);
+    const fuelCost = miles && form?.mpg ? (miles / Math.max(Number(form.mpg || 0), 0.01)) * Number(form?.fuelPrice || 0) : 0;
+    const maintenanceCost = miles * Number(form?.maintenancePerMile || 0);
+    const fixedCosts = Number(form?.dailyTruckPayment || 0) + Number(form?.dailyInsurance || 0) + Number(form?.phoneSoftware || 0);
+    const costDrivers = [
+      { label: "Labor", value: laborCosts },
+      { label: "Fuel", value: fuelCost },
+      { label: "Maintenance", value: maintenanceCost },
+      { label: "Claims reserve", value: Number(form?.claimsChargebacks || 0) },
+      { label: "Truck / insurance / software", value: fixedCosts },
+      { label: "Tolls / parking", value: Number(form?.tollsParking || 0) },
+      { label: "Other costs", value: Number(form?.otherCosts || 0) },
+    ].filter((item) => item.value > 0).sort((a, b) => b.value - a.value);
 
     return {
       openClaims,
+      totalClaimExposure,
       totalExposure,
       highClaims,
       preventableClaims,
+      preventableExposure,
       missingPhotoTeams,
+      rankedClaims,
       riskiestTeam,
+      teamExposure,
+      typeExposure,
       worstClaim,
       visibleDashboardWidgets,
       netProfit: Number(results?.netProfit || 0),
       marginPercent: Number(results?.profitMargin || 0) * 100,
+      profitPerStop: Number(results?.profitPerStop || 0),
+      profitPerMile: Number(results?.profitPerMile || 0),
+      profitPerHour: Number(results?.profitPerHour || 0),
       totalCost: Number(results?.totalCost || 0),
       totalRevenue: Number(results?.totalRevenue || 0),
       requiredRevenue: Number(results?.requiredRevenue || 0),
       requiredRoutePay: Number(results?.requiredRoutePay || 0),
+      revenueGap,
+      breakEvenPerStop,
+      targetPerStop,
+      revenuePerStop,
+      costPerStop,
+      costDrivers,
       targetProfit: Number(form?.targetProfit || 0),
+      stops,
+      miles,
+      routeHours,
       routeName: form?.scenarioName || "Current route",
       savedDayCount: savedDays?.length || 0,
     };
-  }, [appSettings?.dashboardWidgets, claims, form?.scenarioName, results, savedDays?.length, teams]);
+  }, [appSettings?.dashboardWidgets, claims, form, results, savedDays?.length, teams]);
 
   const getAnswer = (rawQuestion) => {
     const ask = rawQuestion.toLowerCase();
     const ctx = businessContext;
     const actions = [];
+    const details = [];
     let title = "Here is what I see";
     let summary = "";
     let tab = "Dashboard";
@@ -100,43 +210,74 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
       actions.push(`${currency.format(ctx.totalCost)} covers today’s labor, fuel, truck, insurance, maintenance, claims, and other costs.`);
       actions.push(`To hit your target profit of ${currency.format(ctx.targetProfit)}, revenue should be about ${currency.format(ctx.requiredRevenue)}.`);
       actions.push(`If only route pay changes, route pay should be about ${currency.format(ctx.requiredRoutePay)} to hit that target.`);
+      details.push(`Break-even per stop: ${currency.format(ctx.breakEvenPerStop)}.`);
+      details.push(`Target-profit per stop: ${currency.format(ctx.targetPerStop)}.`);
+      tab = "Profitability";
+    } else if (ask.includes("charge") || ask.includes("per stop") || ask.includes("rate") || ask.includes("price")) {
+      title = `Target rate is ${currency.format(ctx.targetPerStop)} per stop`;
+      summary = `${ctx.routeName} has ${ctx.stops} stops. You are making ${currency.format(ctx.revenuePerStop)} per stop right now, break even is ${currency.format(ctx.breakEvenPerStop)}, and target-profit pricing is ${currency.format(ctx.targetPerStop)}.`;
+      actions.push(ctx.revenueGap > 0 ? `Add about ${currency.format(ctx.revenueGap)} total revenue to hit your target profit.` : `Current revenue already covers the target profit math.`);
+      actions.push(`If this is negotiated as route pay, ask for about ${currency.format(ctx.requiredRoutePay)} route pay.`);
+      actions.push(`Do not quote below ${currency.format(ctx.breakEvenPerStop)} per stop unless another charge covers the gap.`);
+      details.push(`Cost per stop: ${currency.format(ctx.costPerStop)}.`);
+      details.push(`Profit per stop: ${currency.format(ctx.profitPerStop)}.`);
       tab = "Profitability";
     } else if (ask.includes("fix") || ask.includes("first") || ask.includes("today")) {
-      title = "Fix claims and proof gaps first";
-      summary = `${ctx.openClaims.length} open claims are carrying ${currency.format(ctx.totalExposure)} in exposure. ${ctx.highClaims.length} are high risk, and ${ctx.missingPhotoTeams.length} team${ctx.missingPhotoTeams.length === 1 ? "" : "s"} still have photo/compliance gaps.`;
-      actions.push("Review high-value claims before accepting losses.");
-      actions.push("Start with missing photos because weak evidence hurts disputes.");
-      actions.push("Check route margin after claim exposure is updated.");
+      const topClaim = ctx.rankedClaims[0];
+      title = topClaim ? `Start with ${topClaim.id}: ${topClaim.type}` : "Start with route margin";
+      summary = topClaim
+        ? `${topClaim.id} is ${currency.format(topClaim.amountValue)} with a ${topClaim.risk} risk rating, assigned to ${topClaim.team} / ${topClaim.driver}. It is the strongest first move because it combines dollars, risk, and missing evidence.`
+        : `${ctx.routeName} is at ${currency.format(ctx.netProfit)} profit and ${ctx.marginPercent.toFixed(1)}% margin. There are no open claims, so start with route cost and pricing.`;
+      if (topClaim) actions.push(`Collect ${formatList(topClaim.missingEvidence)} before accepting or disputing it.`);
+      actions.push(ctx.riskiestTeam?.team ? `Review ${ctx.riskiestTeam.team}; it carries ${currency.format(ctx.riskiestTeam.exposure)} in open exposure.` : "Review team readiness.");
+      actions.push(ctx.netProfit < ctx.targetProfit ? `Route profit is ${currency.format(ctx.netProfit)}, below the ${currency.format(ctx.targetProfit)} target.` : `Route profit is above target; protect it by closing evidence gaps.`);
+      details.push(`${ctx.openClaims.length} open claims total ${currency.format(ctx.totalExposure)}.`);
+      details.push(`${ctx.highClaims.length} high-risk claims and ${ctx.missingPhotoTeams.length} team photo gaps.`);
       tab = "Claims";
     } else if (ask.includes("driver") || ask.includes("team") || ask.includes("costing")) {
       title = `${ctx.riskiestTeam.team} needs the closest review`;
-      summary = `${ctx.riskiestTeam.team} is tied to ${currency.format(ctx.riskiestTeam.exposure)} across ${ctx.riskiestTeam.claims} open claim${ctx.riskiestTeam.claims === 1 ? "" : "s"}.`;
-      actions.push("Open the Teams page and review readiness/photo status.");
-      actions.push("Compare driver notes against claim history.");
-      actions.push("Coach before the next similar route.");
+      summary = `${ctx.riskiestTeam.team} is tied to ${currency.format(ctx.riskiestTeam.exposure)} across ${ctx.riskiestTeam.claims} open claim${ctx.riskiestTeam.claims === 1 ? "" : "s"}. Lead driver: ${ctx.riskiestTeam.driver}. Compliance score: ${ctx.riskiestTeam.complianceScore || "N/A"}.`;
+      actions.push(`Pull the claim list for ${ctx.riskiestTeam.driver} and separate preventable vs disputed claims.`);
+      actions.push(ctx.riskiestTeam.photoStatus !== "Uploaded" ? "Fix the missing daily photo process before the next route." : "Daily photo is uploaded; compare it against customer damage language.");
+      actions.push("Coach around the claim type that repeats most, not just the total dollar amount.");
+      ctx.teamExposure.slice(0, 3).forEach((team, index) => {
+        details.push(`${index + 1}. ${team.team}: ${currency.format(team.exposure)} exposure, ${team.claims} claim${team.claims === 1 ? "" : "s"}.`);
+      });
       tab = "Teams";
     } else if (ask.includes("dispute") || ask.includes("claim")) {
-      title = "Dispute the highest-value claims with evidence gaps";
-      summary = ctx.worstClaim
-        ? `${ctx.worstClaim.id} (${ctx.worstClaim.type}) is the largest open claim at ${currency.format(ctx.worstClaim.amount)}. High-risk and preventable claims should get packet review before they become accepted losses.`
+      const topClaim = ctx.rankedClaims[0];
+      title = topClaim ? `Dispute review: ${topClaim.id}` : "No open claims need dispute review";
+      summary = topClaim
+        ? `${topClaim.id} (${topClaim.type}) should be reviewed first. Amount: ${currency.format(topClaim.amountValue)}. Team/driver: ${topClaim.team} / ${topClaim.driver}. Missing: ${formatList(topClaim.missingEvidence)}.`
         : "There are no open claims to dispute right now.";
-      actions.push("Generate a dispute packet for the largest claim.");
-      actions.push("Collect photos, POD, call logs, and driver notes.");
-      actions.push("Move claims to In Progress once someone owns the packet.");
+      if (topClaim) {
+        actions.push(`Build the packet around ${formatList(topClaim.missingEvidence)}.`);
+        actions.push(topClaim.preventable === "Yes" ? "Because it is marked preventable, check if coaching and settlement is smarter than a weak dispute." : "Because preventability is not confirmed, dispute until the retailer proves responsibility.");
+        actions.push("Move it to In Progress only after one person owns the packet.");
+      }
+      ctx.rankedClaims.slice(0, 3).forEach((claim, index) => {
+        details.push(`${index + 1}. ${claim.id}: ${currency.format(claim.amountValue)}, ${claim.risk}, score ${claim.disputeScore}.`);
+      });
       tab = "Claims";
     } else if (ask.includes("profit") || ask.includes("margin") || ask.includes("down")) {
-      title = ctx.netProfit < 0 ? "The current route is losing money" : "Profit is positive, but watch cost pressure";
-      summary = `${ctx.routeName} is showing ${currency.format(ctx.netProfit)} net profit at ${ctx.marginPercent.toFixed(1)}% margin. Total cost is ${currency.format(ctx.totalCost)} against ${currency.format(ctx.totalRevenue)} revenue.`;
-      actions.push("Review route pay, stops, miles, fuel, and labor.");
-      actions.push("Add accessorial revenue where the contract allows it.");
-      actions.push("Use claim reserve as a real cost, not an afterthought.");
+      const biggestCost = ctx.costDrivers[0];
+      title = ctx.netProfit < 0 ? "This route is losing money" : `${currency.format(ctx.netProfit)} profit, ${ctx.marginPercent.toFixed(1)}% margin`;
+      summary = `${ctx.routeName} has ${currency.format(ctx.totalRevenue)} revenue against ${currency.format(ctx.totalCost)} cost. Biggest cost driver: ${biggestCost ? `${biggestCost.label} at ${currency.format(biggestCost.value)}` : "no cost driver entered"}.`;
+      actions.push(ctx.revenueGap > 0 ? `You need about ${currency.format(ctx.revenueGap)} more revenue to hit target profit.` : `You are at or above the target-profit revenue requirement.`);
+      actions.push(`Protect ${currency.format(ctx.profitPerStop)} profit per stop and ${currency.format(ctx.profitPerMile)} profit per mile.`);
+      actions.push("Use accessorials first when the contract allows it; then renegotiate route pay.");
+      ctx.costDrivers.slice(0, 4).forEach((item, index) => {
+        details.push(`${index + 1}. ${item.label}: ${currency.format(item.value)}.`);
+      });
       tab = "Profitability";
     } else if (ask.includes("contract") || ask.includes("rate") || ask.includes("renewal")) {
-      title = "Review contract rates against claims and route cost";
-      summary = "Contracts with low route pay, missing accessorials, or high claim exposure should be reviewed before renewal.";
-      actions.push("Open Contracts and compare rate cards against the current route math.");
-      actions.push("Flag contracts missing fuel surcharge or accessorial coverage.");
-      actions.push("Use Claims exposure as leverage in renewal conversations.");
+      title = "Review contracts that cannot cover target route math";
+      summary = `${ctx.routeName} needs ${currency.format(ctx.requiredRevenue)} total revenue, or about ${currency.format(ctx.targetPerStop)} per stop, to cover costs and target profit. Any contract below that is risky unless accessorials make up the gap.`;
+      actions.push(`Use ${currency.format(ctx.requiredRoutePay)} as the route-pay target if stops and accessorials stay the same.`);
+      actions.push(ctx.typeExposure[0] ? `Bring up ${ctx.typeExposure[0].type}: ${currency.format(ctx.typeExposure[0].exposure)} in claim exposure.` : "Bring claim exposure into the renewal conversation.");
+      actions.push("Check fuel surcharge, install pay, reattempt pay, and accessorial coverage before accepting the rate.");
+      details.push(`Current route pay: ${currency.format(Number(form?.routePay || 0))}.`);
+      details.push(`Revenue gap to target: ${currency.format(ctx.revenueGap)}.`);
       tab = "Contracts";
     } else if (ask.includes("dashboard") || ask.includes("layout") || ask.includes("show")) {
       title = "Put action items above passive reports";
@@ -146,60 +287,29 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
       actions.push("Use Finance when reviewing contracts or margin.");
       tab = "Settings";
     } else {
-      title = "Business snapshot";
-      summary = `${ctx.openClaims.length} open claims, ${currency.format(ctx.totalExposure)} claim exposure, ${currency.format(ctx.netProfit)} current route profit, and ${ctx.savedDayCount} saved daily snapshot${ctx.savedDayCount === 1 ? "" : "s"}.`;
-      actions.push("Ask about claims, profit, teams, contracts, or dashboard layout.");
-      actions.push("Start with the highest exposure claim if you are unsure.");
+      title = "Business snapshot with next move";
+      summary = `${ctx.openClaims.length} open claims, ${currency.format(ctx.totalExposure)} open exposure, ${currency.format(ctx.netProfit)} current route profit, and ${ctx.savedDayCount} saved daily snapshot${ctx.savedDayCount === 1 ? "" : "s"}.`;
+      actions.push(ctx.rankedClaims[0] ? `First move: review ${ctx.rankedClaims[0].id} for ${currency.format(ctx.rankedClaims[0].amountValue)}.` : "First move: review route pricing because claims are clean.");
+      actions.push(ctx.netProfit < ctx.targetProfit ? `Profit is under target by ${currency.format(ctx.targetProfit - ctx.netProfit)}.` : "Profit is above target right now.");
+      actions.push("Ask a sharper question like: what should I charge, who is costing me, or which claim should I dispute?");
+      details.push(`Top team exposure: ${ctx.riskiestTeam.team} at ${currency.format(ctx.riskiestTeam.exposure)}.`);
       tab = "Dashboard";
     }
 
-    return { id: Date.now(), question: rawQuestion, title, summary, actions, tab };
+    return { id: Date.now(), question: rawQuestion, title, summary, actions, details, tab };
   };
 
   const askBusiness = async (nextQuestion = question) => {
     const trimmed = nextQuestion.trim();
     if (!trimmed) return;
-    setIsAskingAi(true);
-    setAiStatus("");
+    setIsAnswering(true);
+    setAiStatus("Answered from live app data.");
 
-    let answer = null;
-    try {
-      const response = await fetch("/api/ask-business", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: trimmed,
-          businessContext,
-        }),
-      });
-
-      if (response.ok) {
-        const aiAnswer = await response.json();
-        answer = {
-          id: Date.now(),
-          question: trimmed,
-          title: aiAnswer.title || "AI answer",
-          summary: aiAnswer.summary || "The AI returned an answer without a summary.",
-          actions: Array.isArray(aiAnswer.actions) && aiAnswer.actions.length ? aiAnswer.actions : ["Review the related page for details."],
-          tab: aiAnswer.tab || "Dashboard",
-          source: "AI",
-        };
-        setAiStatus("Answered by OpenAI.");
-      } else {
-        const error = await response.json().catch(() => ({}));
-        setAiStatus(error.error || "AI is unavailable, using local fallback.");
-      }
-    } catch {
-      setAiStatus("AI is unavailable, using local fallback.");
-    }
-
-    if (!answer) {
-      answer = { ...getAnswer(trimmed), source: "Local fallback" };
-    }
+    const answer = { ...getAnswer(trimmed), source: "Business data" };
 
     setConversation((current) => [answer, ...current].slice(0, 6));
     setQuestion("");
-    setIsAskingAi(false);
+    window.setTimeout(() => setIsAnswering(false), 150);
   };
 
   const latest = conversation[0] || getAnswer("What should I fix first today?");
@@ -241,6 +351,16 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
                   </div>
                 ))}
               </div>
+              {latest.details?.length > 0 && (
+                <div className={isDark ? "mt-4 rounded-xl border border-white/10 bg-white/5 p-3" : "mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3"}>
+                  <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Why this answer</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {latest.details.map((detail) => (
+                      <p key={detail} className={`text-xs font-bold leading-5 ${mutedText}`}>{detail}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => navigateToTab(latest.tab)}
@@ -263,10 +383,10 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
           <button
             type="button"
             onClick={() => askBusiness()}
-            disabled={isAskingAi}
-            className={isAskingAi ? "mt-3 w-full rounded-xl bg-blue-400 px-4 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/20" : "mt-3 w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500"}
+            disabled={isAnswering}
+            className={isAnswering ? "mt-3 w-full rounded-xl bg-blue-400 px-4 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/20" : "mt-3 w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500"}
           >
-            {isAskingAi ? "Asking AI..." : "Ask"}
+            {isAnswering ? "Answering..." : "Ask"}
           </button>
           {aiStatus && <p className={`mt-2 text-xs font-bold ${mutedText}`}>{aiStatus}</p>}
           <div className="mt-4 flex flex-wrap gap-2">
@@ -325,7 +445,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
         <div className="flex items-start gap-3">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
           <p className={isDark ? "text-sm font-semibold leading-6 text-amber-100" : "text-sm font-semibold leading-6 text-amber-900"}>
-            Ask My Business now tries the OpenAI backend first when an API key is configured. If AI is unavailable, it keeps working with the local app-data fallback.
+            Ask My Business answers from the app data currently loaded in Final Mile Margin. Add new claims, routes, teams, and contract numbers to make the answers sharper.
           </p>
         </div>
       </div>
