@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -18,6 +18,91 @@ import {
   YAxis,
 } from "../shared";
 
+const chargeOptions = [
+  ["routePay", "Flat Route Pay", "Base route rate"],
+  ["perStopPay", "Per Stop Pay", "Stop or extra-stop rate"],
+  ["installPay", "Install Pay", "Appliance, setup, or service work"],
+  ["accessorialPay", "Accessorials", "Stairs, long carry, haul away, special handling"],
+  ["fuelSurcharge", "Fuel Surcharge", "Fuel recovery charge"],
+  ["reattemptPay", "Reattempt Pay", "Redelivery or second trip fee"],
+];
+
+const defaultChargeRules = {
+  routePay: true,
+  perStopPay: false,
+  installPay: false,
+  accessorialPay: false,
+  fuelSurcharge: false,
+  reattemptPay: false,
+};
+
+const chargeRuleDefaultsByContract = {
+  lowes: {
+    routePay: true,
+    perStopPay: true,
+    installPay: true,
+    accessorialPay: true,
+    fuelSurcharge: true,
+    reattemptPay: true,
+  },
+  "home-depot": {
+    routePay: true,
+    perStopPay: true,
+    accessorialPay: true,
+    fuelSurcharge: true,
+  },
+  "best-buy": {
+    routePay: false,
+    perStopPay: true,
+    installPay: true,
+    accessorialPay: true,
+    reattemptPay: true,
+  },
+  "rc-willey": {
+    routePay: true,
+    perStopPay: true,
+    accessorialPay: true,
+  },
+};
+
+const getDefaultChargeRulesForContract = (contractId) => ({
+  ...defaultChargeRules,
+  ...(chargeRuleDefaultsByContract[contractId] || {}),
+});
+
+const routeContractDefaults = {
+  lowes: {
+    scenarioName: "Lowe's Appliance Delivery",
+    routePay: 1200,
+    perStopPay: 75,
+    installPay: 25,
+    routeType: "Appliance Delivery",
+  },
+  "home-depot": {
+    scenarioName: "Home Depot Large Item Delivery",
+    routePay: 950,
+    perStopPay: 65,
+    installPay: 0,
+    routeType: "Large Item Delivery",
+  },
+  "best-buy": {
+    scenarioName: "Best Buy Tech Delivery",
+    routePay: 0,
+    perStopPay: 75,
+    installPay: 35,
+    routeType: "Tech Delivery",
+  },
+  "rc-willey": {
+    scenarioName: "RC Willey Furniture Delivery",
+    routePay: 1100,
+    perStopPay: 55,
+    installPay: 0,
+    routeType: "Furniture Delivery",
+  },
+};
+
+const routeProfitDefaultKeys = ["scenarioName", "routePay", "perStopPay", "installPay", "routeType"];
+
 function ProfitabilityDashboard({
   form,
   update,
@@ -33,9 +118,50 @@ function ProfitabilityDashboard({
   isDark,
   appSettings,
 }) {
-  const [profitabilityView, setProfitabilityView] = useState("All Contracts");
+  const [profitabilityView, setProfitabilityView] = useState(() => {
+    const savedView = localStorage.getItem("finalMileProfitabilityView");
+    return savedView === "Single Route" ? "Route Profit Check" : savedView || "All Contracts";
+  });
   const [searchTerm, setSearchTerm] = useState("");
-  const [expandedRowId, setExpandedRowId] = useState("home-depot");
+  const [editingRollupId, setEditingRollupId] = useState(null);
+  const [rollupDraft, setRollupDraft] = useState(null);
+  const [rollupEditorPosition, setRollupEditorPosition] = useState(null);
+  const [editingRouteSection, setEditingRouteSection] = useState(null);
+  const [routeEditorPosition, setRouteEditorPosition] = useState(null);
+  const [activeChartKey, setActiveChartKey] = useState(null);
+  const [chartPopupPosition, setChartPopupPosition] = useState(null);
+  const rollupEditorRef = useRef(null);
+  const routeEditorRef = useRef(null);
+  const chartPopupRef = useRef(null);
+  const [selectedRouteContractId, setSelectedRouteContractId] = useState(() => localStorage.getItem("finalMileRouteProfitContractId") || "lowes");
+  const [contractChargeRules, setContractChargeRules] = useState(() => {
+    try {
+      const saved = localStorage.getItem("finalMileContractChargeRules");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [contractCustomCharges, setContractCustomCharges] = useState(() => {
+    try {
+      const saved = localStorage.getItem("finalMileContractCustomCharges");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [customChargeDraft, setCustomChargeDraft] = useState({ name: "", amount: "" });
+
+  const applyRouteContractDefaults = (contractId, explicitDefaults) => {
+    const defaults = explicitDefaults || routeContractDefaults[contractId];
+    if (!defaults) return;
+
+    routeProfitDefaultKeys.forEach((key) => {
+      if (defaults[key] !== undefined) {
+        update(key, defaults[key]);
+      }
+    });
+  };
 
 
   const [rollupRows, setRollupRows] = useState([
@@ -101,6 +227,92 @@ function ProfitabilityDashboard({
     },
   ]);
 
+  useEffect(() => {
+    localStorage.setItem("finalMileProfitabilityView", profitabilityView);
+  }, [profitabilityView]);
+
+  useEffect(() => {
+    localStorage.setItem("finalMileRouteProfitContractId", selectedRouteContractId);
+  }, [selectedRouteContractId]);
+
+  useEffect(() => {
+    localStorage.setItem("finalMileContractChargeRules", JSON.stringify(contractChargeRules));
+  }, [contractChargeRules]);
+
+  useEffect(() => {
+    localStorage.setItem("finalMileContractCustomCharges", JSON.stringify(contractCustomCharges));
+  }, [contractCustomCharges]);
+
+  useEffect(() => {
+    try {
+      const savedDraft = localStorage.getItem("finalMileRouteProfitContractDraft");
+      if (!savedDraft) return;
+
+      const draft = JSON.parse(savedDraft);
+      if (draft.rateCardId) {
+        setSelectedRouteContractId(draft.rateCardId);
+      }
+      applyRouteContractDefaults(draft.rateCardId, draft);
+      localStorage.removeItem("finalMileRouteProfitContractDraft");
+    } catch {
+      localStorage.removeItem("finalMileRouteProfitContractDraft");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!editingRouteSection) return;
+
+    const handlePointerDown = (event) => {
+      const target = event.target;
+      if (routeEditorRef.current?.contains(target)) return;
+      if (target instanceof Element && target.closest("[data-route-editor-trigger='true']")) return;
+      setEditingRouteSection(null);
+      setRouteEditorPosition(null);
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setEditingRouteSection(null);
+        setRouteEditorPosition(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [editingRouteSection]);
+
+  useEffect(() => {
+    if (!activeChartKey) return;
+
+    const handlePointerDown = (event) => {
+      const target = event.target;
+      if (chartPopupRef.current?.contains(target)) return;
+      if (target instanceof Element && target.closest("[data-chart-popup-trigger='true']")) return;
+      setActiveChartKey(null);
+      setChartPopupPosition(null);
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setActiveChartKey(null);
+        setChartPopupPosition(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activeChartKey]);
+
   const toNumber = (value) => Number(value || 0);
   const marginFactors = appSettings?.marginFactors || {};
   const enabledFactor = (category, key) => marginFactors?.[category]?.[key] !== false;
@@ -110,53 +322,59 @@ function ProfitabilityDashboard({
   };
   const anyCostEnabled = (...keys) => keys.some((key) => enabledFactor("costs", key));
   const anyRevenueEnabled = (...keys) => keys.some((key) => enabledFactor("revenue", key));
+  const rollupNumberFields = [
+    "routes",
+    "stops",
+    "revenue",
+    "labor",
+    "fuel",
+    "truckInsurance",
+    "maintenance",
+    "claims",
+    "other",
+  ];
+
+  const getRollupRowWithTotals = (row) => {
+    const revenue = categoryHasVisibleFactors("revenue") ? toNumber(row.revenue) : 0;
+    const labor = anyCostEnabled("driverPay", "helperPay") ? toNumber(row.labor) : 0;
+    const fuel = enabledFactor("costs", "fuel") ? toNumber(row.fuel) : 0;
+    const truckInsurance = anyCostEnabled("truckPayment", "truckInsurance") ? toNumber(row.truckInsurance) : 0;
+    const maintenance = enabledFactor("costs", "maintenance") ? toNumber(row.maintenance) : 0;
+    const claims = enabledFactor("costs", "claimsReserve") ? toNumber(row.claims) : 0;
+    const other = anyCostEnabled(
+      "otherExpenses",
+      "bond",
+      "phonesSoftware",
+      "warehouseFees",
+      "uniformsPpe",
+      "backgroundChecks",
+      "drugTests",
+      "dotCompliance",
+      "tollsParking"
+    )
+      ? toNumber(row.other)
+      : 0;
+    const totalCosts = labor + fuel + truckInsurance + maintenance + claims + other;
+    const netProfit = revenue - totalCosts;
+    const margin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+
+    return {
+      ...row,
+      calculatedRevenue: revenue,
+      calculatedLabor: labor,
+      calculatedFuel: fuel,
+      calculatedTruckInsurance: truckInsurance,
+      calculatedMaintenance: maintenance,
+      calculatedClaims: claims,
+      calculatedOther: other,
+      totalCosts,
+      netProfit,
+      margin,
+    };
+  };
 
   const rowsWithTotals = useMemo(() => {
-    return rollupRows.map((row) => {
-      const revenue = categoryHasVisibleFactors("revenue") ? toNumber(row.revenue) : 0;
-      const labor = anyCostEnabled("driverPay", "helperPay") ? toNumber(row.labor) : 0;
-      const fuel = enabledFactor("costs", "fuel") ? toNumber(row.fuel) : 0;
-      const truckInsurance = anyCostEnabled("truckPayment", "truckInsurance") ? toNumber(row.truckInsurance) : 0;
-      const maintenance = enabledFactor("costs", "maintenance") ? toNumber(row.maintenance) : 0;
-      const claims = enabledFactor("costs", "claimsReserve") ? toNumber(row.claims) : 0;
-      const other = anyCostEnabled(
-        "otherExpenses",
-        "bond",
-        "phonesSoftware",
-        "warehouseFees",
-        "uniformsPpe",
-        "backgroundChecks",
-        "drugTests",
-        "dotCompliance",
-        "tollsParking"
-      )
-        ? toNumber(row.other)
-        : 0;
-      const totalCosts =
-        labor +
-        fuel +
-        truckInsurance +
-        maintenance +
-        claims +
-        other;
-
-      const netProfit = revenue - totalCosts;
-      const margin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
-
-      return {
-        ...row,
-        calculatedRevenue: revenue,
-        calculatedLabor: labor,
-        calculatedFuel: fuel,
-        calculatedTruckInsurance: truckInsurance,
-        calculatedMaintenance: maintenance,
-        calculatedClaims: claims,
-        calculatedOther: other,
-        totalCosts,
-        netProfit,
-        margin,
-      };
-    });
+    return rollupRows.map(getRollupRowWithTotals);
   }, [rollupRows, marginFactors]);
 
   const filteredRows = rowsWithTotals.filter((row) =>
@@ -232,52 +450,175 @@ function ProfitabilityDashboard({
     { week: "May 12", profit: 19950 },
   ];
 
-  const updateRollupRow = (id, key, value) => {
-    const numberFields = [
-      "routes",
-      "stops",
-      "revenue",
-      "labor",
-      "fuel",
-      "truckInsurance",
-      "maintenance",
-      "claims",
-      "other",
-    ];
+  const normalizeRollupRow = (row) => ({
+    ...row,
+    ...Object.fromEntries(
+      rollupNumberFields.map((key) => [key, Number(row?.[key] || 0)])
+    ),
+  });
 
-    setRollupRows((current) =>
-      current.map((row) =>
-        row.id === id
-          ? {
-            ...row,
-            [key]: numberFields.includes(key) ? Number(value || 0) : value,
-          }
-          : row
-      )
+  const updateRollupDraft = (key, value) => {
+    setRollupDraft((current) =>
+      current
+        ? {
+          ...current,
+          [key]: rollupNumberFields.includes(key) ? Number(value || 0) : value,
+        }
+        : current
     );
   };
 
-  const addRollupRow = () => {
-    const id = `contract-${Date.now()}`;
-    setRollupRows((current) => [
+  const saveRollupDraft = () => {
+    if (!rollupDraft) return;
+
+    const savedRow = normalizeRollupRow(rollupDraft);
+    setRollupRows((current) => {
+      const exists = current.some((row) => row.id === savedRow.id);
+      return exists
+        ? current.map((row) => (row.id === savedRow.id ? savedRow : row))
+        : [...current, savedRow];
+    });
+    closeRollupEditor();
+  };
+
+  const updateContractChargeRule = (contractId, key, enabled) => {
+    setContractChargeRules((current) => ({
       ...current,
-      {
-        id,
-        logo: "NEW",
-        logoClass: "bg-slate-700 text-white",
-        contract: "New Contract",
-        routes: 0,
-        stops: 0,
-        revenue: 0,
-        labor: 0,
-        fuel: 0,
-        truckInsurance: 0,
-        maintenance: 0,
-        claims: 0,
-        other: 0,
+      [contractId]: {
+        ...getDefaultChargeRulesForContract(contractId),
+        ...(current[contractId] || {}),
+        [key]: enabled,
       },
-    ]);
-    setExpandedRowId(id);
+    }));
+  };
+
+  const addCustomContractCharge = (contractId) => {
+    const name = customChargeDraft.name.trim();
+    if (!name) return;
+
+    const amount = Number(customChargeDraft.amount || 0);
+    const newCharge = {
+      id: `custom-charge-${Date.now()}`,
+      name,
+      amount: Number.isFinite(amount) ? amount : 0,
+      enabled: true,
+    };
+
+    setContractCustomCharges((current) => ({
+      ...current,
+      [contractId]: [...(current[contractId] || []), newCharge],
+    }));
+    setCustomChargeDraft({ name: "", amount: "" });
+  };
+
+  const updateCustomContractCharge = (contractId, chargeId, key, value) => {
+    setContractCustomCharges((current) => ({
+      ...current,
+      [contractId]: (current[contractId] || []).map((charge) =>
+        charge.id === chargeId
+          ? {
+            ...charge,
+            [key]: key === "amount" ? Number(value || 0) : value,
+          }
+          : charge
+      ),
+    }));
+  };
+
+  const deleteCustomContractCharge = (contractId, chargeId) => {
+    setContractCustomCharges((current) => ({
+      ...current,
+      [contractId]: (current[contractId] || []).filter((charge) => charge.id !== chargeId),
+    }));
+  };
+
+  const closeRouteSectionEditor = () => {
+    setEditingRouteSection(null);
+    setRouteEditorPosition(null);
+  };
+
+  const closeRollupEditor = () => {
+    setEditingRollupId(null);
+    setRollupEditorPosition(null);
+    setRollupDraft(null);
+  };
+
+  const closeChartPopup = () => {
+    setActiveChartKey(null);
+    setChartPopupPosition(null);
+  };
+
+  const getFloatingPosition = (source, preferredWidth = 680, preferredHeight = 610) => {
+    const gap = 16;
+    const width = Math.min(preferredWidth, window.innerWidth - gap * 2);
+    const estimatedHeight = Math.min(preferredHeight, window.innerHeight - gap * 2);
+    let anchorX = window.innerWidth / 2;
+    let anchorY = 96;
+
+    if (source?.clientX !== undefined && source?.clientY !== undefined) {
+      anchorX = source.clientX;
+      anchorY = source.clientY;
+    } else if (source?.getBoundingClientRect) {
+      const rect = source.getBoundingClientRect();
+      anchorX = rect.right;
+      anchorY = rect.top;
+    }
+
+    let left = anchorX + gap;
+    if (left + width > window.innerWidth - gap) {
+      left = anchorX - width - gap;
+    }
+    if (left < gap) {
+      left = Math.min(window.innerWidth - width - gap, Math.max(gap, anchorX - width / 2));
+    }
+
+    const top = Math.max(gap, Math.min(anchorY - 32, window.innerHeight - estimatedHeight - gap));
+
+    return {
+      left,
+      top,
+      width,
+      maxHeight: Math.max(320, window.innerHeight - top - gap),
+    };
+  };
+
+  const openRouteSectionEditor = (sectionId, source) => {
+    setRouteEditorPosition(getFloatingPosition(source, 680, 610));
+    setEditingRouteSection(sectionId);
+  };
+
+  const openRollupEditor = (id, source) => {
+    const row = rollupRows.find((item) => item.id === id);
+    if (!row) return;
+    setRollupEditorPosition(getFloatingPosition(source, 720, 640));
+    setRollupDraft({ ...row });
+    setEditingRollupId(id);
+  };
+
+  const openChartPopup = (chartKey, source) => {
+    setChartPopupPosition(getFloatingPosition(source, 560, 420));
+    setActiveChartKey(chartKey);
+  };
+
+  const addRollupRow = (event) => {
+    const id = `contract-${Date.now()}`;
+    setRollupDraft({
+      id,
+      logo: "NEW",
+      logoClass: "bg-slate-700 text-white",
+      contract: "New Contract",
+      routes: 0,
+      stops: 0,
+      revenue: 0,
+      labor: 0,
+      fuel: 0,
+      truckInsurance: 0,
+      maintenance: 0,
+      claims: 0,
+      other: 0,
+    });
+    setRollupEditorPosition(getFloatingPosition(event?.currentTarget || event, 720, 640));
+    setEditingRollupId(id);
   };
 
   const deleteRollupRow = (id) => {
@@ -289,8 +630,8 @@ function ProfitabilityDashboard({
     if (!confirmed) return;
 
     setRollupRows((current) => current.filter((row) => row.id !== id));
-    if (expandedRowId === id) {
-      setExpandedRowId(null);
+    if (editingRollupId === id) {
+      closeRollupEditor();
     }
   };
 
@@ -330,6 +671,39 @@ function ProfitabilityDashboard({
   const inputClass = isDark
     ? "w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm font-bold text-white outline-none focus:border-blue-500"
     : "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-950 outline-none focus:border-blue-500";
+  const editingRollupRow = rollupDraft ? getRollupRowWithTotals(rollupDraft) : null;
+  const signedNumberClass = (value) => {
+    if (value < 0) return "text-red-600";
+    if (value > 0) return "text-emerald-700";
+    return isDark ? "text-slate-300" : "text-slate-700";
+  };
+  const signedTone = (value) => {
+    if (value < 0) return "red";
+    if (value > 0) return "green";
+    return "slate";
+  };
+  const draftTotalsPanelClass = (value) => {
+    if (isDark) {
+      if (value < 0) return "rounded-2xl border border-red-500/25 bg-red-500/10 p-5";
+      if (value > 0) return "rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-5";
+      return "rounded-2xl border border-white/10 bg-slate-950/70 p-5";
+    }
+
+    if (value < 0) return "rounded-2xl border border-red-100 bg-red-50 p-5";
+    if (value > 0) return "rounded-2xl border border-emerald-100 bg-emerald-50 p-5";
+    return "rounded-2xl border border-slate-200 bg-slate-50 p-5";
+  };
+  const draftTotalsBorderClass = (value) => {
+    if (isDark) {
+      if (value < 0) return "border-red-500/25 text-slate-300";
+      if (value > 0) return "border-emerald-500/25 text-slate-300";
+      return "border-white/10 text-slate-400";
+    }
+
+    if (value < 0) return "border-red-100 text-slate-600";
+    if (value > 0) return "border-emerald-100 text-slate-600";
+    return "border-slate-200 text-slate-600";
+  };
 
   const costColors = ["#2563EB", "#16A34A", "#F97316", "#8B5CF6", "#EF4444"];
 
@@ -348,7 +722,7 @@ function ProfitabilityDashboard({
       value: currency.format(totals.netProfit),
       note: `${totals.margin.toFixed(2)}% average margin`,
       icon: BarChart3,
-      tone: "green",
+      tone: signedTone(totals.netProfit),
       mini: "line",
       visible: enabledFactor("metrics", "netProfit"),
     },
@@ -366,7 +740,7 @@ function ProfitabilityDashboard({
       value: `${totals.margin.toFixed(2)}%`,
       note: "Across all contracts",
       icon: BarChart3,
-      tone: "purple",
+      tone: signedTone(totals.margin),
       mini: "line",
       visible: enabledFactor("metrics", "marginPercent"),
     },
@@ -378,20 +752,70 @@ function ProfitabilityDashboard({
     red: "bg-red-500/10 text-red-600",
     purple: "bg-purple-500/10 text-purple-600",
     amber: "bg-amber-500/10 text-amber-700",
+    slate: isDark ? "bg-slate-500/10 text-slate-300" : "bg-slate-500/10 text-slate-600",
   };
 
   const totalCostPercent = (value) => (totals.totalCosts > 0 ? ((value / totals.totalCosts) * 100).toFixed(1) : "0.0");
+  const clampPercent = (value) => Math.max(0, Math.min(100, value));
+  const getKpiBreakdown = (title) => {
+    const revenue = Math.max(totals.revenue, 1);
+    const cost = Math.max(totals.totalCosts, 0);
+    const profit = Math.max(totals.netProfit, 0);
+    const claims = Math.max(totals.claims, 0);
 
-  if (profitabilityView === "Single Route") {
-    const routeRevenue = enabledFactor("revenue", "routePay") ? toNumber(form.routePay) : 0;
+    if (title === "Total Revenue") {
+      return [
+        { label: "Profit kept", value: currency.format(profit), width: clampPercent((profit / revenue) * 100), color: "bg-emerald-500" },
+        { label: "Costs paid", value: currency.format(cost), width: clampPercent((cost / revenue) * 100), color: "bg-orange-500" },
+      ];
+    }
+
+    if (title === "Net Profit") {
+      return [
+        { label: "Actual margin", value: `${totals.margin.toFixed(1)}%`, width: clampPercent((totals.margin / 35) * 100), color: "bg-emerald-500" },
+        { label: "Target margin", value: "25.0%", width: 71, color: "bg-blue-500" },
+      ];
+    }
+
+    if (title === "Claims Exposure") {
+      return [
+        { label: "Exposure", value: currency.format(claims), width: clampPercent((claims / 4000) * 100), color: "bg-red-500" },
+        { label: "Reserve target", value: currency.format(2500), width: 63, color: "bg-amber-500" },
+      ];
+    }
+
+    return [
+      { label: "Average", value: `${totals.margin.toFixed(1)}%`, width: clampPercent((totals.margin / 40) * 100), color: "bg-purple-500" },
+      { label: "Review line", value: "20.0%", width: 50, color: "bg-slate-500" },
+    ];
+  };
+
+  if (profitabilityView === "Route Profit Check") {
+    const selectedRouteContract = rowsWithTotals.find((row) => row.id === selectedRouteContractId) || rowsWithTotals[0];
+    const selectedChargeRules = {
+      ...getDefaultChargeRulesForContract(selectedRouteContract?.id),
+      ...(contractChargeRules[selectedRouteContract?.id] || {}),
+    };
+    const chargeEnabled = (key) => selectedChargeRules[key] !== false;
+    const enabledChargeLabels = chargeOptions.filter(([key]) => chargeEnabled(key)).map(([, label]) => label);
+    const customCharges = (contractCustomCharges[selectedRouteContract?.id] || []).map((charge) => ({
+      ...charge,
+      amount: Number(charge.amount || 0),
+      enabled: charge.enabled !== false,
+    }));
+    const enabledCustomCharges = customCharges.filter((charge) => charge.enabled);
+    const customRevenue = enabledCustomCharges.reduce((sum, charge) => sum + charge.amount, 0);
+    const enabledPayTypeCount = enabledChargeLabels.length + enabledCustomCharges.length;
+    const routeRevenue = enabledFactor("revenue", "routePay") && chargeEnabled("routePay") ? toNumber(form.routePay) : 0;
     const extraStops = toNumber(form.stops);
-    const perStopRevenue = anyRevenueEnabled("perStopPay", "extraStops") ? toNumber(form.perStopPay) : 0;
-    const installRevenue = enabledFactor("revenue", "installRevenue") ? toNumber(form.installPay) : 0;
+    const perStopRevenue = anyRevenueEnabled("perStopPay", "extraStops") && chargeEnabled("perStopPay") ? toNumber(form.perStopPay) : 0;
+    const installRevenue = enabledFactor("revenue", "installRevenue") && chargeEnabled("installPay") ? toNumber(form.installPay) : 0;
     const accessorialRevenue = anyRevenueEnabled("haulAwayRevenue", "stairsLongCarry", "detentionWaitTime", "assemblySetup", "otherAccessorials")
+      && chargeEnabled("accessorialPay")
       ? toNumber(form.accessorialPay)
       : 0;
-    const fuelSurcharge = enabledFactor("revenue", "fuelSurcharge") ? toNumber(form.fuelSurcharge) : 0;
-    const reattemptRevenue = enabledFactor("revenue", "reattemptFee") ? toNumber(form.reattemptPay) : 0;
+    const fuelSurcharge = enabledFactor("revenue", "fuelSurcharge") && chargeEnabled("fuelSurcharge") ? toNumber(form.fuelSurcharge) : 0;
+    const reattemptRevenue = enabledFactor("revenue", "reattemptFee") && chargeEnabled("reattemptPay") ? toNumber(form.reattemptPay) : 0;
 
     const totalRouteRevenue =
       routeRevenue +
@@ -399,7 +823,8 @@ function ProfitabilityDashboard({
       installRevenue +
       accessorialRevenue +
       fuelSurcharge +
-      reattemptRevenue;
+      reattemptRevenue +
+      customRevenue;
 
     const miles = Math.max(toNumber(form.miles), 0);
     const routeHours = Math.max(toNumber(form.routeHours), 1);
@@ -435,17 +860,17 @@ function ProfitabilityDashboard({
     const profitPerMile = miles > 0 ? routeNetProfit / miles : 0;
     const profitPerHour = routeNetProfit / routeHours;
 
-    const showStopsField = anyRevenueEnabled("extraStops", "perStopPay") || enabledFactor("metrics", "profitPerStop") || enabledFactor("metrics", "stopsPerHour") || enabledFactor("metrics", "milesPerStop");
-    const showAccessorialField = anyRevenueEnabled("haulAwayRevenue", "stairsLongCarry", "detentionWaitTime", "assemblySetup", "otherAccessorials");
+    const showStopsField = (anyRevenueEnabled("extraStops", "perStopPay") && chargeEnabled("perStopPay")) || enabledFactor("metrics", "profitPerStop") || enabledFactor("metrics", "stopsPerHour") || enabledFactor("metrics", "milesPerStop");
+    const showAccessorialField = anyRevenueEnabled("haulAwayRevenue", "stairsLongCarry", "detentionWaitTime", "assemblySetup", "otherAccessorials") && chargeEnabled("accessorialPay");
 
     const revenueFields = [
-      ["Base Route Pay", "routePay", "Flat route revenue", enabledFactor("revenue", "routePay")],
+      ["Base Route Pay", "routePay", "Flat route revenue", enabledFactor("revenue", "routePay") && chargeEnabled("routePay")],
       ["Stops", "stops", "Total stops on route", showStopsField],
-      ["Per Stop Pay", "perStopPay", "Revenue per additional stop", anyRevenueEnabled("perStopPay", "extraStops")],
-      ["Install Revenue", "installPay", "Install / accessory work", enabledFactor("revenue", "installRevenue")],
+      ["Per Stop Pay", "perStopPay", "Revenue per additional stop", anyRevenueEnabled("perStopPay", "extraStops") && chargeEnabled("perStopPay")],
+      ["Install Revenue", "installPay", "Install / accessory work", enabledFactor("revenue", "installRevenue") && chargeEnabled("installPay")],
       ["Accessorials", "accessorialPay", "Haul away, stairs, special handling", showAccessorialField],
-      ["Fuel Surcharge", "fuelSurcharge", "Fuel recovery revenue", enabledFactor("revenue", "fuelSurcharge")],
-      ["Reattempt Pay", "reattemptPay", "Redelivery / trip fee revenue", enabledFactor("revenue", "reattemptFee")],
+      ["Fuel Surcharge", "fuelSurcharge", "Fuel recovery revenue", enabledFactor("revenue", "fuelSurcharge") && chargeEnabled("fuelSurcharge")],
+      ["Reattempt Pay", "reattemptPay", "Redelivery / trip fee revenue", enabledFactor("revenue", "reattemptFee") && chargeEnabled("reattemptPay")],
     ].filter(([, , , visible]) => visible);
 
     const costFields = [
@@ -466,8 +891,8 @@ function ProfitabilityDashboard({
     const summaryCards = [
       ["Total Revenue", totalRouteRevenue, "text-blue-600", DollarSign, "", categoryHasVisibleFactors("revenue")],
       ["Total Cost", totalRouteCost, "text-red-600", ShieldCheck, "", categoryHasVisibleFactors("costs")],
-      ["Net Profit", routeNetProfit, "text-emerald-700", BarChart3, "", enabledFactor("metrics", "netProfit")],
-      ["Margin", routeMargin, routeMargin >= 25 ? "text-emerald-700" : routeMargin >= 15 ? "text-orange-600" : "text-red-600", Truck, "%", enabledFactor("metrics", "marginPercent")],
+      ["Net Profit", routeNetProfit, signedNumberClass(routeNetProfit), BarChart3, "", enabledFactor("metrics", "netProfit")],
+      ["Margin", routeMargin, signedNumberClass(routeMargin), Truck, "%", enabledFactor("metrics", "marginPercent")],
     ].filter(([, , , , , visible]) => visible);
 
     const efficiencyCards = [
@@ -477,12 +902,80 @@ function ProfitabilityDashboard({
       ["Fuel Cost", fuelCost, enabledFactor("costs", "fuel")],
     ].filter(([, , visible]) => visible);
 
+    const routeDetailFields = [
+      ["Route Hours", "routeHours", "Used for profit per hour", enabledFactor("metrics", "profitPerHour")],
+      ["Target Profit", "targetProfit", "Daily goal for this route", true],
+    ].filter(([, , , visible]) => visible);
+
+    const getFieldsByKey = (fields, keys) => fields.filter(([, key]) => keys.includes(key));
+    const routeInputSections = [
+      {
+        id: "revenue",
+        title: "Revenue",
+        subtitle: "Route pay, stops, accessorials, and surcharges.",
+        icon: DollarSign,
+        tone: "blue",
+        value: totalRouteRevenue,
+        note: customCharges.length > 0 ? `${extraStops} stops · ${customCharges.length} custom charges` : `${extraStops} stops included`,
+        fields: revenueFields,
+      },
+      {
+        id: "labor",
+        title: "Labor",
+        subtitle: "Driver and helper cost for this route.",
+        icon: Users,
+        tone: "green",
+        value: laborCost,
+        note: `${currency.format(driverPay)} driver / ${currency.format(helperPay)} helper`,
+        fields: getFieldsByKey(costFields, ["driverPay", "helperPay"]),
+      },
+      {
+        id: "truck",
+        title: "Truck, Fuel & Miles",
+        subtitle: "Fuel, mileage, truck, insurance, and maintenance.",
+        icon: Truck,
+        tone: "amber",
+        value: fuelCost + truckCost + insuranceCost + maintenanceCost + tollsParking + phoneSoftware,
+        note: `${miles} miles at ${mpg} MPG`,
+        fields: getFieldsByKey(costFields, ["miles", "mpg", "fuelPrice", "dailyTruckPayment", "dailyInsurance", "maintenancePerMile", "tollsParking", "phoneSoftware"]),
+      },
+      {
+        id: "claims",
+        title: "Claims & Other",
+        subtitle: "Reserve for damages, chargebacks, and one-off costs.",
+        icon: ShieldCheck,
+        tone: "red",
+        value: claimsReserve + otherCosts,
+        note: `${currency.format(claimsReserve)} claim reserve`,
+        fields: getFieldsByKey(costFields, ["claimsChargebacks", "otherCosts"]),
+      },
+      {
+        id: "route-details",
+        title: "Route Details",
+        subtitle: "Time and target numbers that affect route health.",
+        icon: FileText,
+        tone: "purple",
+        value: profitPerHour,
+        note: `${routeHours} hours / ${currency.format(toNumber(form.targetProfit))} target`,
+        fields: routeDetailFields,
+      },
+    ].filter((section) => section.fields.length > 0);
+    const editingRouteSectionData = routeInputSections.find((section) => section.id === editingRouteSection);
+    const EditingRouteIcon = editingRouteSectionData?.icon;
+    const routeToneClass = {
+      blue: isDark ? "bg-blue-500/10 text-blue-300" : "bg-blue-50 text-blue-600",
+      green: isDark ? "bg-emerald-500/10 text-emerald-300" : "bg-emerald-50 text-emerald-700",
+      amber: isDark ? "bg-amber-500/10 text-amber-300" : "bg-amber-50 text-amber-700",
+      red: isDark ? "bg-red-500/10 text-red-300" : "bg-red-50 text-red-600",
+      purple: isDark ? "bg-purple-500/10 text-purple-300" : "bg-purple-50 text-purple-600",
+    };
+
     return (
       <div className={pageClass}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className={`text-3xl font-black tracking-tight ${titleText}`}>Profitability</h1>
-            <p className={`mt-1 text-sm ${mutedText}`}>Single route calculator with accessorials, costs, and live margin.</p>
+            <h1 className={`text-3xl font-black tracking-tight ${titleText}`}>Route Profit Check</h1>
+            <p className={`mt-1 text-sm ${mutedText}`}>Quickly decide if one route is worth running today.</p>
           </div>
         </div>
 
@@ -491,7 +984,7 @@ function ProfitabilityDashboard({
             <div className="flex flex-wrap items-center gap-3">
               <span className={`text-sm font-black ${titleText}`}>View:</span>
               <div className={isDark ? "rounded-2xl bg-white/5 p-1" : "rounded-2xl bg-slate-100 p-1"}>
-                {["All Contracts", "Single Route"].map((view) => (
+                {["All Contracts", "Route Profit Check"].map((view) => (
                   <button
                     key={view}
                     onClick={() => setProfitabilityView(view)}
@@ -508,6 +1001,28 @@ function ProfitabilityDashboard({
               </div>
 
             </div>
+
+            {profitabilityView === "Route Profit Check" && (
+              <div className="flex flex-wrap items-center gap-3">
+                <label className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Contract</label>
+                <select
+                  value={selectedRouteContract?.id}
+                  onChange={(event) => {
+                    const nextContractId = event.target.value;
+                    setSelectedRouteContractId(nextContractId);
+                    applyRouteContractDefaults(nextContractId);
+                  }}
+                  className={isDark ? "min-w-72 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm font-bold text-white outline-none focus:border-blue-500" : "min-w-72 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-950 outline-none focus:border-blue-500"}
+                >
+                  {rowsWithTotals.map((row) => (
+                    <option key={row.id} value={row.id}>{row.contract}</option>
+                  ))}
+                </select>
+                <span className={isDark ? "rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-black text-emerald-200" : "rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700"}>
+                  {enabledPayTypeCount} pay types on
+                </span>
+              </div>
+            )}
 
             {profitabilityView === "All Contracts" && (
               <div className="flex flex-wrap gap-3">
@@ -546,97 +1061,208 @@ function ProfitabilityDashboard({
           ))}
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
           <div className={cardClass}>
-            <div className="mb-5">
-              <h2 className={`text-xl font-black ${titleText}`}>Route Revenue</h2>
-              <p className={`text-sm ${mutedText}`}>Enter pay items, extra stops, accessorials, and route revenue.</p>
+            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className={`text-xl font-black ${titleText}`}>Route Inputs</h2>
+                <p className={`text-sm ${mutedText}`}>Click any section to edit the numbers behind this route.</p>
+              </div>
+              <span className={isDark ? "rounded-full bg-blue-500/15 px-3 py-1 text-xs font-black text-blue-200" : "rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700"}>
+                Click to edit
+              </span>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {revenueFields.map(([label, key, help]) => (
-                <div key={key}>
-                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</label>
+            <div className={isDark ? "mb-5 rounded-2xl border border-white/10 bg-slate-950/40 p-4" : "mb-5 rounded-2xl border border-blue-100 bg-blue-50/60 p-4"}>
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className={`text-sm font-black ${titleText}`}>Pay Types for {selectedRouteContract?.contract}</p>
+                  <p className={`mt-1 text-xs font-semibold ${mutedText}`}>Check the charges this contract allows. Off items are hidden from Revenue.</p>
+                </div>
+                <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-white px-3 py-1 text-xs font-black text-blue-700"}>
+                  Contract rate card
+                </span>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {chargeOptions.map(([key, label, description]) => {
+                  const checked = chargeEnabled(key);
+                  return (
+                    <label
+                      key={key}
+                      className={isDark ? "flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3 hover:bg-white/10" : "flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 hover:border-blue-200"}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => updateContractChargeRule(selectedRouteContract.id, key, event.target.checked)}
+                        className="mt-1 h-4 w-4 accent-blue-600"
+                      />
+                      <span className="min-w-0">
+                        <span className={`block text-sm font-black ${checked ? titleText : mutedText}`}>{label}</span>
+                        <span className={`mt-0.5 block text-xs leading-snug ${mutedText}`}>{description}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+
+                {customCharges.map((charge) => (
+                  <div
+                    key={charge.id}
+                    className={isDark ? "rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3" : "rounded-xl border border-emerald-100 bg-emerald-50 p-3"}
+                  >
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <label className="flex min-w-0 items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={charge.enabled}
+                          onChange={(event) => updateCustomContractCharge(selectedRouteContract.id, charge.id, "enabled", event.target.checked)}
+                          className="h-4 w-4 accent-emerald-600"
+                        />
+                        <span className={charge.enabled ? "text-xs font-black uppercase tracking-wide text-emerald-700" : `text-xs font-black uppercase tracking-wide ${mutedText}`}>
+                          Custom
+                        </span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => deleteCustomContractCharge(selectedRouteContract.id, charge.id)}
+                        className={isDark ? "rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-red-300" : "rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-red-600"}
+                        title="Delete custom charge"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <input
+                      value={charge.name}
+                      onChange={(event) => updateCustomContractCharge(selectedRouteContract.id, charge.id, "name", event.target.value)}
+                      className={isDark ? "w-full rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 text-sm font-black text-white outline-none focus:border-emerald-500" : "w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-black text-slate-950 outline-none focus:border-emerald-500"}
+                    />
+                    <div className="mt-2">
+                      <label className={`mb-1 block text-[11px] font-black uppercase tracking-wide ${mutedText}`}>Amount</label>
+                      <div className="relative">
+                        <span className={`absolute left-3 top-2 text-sm font-black ${mutedText}`}>$</span>
+                        <input
+                          type="number"
+                          value={charge.amount}
+                          onChange={(event) => updateCustomContractCharge(selectedRouteContract.id, charge.id, "amount", event.target.value)}
+                          className={isDark ? "w-full rounded-lg border border-white/10 bg-slate-950/60 py-2 pl-7 pr-3 text-sm font-black text-white outline-none focus:border-emerald-500" : "w-full rounded-lg border border-emerald-100 bg-white py-2 pl-7 pr-3 text-sm font-black text-slate-950 outline-none focus:border-emerald-500"}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className={isDark ? "mt-4 rounded-2xl border border-white/10 bg-slate-950/50 p-4" : "mt-4 rounded-2xl border border-slate-200 bg-white p-4"}>
+                <div className="mb-3">
+                  <p className={`text-sm font-black ${titleText}`}>Add Custom Charge</p>
+                  <p className={`mt-1 text-xs font-semibold ${mutedText}`}>Example: stairs fee, disposal, premium install, weekend delivery.</p>
+                </div>
+                <div className="grid gap-3 md:grid-cols-[1fr_150px_auto]">
                   <input
-                    type="number"
-                    value={form[key]}
-                    onChange={(event) => update(key, event.target.value)}
+                    value={customChargeDraft.name}
+                    onChange={(event) => setCustomChargeDraft((current) => ({ ...current, name: event.target.value }))}
+                    placeholder="Charge name"
                     className={inputClass}
                   />
-                  <p className={`mt-1 text-[11px] ${mutedText}`}>{help}</p>
+                  <div className="relative">
+                    <span className={`absolute left-3 top-2.5 text-sm font-black ${mutedText}`}>$</span>
+                    <input
+                      type="number"
+                      value={customChargeDraft.amount}
+                      onChange={(event) => setCustomChargeDraft((current) => ({ ...current, amount: event.target.value }))}
+                      placeholder="0"
+                      className={isDark ? "w-full rounded-xl border border-white/10 bg-slate-950/70 py-2 pl-7 pr-3 text-sm font-bold text-white outline-none focus:border-blue-500" : "w-full rounded-xl border border-slate-200 bg-white py-2 pl-7 pr-3 text-sm font-bold text-slate-950 outline-none focus:border-blue-500"}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => addCustomContractCharge(selectedRouteContract.id)}
+                    className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500"
+                  >
+                    + Add Charge
+                  </button>
                 </div>
-              ))}
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {routeInputSections.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    data-route-editor-trigger="true"
+                    onClick={(event) => openRouteSectionEditor(section.id, event)}
+                    className={isDark ? "group rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-left transition hover:border-blue-400/50 hover:bg-slate-950/80" : "group rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-blue-300 hover:bg-white hover:shadow-md"}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex min-w-0 gap-3">
+                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${routeToneClass[section.tone]}`}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className={`text-base font-black ${titleText}`}>{section.title}</p>
+                          <p className={`mt-1 line-clamp-2 text-xs font-semibold ${mutedText}`}>{section.subtitle}</p>
+                        </div>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-blue-600 px-2.5 py-1 text-[11px] font-black text-white opacity-0 transition group-hover:opacity-100">
+                        Open
+                      </span>
+                    </div>
+                    <div className={`mt-5 border-t pt-4 ${rowBorder}`}>
+                      <p className={`safe-number text-2xl font-black ${section.value >= 0 ? titleText : "text-red-600"}`}>
+                        {currency.format(section.value)}
+                      </p>
+                      <p className={`mt-1 truncate text-xs font-bold ${mutedText}`}>{section.note}</p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           <div className={cardClass}>
             <div className="mb-5">
               <h2 className={`text-xl font-black ${titleText}`}>Live Route Summary</h2>
-              <p className={`text-sm ${mutedText}`}>Profitability updates as numbers change.</p>
+              <p className={`text-sm ${mutedText}`}>Profitability updates as section numbers change.</p>
             </div>
 
             <div className="space-y-4">
               {[
                 ["Revenue", totalRouteRevenue, "text-blue-600", categoryHasVisibleFactors("revenue")],
                 ["Cost", totalRouteCost, "text-red-600", categoryHasVisibleFactors("costs")],
-                ["Net Profit", routeNetProfit, "text-emerald-700", enabledFactor("metrics", "netProfit")],
+                ["Net Profit", routeNetProfit, signedNumberClass(routeNetProfit), enabledFactor("metrics", "netProfit")],
               ].filter(([, , , visible]) => visible).map(([label, value, tone]) => (
-                <div key={label} className={`flex items-center justify-between border-b pb-3 ${rowBorder}`}>
+                <div key={label} className={`flex items-center justify-between gap-4 border-b pb-3 ${rowBorder}`}>
                   <p className={`font-bold ${mutedText}`}>{label}</p>
-                  <p className={`text-xl font-black ${tone}`}>{currency.format(value)}</p>
+                  <p className={`safe-number text-right text-xl font-black ${tone}`}>{currency.format(value)}</p>
                 </div>
               ))}
 
               {enabledFactor("metrics", "marginPercent") && (
                 <div className={isDark ? "rounded-2xl bg-slate-950/70 p-4" : "rounded-2xl bg-emerald-50 p-4"}>
                   <p className={`text-sm font-black ${mutedText}`}>Margin</p>
-                  <p className={`mt-1 text-4xl font-black ${routeMargin >= 25 ? "text-emerald-700" : routeMargin >= 15 ? "text-orange-600" : "text-red-600"}`}>
+                  <p className={`mt-1 text-4xl font-black ${signedNumberClass(routeMargin)}`}>
                     {routeMargin.toFixed(2)}%
                   </p>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
 
-        <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className={cardClass}>
-            <div className="mb-5">
-              <h2 className={`text-xl font-black ${titleText}`}>Route Costs</h2>
-              <p className={`text-sm ${mutedText}`}>Labor, fuel, truck, insurance, maintenance, and claim reserves.</p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {costFields.map(([label, key, help]) => (
-                <div key={key}>
-                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</label>
-                  <input
-                    type="number"
-                    value={form[key]}
-                    onChange={(event) => update(key, event.target.value)}
-                    className={inputClass}
-                  />
-                  <p className={`mt-1 text-[11px] ${mutedText}`}>{help}</p>
+              {efficiencyCards.length > 0 && (
+                <div className={`grid gap-3 border-t pt-4 sm:grid-cols-2 ${rowBorder}`}>
+                  {efficiencyCards.map(([label, value]) => (
+                    <div key={label} className={isDark ? "rounded-xl bg-white/5 p-3" : "rounded-xl bg-slate-50 p-3"}>
+                      <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</p>
+                      <p className={`safe-number mt-1 text-lg font-black ${value >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                        {currency.format(value)}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className={cardClass}>
-            <div className="mb-5">
-              <h2 className={`text-xl font-black ${titleText}`}>Route Efficiency</h2>
-              <p className={`text-sm ${mutedText}`}>See whether the route is worth the work.</p>
-            </div>
-
-            <div className="grid gap-4">
-              {efficiencyCards.map(([label, value]) => (
-                <div key={label} className={isDark ? "rounded-2xl border border-white/10 bg-slate-950/70 p-4" : "rounded-2xl border border-slate-200 bg-slate-50 p-4"}>
-                  <p className={`text-sm font-black ${mutedText}`}>{label}</p>
-                  <p className={`mt-1 text-2xl font-black ${value >= 0 ? "text-emerald-700" : "text-red-600"}`}>
-                    {currency.format(value)}
-                  </p>
-                </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -666,6 +1292,128 @@ function ProfitabilityDashboard({
             ))}
           </div>
         </div>
+
+        {editingRouteSectionData && (
+          <div
+            ref={routeEditorRef}
+            className="fixed z-50 w-[min(680px,calc(100vw-2rem))]"
+            style={{
+              left: `${routeEditorPosition?.left ?? 16}px`,
+              top: `${routeEditorPosition?.top ?? 96}px`,
+              width: `${routeEditorPosition?.width ?? 680}px`,
+            }}
+          >
+            <div
+              className={isDark ? "overflow-y-auto rounded-2xl border border-blue-500/25 bg-slate-950/95 p-4 shadow-2xl shadow-blue-950/40 backdrop-blur-xl" : "overflow-y-auto rounded-2xl border border-blue-200 bg-white/95 p-4 shadow-2xl shadow-slate-300/60 backdrop-blur-xl"}
+              style={{ maxHeight: `${routeEditorPosition?.maxHeight ?? 620}px` }}
+            >
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${routeToneClass[editingRouteSectionData.tone]}`}>
+                    {EditingRouteIcon && <EditingRouteIcon className="h-6 w-6" />}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Edit Route Section</p>
+                      <span className={isDark ? "rounded-full bg-blue-500/15 px-2.5 py-1 text-[11px] font-black text-blue-200" : "rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700"}>
+                        Live update
+                      </span>
+                    </div>
+                    <h3 className={`mt-1 text-2xl font-black ${titleText}`}>{editingRouteSectionData.title}</h3>
+                    <p className={`mt-1 text-sm ${mutedText}`}>{editingRouteSectionData.subtitle}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeRouteSectionEditor}
+                  className={isDark ? "rounded-full bg-white/10 px-3 py-2 text-xs font-black text-white hover:bg-white/15" : "rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"}
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {editingRouteSectionData.fields.map(([label, key, help]) => (
+                  <div key={key}>
+                    <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</label>
+                    <input
+                      type="number"
+                      value={form[key]}
+                      onChange={(event) => update(key, event.target.value)}
+                      className={inputClass}
+                    />
+                    <p className={`mt-1 text-[11px] ${mutedText}`}>{help}</p>
+                  </div>
+                ))}
+              </div>
+
+              {editingRouteSectionData.id === "revenue" && customCharges.length > 0 && (
+                <div className={isDark ? "mt-5 rounded-2xl border border-white/10 bg-slate-950/70 p-4" : "mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4"}>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className={`text-sm font-black ${titleText}`}>Custom Charges</p>
+                      <p className={`mt-1 text-xs font-semibold ${mutedText}`}>These are saved to {selectedRouteContract?.contract}.</p>
+                    </div>
+                    <span className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white">
+                      {currency.format(customRevenue)}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {customCharges.map((charge) => (
+                      <div key={charge.id} className={isDark ? "rounded-xl border border-white/10 bg-white/5 p-3" : "rounded-xl border border-emerald-100 bg-white p-3"}>
+                        <label className="mb-2 flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={charge.enabled}
+                            onChange={(event) => updateCustomContractCharge(selectedRouteContract.id, charge.id, "enabled", event.target.checked)}
+                            className="h-4 w-4 accent-emerald-600"
+                          />
+                          <span className={`truncate text-sm font-black ${charge.enabled ? titleText : mutedText}`}>{charge.name}</span>
+                        </label>
+                        <div className="relative">
+                          <span className={`absolute left-3 top-2 text-sm font-black ${mutedText}`}>$</span>
+                          <input
+                            type="number"
+                            value={charge.amount}
+                            onChange={(event) => updateCustomContractCharge(selectedRouteContract.id, charge.id, "amount", event.target.value)}
+                            className={isDark ? "w-full rounded-lg border border-white/10 bg-slate-950/60 py-2 pl-7 pr-3 text-sm font-black text-white outline-none focus:border-emerald-500" : "w-full rounded-lg border border-emerald-100 bg-white py-2 pl-7 pr-3 text-sm font-black text-slate-950 outline-none focus:border-emerald-500"}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className={isDark ? "mt-5 rounded-2xl border border-white/10 bg-slate-950/70 p-5" : "mt-5 rounded-2xl border border-emerald-100 bg-emerald-50 p-5"}>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div>
+                    <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Section Total</p>
+                    <p className={`safe-number mt-1 text-2xl font-black ${titleText}`}>{currency.format(editingRouteSectionData.value)}</p>
+                  </div>
+                  <div>
+                    <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Net Profit</p>
+                    <p className={`safe-number mt-1 text-2xl font-black ${signedNumberClass(routeNetProfit)}`}>{currency.format(routeNetProfit)}</p>
+                  </div>
+                  <div>
+                    <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Margin</p>
+                    <p className={`mt-1 text-2xl font-black ${signedNumberClass(routeMargin)}`}>{routeMargin.toFixed(2)}%</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between ${rowBorder}`}>
+                <p className={`text-sm ${mutedText}`}>Changes update the route summary immediately.</p>
+                <button
+                  onClick={closeRouteSectionEditor}
+                  className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -684,7 +1432,7 @@ function ProfitabilityDashboard({
           <div className="flex flex-wrap items-center gap-3">
             <span className={`text-sm font-black ${titleText}`}>View:</span>
             <div className={isDark ? "rounded-2xl bg-white/5 p-1" : "rounded-2xl bg-slate-100 p-1"}>
-              {["All Contracts", "Single Route"].map((view) => (
+              {["All Contracts", "Route Profit Check"].map((view) => (
                 <button
                   key={view}
                   onClick={() => setProfitabilityView(view)}
@@ -724,7 +1472,7 @@ function ProfitabilityDashboard({
       <div className="grid gap-4 xl:grid-cols-5">
         {kpiCards.map((card) => {
           const Icon = card.icon;
-          const chartColor = card.tone === "red" ? "#EF4444" : card.tone === "green" ? "#16A34A" : card.tone === "purple" ? "#7C3AED" : "#2563EB";
+          const breakdown = getKpiBreakdown(card.title);
 
           return (
             <div key={card.title} className={`${cardClass} overflow-hidden`}>
@@ -748,20 +1496,18 @@ function ProfitabilityDashboard({
                 </div>
               </div>
 
-              <div className={isDark ? "mt-5 h-16 overflow-hidden rounded-xl bg-slate-950/30" : "mt-5 h-16 overflow-hidden rounded-xl bg-slate-50/70"}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={trendData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-                    <Area
-                      type="monotone"
-                      dataKey="profit"
-                      stroke={chartColor}
-                      fill={chartColor}
-                      fillOpacity={isDark ? 0.14 : 0.18}
-                      strokeWidth={3}
-                      dot={false}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+              <div className={isDark ? "mt-5 space-y-3 rounded-xl bg-slate-950/30 p-3" : "mt-5 space-y-3 rounded-xl bg-slate-50/80 p-3"}>
+                {breakdown.map((item) => (
+                  <div key={item.label}>
+                    <div className="mb-1 flex items-center justify-between gap-3">
+                      <p className={`truncate text-[11px] font-black uppercase tracking-wide ${mutedText}`}>{item.label}</p>
+                      <p className={`safe-number text-right text-xs font-black ${titleText}`} title={item.value}>{item.value}</p>
+                    </div>
+                    <div className={isDark ? "h-2 overflow-hidden rounded-full bg-white/10" : "h-2 overflow-hidden rounded-full bg-slate-200"}>
+                      <div className={`h-full rounded-full ${item.color}`} style={{ width: `${item.width}%` }} />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           );
@@ -807,7 +1553,14 @@ function ProfitabilityDashboard({
               <h2 className={`text-lg font-black ${titleText}`}>Net Profit by Contract</h2>
               <p className={`mt-1 text-xs ${mutedText}`}>Ranked from strongest to weakest.</p>
             </div>
-            <button onClick={() => setProfitabilityView("All Contracts")} className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-black text-blue-600">View chart</button>
+            <button
+              type="button"
+              data-chart-popup-trigger="true"
+              onClick={(event) => openChartPopup("profit", event)}
+              className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-black text-blue-600 hover:bg-blue-50"
+            >
+              View chart
+            </button>
           </div>
 
           <div className="space-y-5">
@@ -820,7 +1573,7 @@ function ProfitabilityDashboard({
                   <div key={row.id}>
                     <div className="mb-2 flex items-center justify-between gap-3">
                       <p className={`truncate text-sm font-black ${titleText}`}>{row.contract}</p>
-                      <p className="whitespace-nowrap text-sm font-black text-emerald-700">{currency.format(row.netProfit)}</p>
+                      <p className={`whitespace-nowrap text-sm font-black ${signedNumberClass(row.netProfit)}`}>{currency.format(row.netProfit)}</p>
                     </div>
                     <div className={isDark ? "h-5 overflow-hidden rounded-full bg-slate-950" : "h-5 overflow-hidden rounded-full bg-slate-100"}>
                       <div
@@ -841,7 +1594,14 @@ function ProfitabilityDashboard({
               <h2 className={`text-lg font-black ${titleText}`}>Cost Breakdown (Totals)</h2>
               <p className={`mt-1 text-xs ${mutedText}`}>Clean dollar view by category.</p>
             </div>
-            <button onClick={() => setProfitabilityView("All Contracts")} className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-black text-blue-600">View chart</button>
+            <button
+              type="button"
+              data-chart-popup-trigger="true"
+              onClick={(event) => openChartPopup("costs", event)}
+              className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-black text-blue-600 hover:bg-blue-50"
+            >
+              View chart
+            </button>
           </div>
 
           <div className="space-y-4">
@@ -867,7 +1627,14 @@ function ProfitabilityDashboard({
           <div className={`${cardClass} xl:col-span-4`}>
           <div className="mb-4 flex items-center justify-between">
             <h2 className={`text-lg font-black ${titleText}`}>Profitability Trend (8 Weeks)</h2>
-            <button onClick={() => setProfitabilityView("All Contracts")} className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-black text-blue-600">View chart</button>
+            <button
+              type="button"
+              data-chart-popup-trigger="true"
+              onClick={(event) => openChartPopup("trend", event)}
+              className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-black text-blue-600 hover:bg-blue-50"
+            >
+              View chart
+            </button>
           </div>
           <div className="mb-3 grid grid-cols-4 gap-2 text-xs">
             {trendData.slice(-4).map((point) => (
@@ -903,7 +1670,7 @@ function ProfitabilityDashboard({
           <div>
             <h2 className={`text-xl font-black ${titleText}`}>Contracts Roll-Up</h2>
             <p className={`text-sm ${mutedText}`}>
-              Click any row to expand and edit details. All values are editable.
+              Click any contract row to open the detail popup and update the numbers.
             </p>
           </div>
 
@@ -942,14 +1709,15 @@ function ProfitabilityDashboard({
 
             <tbody>
               {filteredRows.map((row, index) => {
-                const expanded = expandedRowId === row.id;
-                const marginTone = row.margin >= 28 ? "text-emerald-700" : row.margin >= 22 ? "text-orange-600" : "text-red-600";
+                const editing = editingRollupId === row.id;
+                const marginTone = signedNumberClass(row.margin);
 
                 return (
                   <React.Fragment key={row.id}>
                     <tr
-                      onClick={() => setExpandedRowId(expanded ? null : row.id)}
-                      className={`cursor-pointer border-b transition ${expanded
+                      data-rollup-editor-trigger="true"
+                      onClick={(event) => openRollupEditor(row.id, event)}
+                      className={`cursor-pointer border-b transition ${editing
                           ? isDark
                             ? "bg-blue-500/10"
                             : "bg-blue-50/70"
@@ -964,14 +1732,7 @@ function ProfitabilityDashboard({
                           <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-black ${row.logoClass}`}>
                             {row.logo}
                           </div>
-                          <div>
-                            <input
-                              value={row.contract}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) => updateRollupRow(row.id, "contract", event.target.value)}
-                              className={isDark ? "w-full rounded-lg bg-transparent px-1 py-1 font-black text-white outline-none focus:bg-slate-950" : "w-full rounded-lg bg-transparent px-1 py-1 font-black text-slate-950 outline-none focus:bg-white"}
-                            />
-                          </div>
+                          <p className={`truncate rounded-lg px-1 py-1 font-black ${titleText}`}>{row.contract}</p>
                         </div>
                       </td>
                       <td className={`border-b py-4 pr-3 text-center ${rowBorder}`}>{row.routes}</td>
@@ -979,18 +1740,20 @@ function ProfitabilityDashboard({
                       <td className={`border-b py-4 pr-3 text-right font-black ${titleText} ${rowBorder}`}>{currency.format(row.revenue)}</td>
                       <td className={`border-b py-4 pr-3 text-right font-black ${titleText} ${rowBorder}`}>{currency.format(row.totalCosts)}</td>
                       <td className={`border-b py-4 pr-3 text-center font-black text-red-600 ${rowBorder}`}>{row.claims.toLocaleString()}</td>
-                      <td className={`border-b py-4 pr-3 text-right font-black text-emerald-700 ${rowBorder}`}>{currency.format(row.netProfit)}</td>
+                      <td className={`border-b py-4 pr-3 text-right font-black ${signedNumberClass(row.netProfit)} ${rowBorder}`}>{currency.format(row.netProfit)}</td>
                       <td className={`border-b py-4 pr-3 text-right font-black ${marginTone} ${rowBorder}`}>{row.margin.toFixed(2)}%</td>
                       <td className={`border-b py-4 text-center ${rowBorder}`}>
                         <div className="flex items-center justify-center gap-2">
                           <button
+                            type="button"
+                            data-rollup-editor-trigger="true"
                             onClick={(event) => {
                               event.stopPropagation();
-                              setExpandedRowId(expanded ? null : row.id);
+                              openRollupEditor(row.id, event);
                             }}
                             className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-black text-blue-600 hover:bg-blue-50"
                           >
-                            {expanded ? "Close" : "Edit"}
+                            Edit
                           </button>
                           <button
                             onClick={(event) => {
@@ -1005,47 +1768,6 @@ function ProfitabilityDashboard({
                         </div>
                       </td>
                     </tr>
-
-                    {expanded && (
-                      <tr>
-                        <td colSpan="10" className={`border-b p-0 ${rowBorder}`}>
-                          <div className={isDark ? "m-3 rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4" : "m-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-4"}>
-                            <div className="grid gap-4 xl:grid-cols-[1fr_230px]">
-                              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                                {[
-                                  ["Labor", "labor"],
-                                  ["Fuel", "fuel"],
-                                  ["Truck / Insurance", "truckInsurance"],
-                                  ["Maintenance", "maintenance"],
-                                  ["Other Costs", "other"],
-                                  ["Routes / Week", "routes"],
-                                  ["Stops / Week", "stops"],
-                                  ["Revenue", "revenue"],
-                                  ["Claims", "claims"],
-                                ].map(([label, key]) => (
-                                  <div key={key}>
-                                    <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</label>
-                                    <input
-                                      type="number"
-                                      value={row[key]}
-                                      onChange={(event) => updateRollupRow(row.id, key, event.target.value)}
-                                      className={inputClass}
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-
-                              <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-950/70 p-5" : "rounded-2xl border border-emerald-100 bg-emerald-50 p-5"}>
-                                <p className={`text-sm font-black ${mutedText}`}>Net Profit</p>
-                                <p className="mt-2 text-2xl font-black text-emerald-700">{currency.format(row.netProfit)}</p>
-                                <p className={`mt-5 text-sm font-black ${mutedText}`}>Margin %</p>
-                                <p className={`mt-2 text-2xl font-black ${marginTone}`}>{row.margin.toFixed(2)}%</p>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
                   </React.Fragment>
                 );
               })}
@@ -1059,14 +1781,220 @@ function ProfitabilityDashboard({
                 <td className="py-4 pr-3 text-right font-black">{currency.format(totals.revenue)}</td>
                 <td className="py-4 pr-3 text-right font-black">{currency.format(totals.totalCosts)}</td>
                 <td className="py-4 pr-3 text-center font-black text-red-600">{totals.claims.toLocaleString()}</td>
-                <td className="py-4 pr-3 text-right font-black text-emerald-700">{currency.format(totals.netProfit)}</td>
-                <td className="py-4 pr-3 text-right font-black text-emerald-700">{totals.margin.toFixed(2)}%</td>
+                <td className={`py-4 pr-3 text-right font-black ${signedNumberClass(totals.netProfit)}`}>{currency.format(totals.netProfit)}</td>
+                <td className={`py-4 pr-3 text-right font-black ${signedNumberClass(totals.margin)}`}>{totals.margin.toFixed(2)}%</td>
                 <td />
               </tr>
             </tfoot>
           </table>
         </div>
       </div>
+
+      {activeChartKey && (
+        <div
+          ref={chartPopupRef}
+          className="fixed z-50 w-[min(560px,calc(100vw-2rem))]"
+          style={{
+            left: `${chartPopupPosition?.left ?? 16}px`,
+            top: `${chartPopupPosition?.top ?? 96}px`,
+            width: `${chartPopupPosition?.width ?? 560}px`,
+          }}
+        >
+          <div
+            className={isDark ? "overflow-y-auto rounded-2xl border border-blue-500/25 bg-slate-950/95 p-4 shadow-2xl shadow-blue-950/40 backdrop-blur-xl" : "overflow-y-auto rounded-2xl border border-blue-200 bg-white/95 p-4 shadow-2xl shadow-slate-300/60 backdrop-blur-xl"}
+            style={{ maxHeight: `${chartPopupPosition?.maxHeight ?? 420}px` }}
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Chart View</p>
+                <h3 className={`mt-1 text-xl font-black ${titleText}`}>
+                  {activeChartKey === "profit" && "Net Profit by Contract"}
+                  {activeChartKey === "costs" && "Cost Breakdown"}
+                  {activeChartKey === "trend" && "Profitability Trend"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={closeChartPopup}
+                className={isDark ? "rounded-full bg-white/10 px-3 py-2 text-xs font-black text-white hover:bg-white/15" : "rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"}
+              >
+                Close
+              </button>
+            </div>
+
+            {activeChartKey === "profit" && (
+              <div className="space-y-4">
+                {rowsWithTotals
+                  .slice()
+                  .sort((a, b) => b.netProfit - a.netProfit)
+                  .map((row) => {
+                    const width = bestContract?.netProfit > 0 ? Math.max((row.netProfit / bestContract.netProfit) * 100, 8) : 0;
+                    return (
+                      <div key={row.id}>
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <p className={`truncate text-sm font-black ${titleText}`}>{row.contract}</p>
+                          <p className={`whitespace-nowrap text-sm font-black ${signedNumberClass(row.netProfit)}`}>{currency.format(row.netProfit)}</p>
+                        </div>
+                        <div className={isDark ? "h-6 overflow-hidden rounded-full bg-white/10" : "h-6 overflow-hidden rounded-full bg-slate-100"}>
+                          <div className="h-full rounded-full bg-gradient-to-r from-emerald-700 to-emerald-400" style={{ width: `${width}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+
+            {activeChartKey === "costs" && (
+              <div className="space-y-4">
+                {costBreakdownData.map((item, index) => {
+                  const percent = Number(totalCostPercent(item.value));
+                  return (
+                    <div key={item.name}>
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="h-3.5 w-3.5 shrink-0 rounded-full" style={{ backgroundColor: costColors[index] }} />
+                          <p className={`truncate text-sm font-black ${titleText}`}>{item.name}</p>
+                        </div>
+                        <p className={`whitespace-nowrap text-sm font-black ${titleText}`}>{currency.format(item.value)}</p>
+                      </div>
+                      <div className={isDark ? "h-5 overflow-hidden rounded-full bg-white/10" : "h-5 overflow-hidden rounded-full bg-slate-100"}>
+                        <div className="h-full rounded-full" style={{ width: `${Math.max(percent, 6)}%`, backgroundColor: costColors[index] }} />
+                      </div>
+                      <p className={`mt-1 text-right text-xs font-black ${mutedText}`}>{percent.toFixed(1)}% of total costs</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {activeChartKey === "trend" && (
+              <div className="h-72 min-w-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={trendData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="profitTrendPopupFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#16A34A" stopOpacity={0.45} />
+                        <stop offset="95%" stopColor="#16A34A" stopOpacity={0.04} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => `$${Math.round(value / 1000)}K`} />
+                    <Tooltip formatter={(value) => currency.format(value)} />
+                    <Area type="monotone" dataKey="profit" stroke="#16A34A" strokeWidth={3} fill="url(#profitTrendPopupFill)" dot={{ r: 5, fill: "#16A34A", strokeWidth: 2, stroke: "#ffffff" }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {editingRollupRow && (
+        <div
+          ref={rollupEditorRef}
+          className="fixed z-50 w-[min(720px,calc(100vw-2rem))]"
+          style={{
+            left: `${rollupEditorPosition?.left ?? 16}px`,
+            top: `${rollupEditorPosition?.top ?? 96}px`,
+            width: `${rollupEditorPosition?.width ?? 720}px`,
+          }}
+        >
+          <div
+            className={isDark ? "overflow-y-auto rounded-2xl border border-blue-500/25 bg-slate-950/95 p-4 shadow-2xl shadow-blue-950/40 backdrop-blur-xl" : "overflow-y-auto rounded-2xl border border-blue-200 bg-white/95 p-4 shadow-2xl shadow-slate-300/60 backdrop-blur-xl"}
+            style={{ maxHeight: `${rollupEditorPosition?.maxHeight ?? 640}px` }}
+          >
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-black ${editingRollupRow.logoClass}`}>
+                  {editingRollupRow.logo}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Edit Contract</p>
+                    <span className={isDark ? "rounded-full bg-blue-500/15 px-2.5 py-1 text-[11px] font-black text-blue-200" : "rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700"}>
+                      Draft totals
+                    </span>
+                  </div>
+                  <input
+                    value={editingRollupRow.contract}
+                    onChange={(event) => updateRollupDraft("contract", event.target.value)}
+                    className={isDark ? "mt-1 w-full min-w-0 rounded-xl border border-white/10 bg-slate-900/80 px-3 py-2 text-lg font-black text-white outline-none focus:border-blue-500" : "mt-1 w-full min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-lg font-black text-slate-950 outline-none focus:border-blue-500"}
+                  />
+                </div>
+              </div>
+              <button
+                onClick={closeRollupEditor}
+                className={isDark ? "rounded-full bg-white/10 px-3 py-2 text-xs font-black text-white hover:bg-white/15" : "rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"}
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-[1fr_220px]">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[
+                  ["Revenue", "revenue"],
+                  ["Labor", "labor"],
+                  ["Fuel", "fuel"],
+                  ["Truck / Insurance", "truckInsurance"],
+                  ["Maintenance", "maintenance"],
+                  ["Other Costs", "other"],
+                  ["Claims", "claims"],
+                  ["Routes / Week", "routes"],
+                  ["Stops / Week", "stops"],
+                ].map(([label, key]) => (
+                  <div key={key}>
+                    <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</label>
+                    <input
+                      type="number"
+                      value={editingRollupRow[key]}
+                      onChange={(event) => updateRollupDraft(key, event.target.value)}
+                      className={isDark ? "w-full rounded-xl border border-white/10 bg-slate-900/80 px-3 py-2 text-sm font-black text-white outline-none focus:border-blue-500" : "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-black text-slate-950 outline-none focus:border-blue-500"}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className={draftTotalsPanelClass(editingRollupRow.netProfit)}>
+                <p className={`text-sm font-black ${mutedText}`}>Net Profit</p>
+                <p className={`mt-2 text-3xl font-black ${signedNumberClass(editingRollupRow.netProfit)}`}>{currency.format(editingRollupRow.netProfit)}</p>
+                <p className={`mt-5 text-sm font-black ${mutedText}`}>Margin %</p>
+                <p className={`mt-2 text-3xl font-black ${signedNumberClass(editingRollupRow.margin)}`}>
+                  {editingRollupRow.margin.toFixed(2)}%
+                </p>
+                <div className={`mt-5 border-t pt-4 text-sm ${draftTotalsBorderClass(editingRollupRow.netProfit)}`}>
+                  <p>Total costs: <span className="font-black">{currency.format(editingRollupRow.totalCosts)}</span></p>
+                  <p className="mt-2">Routes: <span className="font-black">{editingRollupRow.routes}</span></p>
+                  <p className="mt-2">Stops: <span className="font-black">{editingRollupRow.stops}</span></p>
+                </div>
+              </div>
+            </div>
+
+            <div className={`mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between ${rowBorder}`}>
+              <p className={`text-sm ${mutedText}`}>
+                Review the draft totals, then save to update the table.
+              </p>
+              <div className="flex flex-wrap gap-2 sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeRollupEditor}
+                  className={isDark ? "rounded-xl bg-white/10 px-5 py-2.5 text-sm font-black text-white hover:bg-white/15" : "rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-700 hover:bg-slate-50"}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={saveRollupDraft}
+                  className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

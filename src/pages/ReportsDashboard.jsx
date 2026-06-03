@@ -193,11 +193,11 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
   ];
 
   const exports = [
-    ["May 7, 2026", "Daily Route Profit Report", "May 7, 2026", "PDF"],
-    ["May 6, 2026", "Weekly Profit Summary", "Apr 30 – May 6", "PDF"],
-    ["May 6, 2026", "Claims Impact Report", "Apr 30 – May 6", "PDF"],
-    ["May 5, 2026", "Team Performance Report", "Apr 28 – May 4", "PDF"],
-    ["May 4, 2026", "Compliance Report", "Apr 28 – May 4", "PDF"],
+    ["May 7, 2026", "Daily Route Profit Report", "May 7, 2026", "TXT"],
+    ["May 6, 2026", "Weekly Profit Summary", "Apr 30 – May 6", "TXT"],
+    ["May 6, 2026", "Claims Impact Report", "Apr 30 – May 6", "TXT"],
+    ["May 5, 2026", "Team Performance Report", "Apr 28 – May 4", "TXT"],
+    ["May 4, 2026", "Compliance Report", "Apr 28 – May 4", "TXT"],
   ];
 
   const visibleReports = reportCards.filter((report) => {
@@ -298,7 +298,7 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
             onClick={() => setSelectedReport(reportCards[0])}
             className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
           >
-            + Custom Report
+            Preview Profit Report
           </button>
         </div>
       </div>
@@ -317,7 +317,7 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
                 onClick={() => exportReport(selectedReport.title)}
                 className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500"
               >
-                Export
+                Download TXT
               </button>
               <button
                 onClick={() => setSelectedReport(null)}
@@ -383,7 +383,7 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
                     onClick={() => exportReport(report.title)}
                     className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500"
                   >
-                    Export PDF
+                    Download TXT
                   </button>
                 </div>
               </div>

@@ -1,10 +1,7 @@
 import { useState } from "react";
-import lastMileMarginLogo from "../assets/last-mile-margin-logo.svg";
-import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-dark.svg";
 import loginRoadLakeTruck from "../assets/login-road-lake-truck-branded.png?truck-logo-liftgate";
 import {
   ArrowRight,
-  CheckCircle2,
   Eye,
   EyeOff,
   Lock,
@@ -14,16 +11,19 @@ import {
   Sun,
 } from "lucide-react";
 
+const lastMileMarginLogo = "/assets/last-mile-margin-logo.png";
+const lastMileMarginLogoDark = "/assets/last-mile-margin-logo-transparent-dark.svg";
+
 function LoginPage({ onLogin, isDark, setAppSettings }) {
   const [loginForm, setLoginForm] = useState({
-    email: "admin@finalmilemargin.com",
-    password: "demo123",
+    identifier: "william.mckoy",
+    password: "",
     remember: true,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const logo = isDark ? lastMileMarginLogoDark : lastMileMarginLogo;
   const panelClass = isDark
     ? "border-white/10 bg-slate-950/82 shadow-2xl shadow-black/40 backdrop-blur-md"
     : "border-white/55 bg-white/88 shadow-2xl shadow-slate-950/20 backdrop-blur-md";
@@ -31,19 +31,23 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
     ? "w-full rounded-xl border border-white/10 bg-slate-950/70 py-3.5 pl-11 pr-4 text-sm font-semibold text-white outline-none transition focus:border-blue-500"
     : "w-full rounded-xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-500";
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setIsSubmitting(true);
+    setLoginError("");
 
-    if (
-      loginForm.email.trim().toLowerCase() === "admin@finalmilemargin.com" &&
-      loginForm.password === "demo123"
-    ) {
-      setLoginError("");
-      onLogin();
+    const result = await onLogin({
+      identifier: loginForm.identifier,
+      password: loginForm.password,
+    });
+
+    setIsSubmitting(false);
+
+    if (result?.ok) {
       return;
     }
 
-    setLoginError("Use admin@finalmilemargin.com and demo123 for the demo login.");
+    setLoginError(result?.error || "Could not sign in. Check your username and password.");
   };
 
   const toggleTheme = () => {
@@ -51,16 +55,6 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
       ...current,
       themeMode: current.themeMode === "dark" ? "light" : "dark",
     }));
-  };
-
-  const useDemoAccount = () => {
-    setLoginError("");
-    setLoginForm({
-      email: "admin@finalmilemargin.com",
-      password: "demo123",
-      remember: true,
-    });
-    onLogin();
   };
 
   return (
@@ -81,52 +75,38 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
         {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
       </button>
 
-      <main className="relative z-10 mx-auto grid min-h-screen max-w-7xl items-center gap-8 px-5 py-10 lg:grid-cols-[430px_1fr] lg:px-8">
+      <main className="relative z-10 mx-auto flex min-h-screen max-w-lg items-center px-5 py-10 lg:px-8">
         <section className={`w-full rounded-2xl border p-6 ${panelClass}`}>
           <div className="mb-7 text-center">
             <img
-              src={logo}
+              src={isDark ? lastMileMarginLogoDark : lastMileMarginLogo}
               alt="Last Mile Margin"
               className={
                 isDark
-                  ? "mx-auto h-40 w-40 rounded-[2rem] border border-white/10 bg-slate-950/90 object-contain p-4 shadow-2xl shadow-black/40"
-                  : "mx-auto h-40 w-40 rounded-[2rem] border border-white/70 bg-white/92 object-contain p-4 shadow-2xl shadow-slate-950/20"
+                  ? "mx-auto h-32 w-32 object-contain sm:h-36 sm:w-36"
+                  : "mx-auto h-32 w-32 object-contain sm:h-36 sm:w-36"
               }
             />
             <h1 className={isDark ? "mt-5 text-2xl font-black tracking-tight text-white" : "mt-5 text-2xl font-black tracking-tight text-slate-950"}>
               Last Mile Margin
             </h1>
             <p className={isDark ? "mt-2 text-sm font-semibold text-slate-400" : "mt-2 text-sm font-semibold text-slate-600"}>
-              Sign in to manage profit, claims, contracts, and saved days.
+              Sign in to manage profit, claims, contracts, and daily history.
             </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={useDemoAccount}
-            className="mb-5 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500"
-          >
-            <CheckCircle2 className="h-4 w-4" />
-            Continue with demo account
-          </button>
-
-          <div className="mb-5 flex items-center gap-4">
-            <div className={isDark ? "h-px flex-1 bg-white/10" : "h-px flex-1 bg-slate-200"} />
-            <span className={isDark ? "text-xs font-bold uppercase tracking-wide text-slate-400" : "text-xs font-bold uppercase tracking-wide text-slate-500"}>or sign in manually</span>
-            <div className={isDark ? "h-px flex-1 bg-white/10" : "h-px flex-1 bg-slate-200"} />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className={isDark ? "mb-2 block text-sm font-black text-white" : "mb-2 block text-sm font-black text-slate-950"}>Email</label>
+              <label className={isDark ? "mb-2 block text-sm font-black text-white" : "mb-2 block text-sm font-black text-slate-950"}>Username or Email</label>
               <div className="relative">
                 <Mail className={isDark ? "absolute left-4 top-3.5 h-5 w-5 text-slate-400" : "absolute left-4 top-3.5 h-5 w-5 text-slate-500"} />
                 <input
-                  value={loginForm.email}
-                  onChange={(event) => setLoginForm((current) => ({ ...current, email: event.target.value }))}
+                  value={loginForm.identifier}
+                  onChange={(event) => setLoginForm((current) => ({ ...current, identifier: event.target.value }))}
                   className={inputClass}
-                  placeholder="Enter your email"
-                  type="email"
+                  placeholder="Enter your username or email"
+                  type="text"
+                  autoComplete="username"
                 />
               </div>
             </div>
@@ -141,6 +121,7 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
                   className={`${inputClass} pr-12`}
                   placeholder="Enter your password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -164,7 +145,7 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
               </label>
               <button
                 type="button"
-                onClick={() => setLoginError("Password reset will be available when real authentication is connected.")}
+                onClick={() => setLoginError("Password reset can be enabled in Supabase Auth after the production email sender is configured.")}
                 className="text-sm font-bold text-blue-600"
               >
                 Forgot password?
@@ -179,21 +160,19 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
 
             <button
               type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3.5 text-sm font-black text-white hover:bg-slate-800"
+              disabled={isSubmitting}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3.5 text-sm font-black text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Sign In
+              {isSubmitting ? "Signing In..." : "Sign In"}
               <ArrowRight className="h-4 w-4" />
             </button>
 
             <div className={`rounded-xl p-3 text-xs ${isDark ? "bg-white/5 text-slate-400" : "bg-white/65 text-slate-600"}`}>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                <p className="font-bold">Demo credentials are prefilled.</p>
+                <p className="font-bold">Real Supabase login is enabled.</p>
               </div>
-              <p className="mt-2">
-                <span className={isDark ? "font-black text-white" : "font-black text-slate-950"}>admin@finalmilemargin.com</span> /{" "}
-                <span className={isDark ? "font-black text-white" : "font-black text-slate-950"}>demo123</span>
-              </p>
+              <p className="mt-2">Use your owner username after the Supabase Auth user is created.</p>
             </div>
           </form>
         </section>

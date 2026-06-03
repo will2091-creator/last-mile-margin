@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc" viewBox="0 0 640 520">
+  <title id="title">Last Mile Margin logo</title>
+  <desc id="desc">A transparent flat Last Mile Margin logo with a navy hexagon, integrated LM mark, green upward arrow, and text.</desc>
+  <rect width="640" height="520" fill="none"/>
+  <g transform="translate(200 42)" shape-rendering="geometricPrecision">
+    <path d="M120 8 224 68v120l-104 60-104-60V68Z" fill="none" stroke="#082746" stroke-width="17" stroke-linejoin="round"/>
+    <path d="M58 104h30v79l-30-17Z" fill="#082746"/>
+    <path d="M106 104h31l45 54v52l-30 17v-58l-46-54Z" fill="#082746"/>
+    <path d="M187 104h30v70l-30 18Z" fill="#082746"/>
+    <path d="M55 172 113 122 170 154 224 100" fill="none" stroke="#2F9E1F" stroke-width="20" stroke-linecap="square" stroke-linejoin="miter"/>
+    <path d="M211 90 256 76 242 121Z" fill="#2F9E1F"/>
+  </g>
+  <text x="320" y="370" fill="#07152B" font-family="Inter, Montserrat, Arial, sans-serif" font-size="72" font-weight="900" letter-spacing="7" text-anchor="middle">LAST MILE</text>
+  <text x="320" y="438" fill="#2C8E22" font-family="Inter, Montserrat, Arial, sans-serif" font-size="38" font-weight="800" letter-spacing="22" text-anchor="middle">MARGIN</text>
+</svg>

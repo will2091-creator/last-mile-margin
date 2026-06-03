@@ -9,10 +9,14 @@ import SettingsDashboard from "./pages/SettingsDashboard";
 import ProfitabilityDashboard from "./pages/ProfitabilityDashboard";
 import ContractsDashboard from "./pages/ContractsDashboard";
 import ReportsDashboard from "./pages/ReportsDashboard";
-import lastMileMarginLogo from "./assets/last-mile-margin-logo.svg";
-import lastMileMarginLogoDark from "./assets/last-mile-margin-logo-dark.svg";
+import AskBusinessDashboard from "./pages/AskBusinessDashboard";
+import AiQuickIntake from "./components/AiQuickIntake";
+import { loadAppStateFromSupabase, saveAppStateToSupabase } from "./lib/appStateRepository";
+import { loadClaimsFromSupabase, syncClaimsToSupabase } from "./lib/claimsRepository";
+import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 import {
   accentThemes,
+  Bot,
   BriefcaseBusiness,
   Calculator,
   ClipboardCheck,
@@ -31,17 +35,26 @@ import {
   ShieldCheck,
   Sun,
   toNum,
+  Upload,
   Users,
 } from "./shared";
 
+const lastMileMarginLogo = "/assets/last-mile-margin-logo.png";
+const lastMileMarginLogoDark = "/assets/last-mile-margin-logo-transparent-dark.svg";
+const usernameEmailMap = {
+  "william.mckoy": "william.mckoy2@gmail.com",
+};
+
 const tabSlugs = {
   Dashboard: "dashboard",
+  Intake: "intake",
   Profitability: "profitability",
   Contracts: "contracts",
   Compliance: "compliance",
   Claims: "claims",
   Teams: "teams",
   Reports: "reports",
+  Ask: "ask",
   Settings: "settings",
 };
 
@@ -50,6 +63,13 @@ const tabBySlug = Object.fromEntries(Object.entries(tabSlugs).map(([tab, slug]) 
 const getTabFromUrl = () => {
   const slug = window.location.hash.replace(/^#\/?/, "").toLowerCase();
   return tabBySlug[slug] || "Dashboard";
+};
+
+const getLocalDateKey = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 export default function App() {
@@ -67,7 +87,7 @@ export default function App() {
   const [savedScenarios, setSavedScenarios] = useState(() =>
     loadFromLocalStorage("finalMileSavedScenarios", [])
   );
-  const [activeTab, setActiveTab] = useState("Dashboard");
+  const [activeTab, setActiveTab] = useState(() => getTabFromUrl());
   const [reportsHomeSignal, setReportsHomeSignal] = useState(0);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showSavedDays, setShowSavedDays] = useState(false);
@@ -76,13 +96,28 @@ export default function App() {
     loadFromLocalStorage("finalMileSavedDays", [])
   );
   const [loadedSavedDay, setLoadedSavedDay] = useState(null);
-  const [globalDateRange, setGlobalDateRange] = useState({
-    start: "2025-05-01",
-    end: "2025-05-07",
+  const [currentWorkDate, setCurrentWorkDate] = useState(() =>
+    localStorage.getItem("finalMileCurrentWorkDate") || getLocalDateKey()
+  );
+  const [globalDateRange, setGlobalDateRange] = useState(() => {
+    const workDate = localStorage.getItem("finalMileCurrentWorkDate") || getLocalDateKey();
+    return {
+      start: workDate,
+      end: workDate,
+    };
+  });
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const workDate = localStorage.getItem("finalMileCurrentWorkDate") || getLocalDateKey();
+    const date = new Date(`${workDate}T00:00:00`);
+    return new Date(date.getFullYear(), date.getMonth(), 1);
   });
   const [claims, setClaims] = useState(() =>
     loadFromLocalStorage("finalMileClaims", initialClaims)
   );
+  const [claimsBackendStatus, setClaimsBackendStatus] = useState("Local claims ready.");
+  const [hasLoadedRemoteClaims, setHasLoadedRemoteClaims] = useState(false);
+  const [appStateBackendStatus, setAppStateBackendStatus] = useState("Local app state ready.");
+  const [hasLoadedRemoteAppState, setHasLoadedRemoteAppState] = useState(false);
   const [teams, setTeams] = useState(() =>
     loadFromLocalStorage("finalMileTeams", initialTeams)
   );
@@ -96,6 +131,12 @@ export default function App() {
         ...defaultSettings.dashboardWidgets,
         ...(savedSettings.dashboardWidgets || {}),
       },
+      dashboardWidgetOrder: [
+        ...new Set([
+          ...(savedSettings.dashboardWidgetOrder || []),
+          ...(defaultSettings.dashboardWidgetOrder || Object.keys(defaultSettings.dashboardWidgets)),
+        ]),
+      ].filter((key) => Object.prototype.hasOwnProperty.call(defaultSettings.dashboardWidgets, key)),
       claimRiskThresholds: {
         ...defaultSettings.claimRiskThresholds,
         ...(savedSettings.claimRiskThresholds || {}),
@@ -105,6 +146,8 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() =>
     localStorage.getItem("finalMileLoggedIn") === "true"
   );
+  const [authUser, setAuthUser] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(isSupabaseConfigured);
 
   useEffect(() => {
     localStorage.setItem("finalMileSettings", JSON.stringify(appSettings));
@@ -115,12 +158,176 @@ export default function App() {
   }, [isLoggedIn]);
 
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setIsAuthLoading(false);
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!isMounted) return;
+      const user = data.session?.user || null;
+      setAuthUser(user);
+      setIsLoggedIn(Boolean(user));
+      setIsAuthLoading(false);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user || null;
+      setAuthUser(user);
+      setIsLoggedIn(Boolean(user));
+      localStorage.setItem("finalMileLoggedIn", String(Boolean(user)));
+    });
+
+    return () => {
+      isMounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem("finalMileTeams", JSON.stringify(teams));
   }, [teams]);
 
   useEffect(() => {
     localStorage.setItem("finalMileClaims", JSON.stringify(claims));
   }, [claims]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadRemoteAppState = async () => {
+      const result = await loadAppStateFromSupabase();
+      if (!isMounted) return;
+
+      if (result.ok && result.state) {
+        const remoteState = result.state;
+
+        if (remoteState.form) setForm({ ...defaultForm, ...remoteState.form });
+        if (Array.isArray(remoteState.teams)) setTeams(remoteState.teams);
+        if (Array.isArray(remoteState.savedScenarios)) setSavedScenarios(remoteState.savedScenarios);
+        if (Array.isArray(remoteState.savedDays)) setSavedDays(remoteState.savedDays);
+        if (remoteState.currentWorkDate) setCurrentWorkDate(remoteState.currentWorkDate);
+        if (remoteState.globalDateRange?.start && remoteState.globalDateRange?.end) {
+          setGlobalDateRange(remoteState.globalDateRange);
+        }
+        if (remoteState.appSettings) {
+          setAppSettings((current) => ({
+            ...defaultSettings,
+            ...current,
+            ...remoteState.appSettings,
+            dashboardWidgets: {
+              ...defaultSettings.dashboardWidgets,
+              ...(remoteState.appSettings.dashboardWidgets || {}),
+            },
+            dashboardWidgetOrder: [
+              ...new Set([
+                ...(remoteState.appSettings.dashboardWidgetOrder || []),
+                ...(defaultSettings.dashboardWidgetOrder || Object.keys(defaultSettings.dashboardWidgets)),
+              ]),
+            ].filter((key) => Object.prototype.hasOwnProperty.call(defaultSettings.dashboardWidgets, key)),
+            claimRiskThresholds: {
+              ...defaultSettings.claimRiskThresholds,
+              ...(remoteState.appSettings.claimRiskThresholds || {}),
+            },
+          }));
+        }
+
+        setAppStateBackendStatus("App settings and history loaded from Supabase.");
+      } else if (result.ok) {
+        setAppStateBackendStatus("Supabase app state ready. Local settings will sync after your next change.");
+      } else {
+        setAppStateBackendStatus(`Using local app state. Supabase sync unavailable: ${result.error}`);
+      }
+
+      setHasLoadedRemoteAppState(true);
+    };
+
+    loadRemoteAppState();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadRemoteClaims = async () => {
+      const result = await loadClaimsFromSupabase();
+      if (!isMounted) return;
+
+      if (result.ok && result.claims.length) {
+        setClaims(result.claims);
+        setClaimsBackendStatus(`Loaded ${result.claims.length} claim${result.claims.length === 1 ? "" : "s"} from Supabase.`);
+      } else if (result.ok) {
+        setClaimsBackendStatus("Supabase connected. Local claims will sync after your next claim change.");
+      } else {
+        setClaimsBackendStatus(`Using local claims. Supabase sync unavailable: ${result.error}`);
+      }
+
+      setHasLoadedRemoteClaims(true);
+    };
+
+    loadRemoteClaims();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedRemoteClaims) return;
+
+    let isMounted = true;
+    const previousClaims = JSON.parse(localStorage.getItem("finalMileLastSyncedClaims") || "[]");
+
+    const syncRemoteClaims = async () => {
+      const result = await syncClaimsToSupabase({ previousClaims, nextClaims: claims });
+      if (!isMounted) return;
+
+      if (result.ok) {
+        localStorage.setItem("finalMileLastSyncedClaims", JSON.stringify(claims));
+        setClaimsBackendStatus("Claims synced to Supabase.");
+      } else {
+        setClaimsBackendStatus(`Using local claims. Supabase sync unavailable: ${result.error}`);
+      }
+    };
+
+    syncRemoteClaims();
+    return () => {
+      isMounted = false;
+    };
+  }, [claims, hasLoadedRemoteClaims]);
+
+  useEffect(() => {
+    if (!hasLoadedRemoteAppState) return;
+
+    let isMounted = true;
+    const syncTimer = window.setTimeout(async () => {
+      const result = await saveAppStateToSupabase({
+        version: 1,
+        form,
+        teams,
+        appSettings,
+        savedScenarios,
+        savedDays,
+        currentWorkDate,
+        globalDateRange,
+      });
+
+      if (!isMounted) return;
+      if (result.ok) {
+        setAppStateBackendStatus("App settings and history synced to Supabase.");
+      } else {
+        setAppStateBackendStatus(`Using local app state. Supabase sync unavailable: ${result.error}`);
+      }
+    }, 650);
+
+    return () => {
+      isMounted = false;
+      window.clearTimeout(syncTimer);
+    };
+  }, [appSettings, currentWorkDate, form, globalDateRange, hasLoadedRemoteAppState, savedDays, savedScenarios, teams]);
 
   useEffect(() => {
     localStorage.setItem("finalMileSavedScenarios", JSON.stringify(savedScenarios));
@@ -131,6 +338,10 @@ export default function App() {
   }, [savedDays]);
 
   useEffect(() => {
+    localStorage.setItem("finalMileCurrentWorkDate", currentWorkDate);
+  }, [currentWorkDate]);
+
+  useEffect(() => {
     const handleHistoryChange = () => {
       const nextTab = getTabFromUrl();
       setActiveTab(nextTab);
@@ -138,43 +349,18 @@ export default function App() {
         setReportsHomeSignal((current) => current + 1);
       }
     };
-    const resetToDashboard = () => {
-      if (window.location.hash === `#/${tabSlugs.Dashboard}`) return;
+    if (!window.location.hash) {
       window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
-      setActiveTab("Dashboard");
-    };
-    let lastWindowBlurAt = 0;
-    let lastAppInteractionAt = 0;
-    const markAppInteraction = () => {
-      lastAppInteractionAt = Date.now();
-    };
-    const handleWindowBlur = () => {
-      lastWindowBlurAt = Date.now();
-    };
-    const handleWindowFocus = () => {
-      const returningFromBrowserChrome = Date.now() - lastWindowBlurAt < 30000;
-      const blurWasNotFromAppClick = lastWindowBlurAt - lastAppInteractionAt > 750;
-      if (returningFromBrowserChrome && blurWasNotFromAppClick) {
-        resetToDashboard();
-      }
-    };
-
-    window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
+    } else {
+      handleHistoryChange();
+    }
 
     window.addEventListener("popstate", handleHistoryChange);
     window.addEventListener("hashchange", handleHistoryChange);
-    window.addEventListener("blur", handleWindowBlur);
-    window.addEventListener("focus", handleWindowFocus);
-    document.addEventListener("pointerdown", markAppInteraction, true);
-    document.addEventListener("keydown", markAppInteraction, true);
 
     return () => {
       window.removeEventListener("popstate", handleHistoryChange);
       window.removeEventListener("hashchange", handleHistoryChange);
-      window.removeEventListener("blur", handleWindowBlur);
-      window.removeEventListener("focus", handleWindowFocus);
-      document.removeEventListener("pointerdown", markAppInteraction, true);
-      document.removeEventListener("keydown", markAppInteraction, true);
     };
   }, []);
 
@@ -197,10 +383,81 @@ export default function App() {
     });
   };
 
-  const globalDateLabel =
-    globalDateRange.start === globalDateRange.end
-      ? formatDateLabel(globalDateRange.start)
-      : `${formatDateLabel(globalDateRange.start)} - ${formatDateLabel(globalDateRange.end)}`;
+  const formatDateRangeLabel = (dateRange) =>
+    dateRange.start === dateRange.end
+      ? formatDateLabel(dateRange.start)
+      : `${formatDateLabel(dateRange.start)} - ${formatDateLabel(dateRange.end)}`;
+
+  const globalDateLabel = formatDateRangeLabel(globalDateRange);
+
+  const calendarMonthLabel = calendarMonth.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const calendarDays = useMemo(() => {
+    const firstOfMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+    const lastOfMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0);
+    const gridStart = new Date(firstOfMonth);
+    gridStart.setDate(firstOfMonth.getDate() - firstOfMonth.getDay());
+    const gridEnd = new Date(lastOfMonth);
+    gridEnd.setDate(lastOfMonth.getDate() + (6 - lastOfMonth.getDay()));
+    const dayCount = Math.round((gridEnd - gridStart) / (1000 * 60 * 60 * 24)) + 1;
+
+    return Array.from({ length: dayCount }, (_, index) => {
+      const date = new Date(gridStart);
+      date.setDate(gridStart.getDate() + index);
+      const dateKey = getLocalDateKey(date);
+      return {
+        date,
+        dateKey,
+        dayNumber: date.getDate(),
+        isCurrentMonth: date.getMonth() === calendarMonth.getMonth(),
+        isToday: dateKey === getLocalDateKey(),
+        isSelectedStart: dateKey === globalDateRange.start,
+        isSelectedEnd: dateKey === globalDateRange.end,
+        isInSelectedRange: dateKey >= globalDateRange.start && dateKey <= globalDateRange.end,
+      };
+    });
+  }, [calendarMonth, globalDateRange.end, globalDateRange.start]);
+
+  const pickCalendarDate = (dateKey) => {
+    setLoadedSavedDay(null);
+    setGlobalDateRange((current) => {
+      if (current.start !== current.end) {
+        return { start: dateKey, end: dateKey };
+      }
+
+      if (dateKey < current.start) {
+        return { start: dateKey, end: current.start };
+      }
+
+      return { start: current.start, end: dateKey };
+    });
+  };
+
+  const moveCalendarMonth = (amount) => {
+    setCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() + amount, 1));
+  };
+
+  const selectToday = () => {
+    const today = getLocalDateKey();
+    setLoadedSavedDay(null);
+    setCalendarMonth(new Date(new Date(`${today}T00:00:00`).getFullYear(), new Date(`${today}T00:00:00`).getMonth(), 1));
+    setGlobalDateRange({ start: today, end: today });
+  };
+
+  const selectThisWeek = () => {
+    const todayDate = new Date();
+    const start = new Date(todayDate);
+    start.setDate(todayDate.getDate() - todayDate.getDay());
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+
+    setLoadedSavedDay(null);
+    setCalendarMonth(new Date(todayDate.getFullYear(), todayDate.getMonth(), 1));
+    setGlobalDateRange({ start: getLocalDateKey(start), end: getLocalDateKey(end) });
+  };
 
 
   const update = (key, value) => {
@@ -287,6 +544,8 @@ export default function App() {
 
   const navItems = [
     { name: "Dashboard", icon: LayoutDashboard },
+    { name: "Ask", icon: Bot },
+    { name: "Intake", icon: Upload },
     { name: "Profitability", icon: Calculator },
     { name: "Contracts", icon: BriefcaseBusiness },
     { name: "Compliance", icon: ShieldCheck },
@@ -298,6 +557,9 @@ export default function App() {
 
   const navigateToTab = (tabName, options = {}) => {
     if (!tabSlugs[tabName]) return;
+
+    setShowSavedDays(false);
+    setShowDatePicker(false);
 
     const nextUrl = `#/${tabSlugs[tabName]}`;
     const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -315,11 +577,12 @@ export default function App() {
     setActiveTab(tabName);
   };
 
-  const getDaySnapshot = () => {
+  const getDaySnapshot = (dateRange = globalDateRange, options = {}) => {
     const claimsExposure = claims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
     const openClaims = claims.filter((claim) => claim.status !== "Closed").length;
     const photosUploaded = teams.filter((team) => team.photoStatus === "Uploaded").length;
     const teamsCount = teams.length;
+    const label = formatDateRangeLabel(dateRange);
     const status =
       claimsExposure > 1000 || results.profitMargin < 0.2
         ? "Review"
@@ -328,10 +591,11 @@ export default function App() {
           : "Good";
 
     return {
-      id: `${globalDateRange.start}-${globalDateRange.end}`,
-      label: globalDateLabel,
+      id: `${dateRange.start}-${dateRange.end}`,
+      label,
       savedAt: new Date().toISOString(),
-      dateRange: { ...globalDateRange },
+      savedBy: options.savedBy || "manual",
+      dateRange: { ...dateRange },
       profit: results.netProfit,
       revenue: results.totalRevenue,
       costs: results.totalCost,
@@ -346,12 +610,56 @@ export default function App() {
   };
 
   const saveCurrentDay = () => {
-    const snapshot = getDaySnapshot();
+    const snapshot = getDaySnapshot(globalDateRange, { savedBy: "manual" });
     setSavedDays((current) => [snapshot, ...current.filter((day) => day.id !== snapshot.id)].slice(0, 12));
     setLoadedSavedDay(snapshot);
     setSavedDayFlash(true);
     window.setTimeout(() => setSavedDayFlash(false), 1600);
   };
+
+  const saveIntakeToDay = (intakeDraft) => {
+    const snapshot = {
+      ...getDaySnapshot(globalDateRange, { savedBy: "intake" }),
+      intake: {
+        type: intakeDraft?.type || "intake",
+        title: intakeDraft?.title || "Intake draft",
+        summary: intakeDraft?.summary || "Saved from Intake",
+        source: intakeDraft?.source || "Intake",
+        savedAt: new Date().toISOString(),
+      },
+    };
+    setSavedDays((current) => [snapshot, ...current.filter((day) => day.id !== snapshot.id)].slice(0, 12));
+    setLoadedSavedDay(snapshot);
+    setSavedDayFlash(true);
+    window.setTimeout(() => setSavedDayFlash(false), 1600);
+    return snapshot;
+  };
+
+  const rollToFreshDay = (nextDate) => {
+    const nextRange = { start: nextDate, end: nextDate };
+    setCurrentWorkDate(nextDate);
+    setGlobalDateRange(nextRange);
+    setLoadedSavedDay(null);
+    setForm(defaultForm);
+    setShowSavedDays(false);
+    setShowDatePicker(false);
+  };
+
+  const autoSaveAndStartFreshDay = () => {
+    const today = getLocalDateKey();
+    if (today === currentWorkDate) return;
+
+    const previousRange = { start: currentWorkDate, end: currentWorkDate };
+    const snapshot = getDaySnapshot(previousRange, { savedBy: "auto-midnight" });
+    setSavedDays((current) => [snapshot, ...current.filter((day) => day.id !== snapshot.id)].slice(0, 12));
+    rollToFreshDay(today);
+  };
+
+  useEffect(() => {
+    autoSaveAndStartFreshDay();
+    const interval = window.setInterval(autoSaveAndStartFreshDay, 30000);
+    return () => window.clearInterval(interval);
+  }, [currentWorkDate, claims, teams, results]);
 
   const loadSavedDay = (day) => {
     setGlobalDateRange(day.dateRange);
@@ -410,10 +718,73 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  const addAiClaim = (claimDraft) => {
+    setClaims((current) => [
+      {
+        ...claimDraft,
+        amount: Number(claimDraft.amount || 0),
+        status: claimDraft.status || "Under Review",
+      },
+      ...current,
+    ]);
+  };
+
+  const applyAiRouteDraft = (routeDraft) => {
+    setLoadedSavedDay(null);
+    localStorage.setItem("finalMileProfitabilityView", "Route Profit Check");
+    setForm((current) => {
+      const next = { ...current };
+      Object.entries(routeDraft).forEach(([key, value]) => {
+        if (value !== undefined && value !== "" && value !== 0) {
+          next[key] = value;
+        }
+      });
+      return next;
+    });
+  };
+
+  const normalizeLoginIdentifier = (identifier) => {
+    const cleaned = identifier.trim().toLowerCase();
+    return usernameEmailMap[cleaned] || cleaned;
+  };
+
+  const signInWithSupabase = async ({ identifier, password }) => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { ok: false, error: "Supabase Auth is not configured." };
+    }
+
+    const email = normalizeLoginIdentifier(identifier);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { ok: false, error: error.message };
+
+    setAuthUser(data.user || null);
+    setIsLoggedIn(Boolean(data.user));
+    return { ok: true };
+  };
+
+  const signOut = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    setAuthUser(null);
+    setIsLoggedIn(false);
+  };
+
+  if (isAuthLoading) {
+    return (
+      <div className={isDark ? "flex min-h-screen items-center justify-center bg-slate-950 text-white" : "flex min-h-screen items-center justify-center bg-slate-100 text-slate-950"}>
+        <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900 p-6 text-center shadow-xl" : "rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl"}>
+          <img src={isDark ? lastMileMarginLogoDark : lastMileMarginLogo} alt="Last Mile Margin" className="mx-auto h-24 w-24 object-contain" />
+          <p className="mt-4 text-sm font-black">Checking your session...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isLoggedIn) {
     return (
       <LoginPage
-        onLogin={() => setIsLoggedIn(true)}
+        onLogin={signInWithSupabase}
         isDark={isDark}
         setAppSettings={setAppSettings}
       />
@@ -551,11 +922,11 @@ export default function App() {
 
       <div className="flex min-h-screen">
         <aside className={isDark ? "sticky top-0 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-slate-950 p-5 lg:block" : "sticky top-0 hidden h-screen w-72 overflow-y-auto border-r border-slate-200 bg-white p-5 lg:block"}>
-          <div className="mb-6">
+          <div className="mb-6 flex justify-center">
             <img
               src={isDark ? lastMileMarginLogoDark : lastMileMarginLogo}
               alt="Last Mile Margin"
-              className={isDark ? "h-24 w-auto rounded-2xl shadow-sm shadow-black/30" : "h-24 w-auto rounded-2xl bg-white shadow-sm"}
+              className="h-24 w-40 object-contain"
             />
           </div>
 
@@ -602,8 +973,8 @@ export default function App() {
 
           <div className="mt-10 text-sm text-slate-500">
             <p>{appSettings.companyName}</p>
-            <p>Owner Account</p>
-              <button onClick={() => setIsLoggedIn(false)} className="mt-3 rounded-lg px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-500/10">Sign Out</button>
+            <p>{authUser?.email || "Owner Account"}</p>
+              <button onClick={signOut} className="mt-3 rounded-lg px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-500/10">Sign Out</button>
           </div>
         </aside>
 
@@ -620,7 +991,7 @@ export default function App() {
               }
             >
               <Save className="h-4 w-4" />
-              {savedDayFlash ? "Day Saved" : "Save Day"}
+              {savedDayFlash ? "Snapshot Saved" : "Save Snapshot"}
             </button>
 
             <div className="relative">
@@ -636,7 +1007,7 @@ export default function App() {
                 }
               >
                 <FileText className="h-4 w-4" />
-                Saved Days
+                Daily History
                 <span className={isDark ? "rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300" : "rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500"}>
                   {savedDays.length}
                 </span>
@@ -646,13 +1017,13 @@ export default function App() {
               {showSavedDays && (
                 <div className={isDark ? "absolute right-0 top-12 z-50 w-96 rounded-2xl border border-white/10 bg-slate-900 p-4 shadow-2xl" : "absolute right-0 top-12 z-50 w-96 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl"}>
                   <div className="mb-3 flex items-center justify-between">
-                    <p className={isDark ? "text-sm font-black text-white" : "text-sm font-black text-slate-950"}>Saved Days</p>
-                    <p className={isDark ? "text-xs font-bold text-slate-400" : "text-xs font-bold text-slate-500"}>Click one to load it</p>
+                    <p className={isDark ? "text-sm font-black text-white" : "text-sm font-black text-slate-950"}>Daily History</p>
+                    <p className={isDark ? "text-xs font-bold text-slate-400" : "text-xs font-bold text-slate-500"}>Open a previous workday</p>
                   </div>
 
                   {savedDays.length === 0 ? (
                     <div className={isDark ? "rounded-xl border border-white/10 bg-white/5 p-4 text-sm font-semibold text-slate-400" : "rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-500"}>
-                      No saved days yet. Hit Save Day when you want to keep the current snapshot.
+                      No daily history yet. Save a snapshot when you want an extra checkpoint for the current workday.
                     </div>
                   ) : (
                     <div className="max-h-80 space-y-2 overflow-y-auto">
@@ -688,6 +1059,8 @@ export default function App() {
                 onClick={() => {
                   setShowDatePicker((current) => !current);
                   setShowSavedDays(false);
+                  const activeDate = new Date(`${globalDateRange.start}T00:00:00`);
+                  setCalendarMonth(new Date(activeDate.getFullYear(), activeDate.getMonth(), 1));
                 }}
                 className={
                   isDark
@@ -701,38 +1074,120 @@ export default function App() {
               </button>
 
               {showDatePicker && (
-                <div className={isDark ? "absolute right-0 top-12 z-50 w-80 rounded-2xl border border-white/10 bg-slate-900 p-4 shadow-2xl" : "absolute right-0 top-12 z-50 w-80 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl"}>
-                  <div className="grid gap-3">
-                    <div>
-                      <label className={isDark ? "mb-1 block text-xs font-black uppercase tracking-wide text-slate-400" : "mb-1 block text-xs font-black uppercase tracking-wide text-slate-500"}>Start Date</label>
-                      <input
-                        type="date"
-                        value={globalDateRange.start}
-                        onChange={(event) => {
-                          setLoadedSavedDay(null);
-                          setGlobalDateRange((current) => ({ ...current, start: event.target.value }));
-                        }}
-                        className={isDark ? "w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm font-bold text-white outline-none focus:border-blue-500" : "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-950 outline-none focus:border-blue-500"}
-                      />
-                    </div>
-                    <div>
-                      <label className={isDark ? "mb-1 block text-xs font-black uppercase tracking-wide text-slate-400" : "mb-1 block text-xs font-black uppercase tracking-wide text-slate-500"}>End Date</label>
-                      <input
-                        type="date"
-                        value={globalDateRange.end}
-                        onChange={(event) => {
-                          setLoadedSavedDay(null);
-                          setGlobalDateRange((current) => ({ ...current, end: event.target.value }));
-                        }}
-                        className={isDark ? "w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm font-bold text-white outline-none focus:border-blue-500" : "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-950 outline-none focus:border-blue-500"}
-                      />
+                <div className={isDark ? "absolute right-0 top-12 z-50 w-[19.5rem] rounded-2xl border border-white/10 bg-slate-900 p-3 shadow-2xl sm:w-[23rem]" : "absolute right-0 top-12 z-50 w-[19.5rem] rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl sm:w-[23rem]"}>
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => moveCalendarMonth(-1)}
+                      className={isDark ? "flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-base font-black text-white hover:bg-white/10" : "flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-base font-black text-slate-700 hover:bg-slate-100"}
+                      aria-label="Previous month"
+                    >
+                      ‹
+                    </button>
+                    <div className="min-w-0 text-center">
+                      <p className={isDark ? "text-sm font-black text-white" : "text-sm font-black text-slate-950"}>{calendarMonthLabel}</p>
+                      <p className={isDark ? "mt-0.5 text-[11px] font-bold text-slate-400" : "mt-0.5 text-[11px] font-bold text-slate-500"}>{formatDateRangeLabel(globalDateRange)}</p>
                     </div>
                     <button
-                      onClick={() => setShowDatePicker(false)}
-                      className="mt-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500"
+                      type="button"
+                      onClick={() => moveCalendarMonth(1)}
+                      className={isDark ? "flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-base font-black text-white hover:bg-white/10" : "flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-base font-black text-slate-700 hover:bg-slate-100"}
+                      aria-label="Next month"
                     >
-                      Apply Date Range
+                      ›
                     </button>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1">
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((weekday) => (
+                      <div key={weekday} className={isDark ? "pb-1 text-center text-[10px] font-black uppercase text-slate-500" : "pb-1 text-center text-[10px] font-black uppercase text-slate-400"}>
+                        {weekday}
+                      </div>
+                    ))}
+
+                    {calendarDays.map((day) => {
+                      const selectedEdge = day.isSelectedStart || day.isSelectedEnd;
+                      const dayClass = selectedEdge
+                        ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
+                        : day.isInSelectedRange
+                          ? isDark
+                            ? "bg-blue-500/15 text-blue-100"
+                            : "bg-blue-50 text-blue-700"
+                          : day.isCurrentMonth
+                            ? isDark
+                              ? "text-white hover:bg-white/10"
+                              : "text-slate-800 hover:bg-slate-100"
+                            : isDark
+                              ? "text-slate-600 hover:bg-white/5"
+                              : "text-slate-300 hover:bg-slate-50";
+
+                      return (
+                        <button
+                          key={day.dateKey}
+                          type="button"
+                          onClick={() => pickCalendarDate(day.dateKey)}
+                          className={`relative flex h-8 min-w-0 items-center justify-center rounded-lg text-xs font-black transition ${dayClass}`}
+                          title={formatDateLabel(day.dateKey)}
+                        >
+                          {day.dayNumber}
+                          {day.isToday && !selectedEdge && <span className="absolute bottom-1 h-1 w-1 rounded-full bg-blue-500" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className={isDark ? "mt-3 grid grid-cols-3 gap-2 border-t border-white/10 pt-3" : "mt-3 grid grid-cols-3 gap-2 border-t border-slate-200 pt-3"}>
+                    <button
+                      type="button"
+                      onClick={selectToday}
+                      className={isDark ? "rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs font-black text-white hover:bg-white/10" : "rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-100"}
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      onClick={selectThisWeek}
+                      className={isDark ? "rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs font-black text-white hover:bg-white/10" : "rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-100"}
+                    >
+                      This Week
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDatePicker(false)}
+                      className="rounded-lg bg-blue-600 px-2 py-1.5 text-xs font-black text-white hover:bg-blue-500"
+                    >
+                      Done
+                    </button>
+                  </div>
+
+                  <div className={isDark ? "mt-2 rounded-xl border border-white/10 bg-slate-950/60 p-2.5" : "mt-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5"}>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        ["Start", globalDateRange.start],
+                        ["End", globalDateRange.end],
+                      ].map(([label, value]) => (
+                        <label key={label} className="block">
+                          <span className={isDark ? "mb-1 block text-[10px] font-black uppercase tracking-wide text-slate-500" : "mb-1 block text-[10px] font-black uppercase tracking-wide text-slate-400"}>{label}</span>
+                          <input
+                            type="date"
+                            value={value}
+                            onChange={(event) => {
+                              setLoadedSavedDay(null);
+                              setGlobalDateRange((current) => {
+                                const next = label === "Start" ? { ...current, start: event.target.value } : { ...current, end: event.target.value };
+                                return next.start <= next.end ? next : { start: next.end, end: next.start };
+                              });
+                              const activeDate = new Date(`${event.target.value}T00:00:00`);
+                              setCalendarMonth(new Date(activeDate.getFullYear(), activeDate.getMonth(), 1));
+                            }}
+                            className={isDark ? "w-full rounded-lg border border-white/10 bg-slate-950/70 px-2 py-1 text-[11px] font-bold text-white outline-none focus:border-blue-500" : "w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-950 outline-none focus:border-blue-500"}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                    <p className={isDark ? "mt-1.5 text-[11px] font-semibold text-slate-500" : "mt-1.5 text-[11px] font-semibold text-slate-500"}>
+                      Click once for a day. Click a second date to make a range.
+                    </p>
                   </div>
                 </div>
               )}
@@ -741,19 +1196,47 @@ export default function App() {
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1600px]">
             {activeTab === "Dashboard" ? (
               <DashboardHome teams={teams} claims={claims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} />
+            ) : activeTab === "Intake" ? (
+              <AiQuickIntake
+                teams={teams}
+                claims={claims}
+                isDark={isDark}
+                appSettings={appSettings}
+                onAddClaim={addAiClaim}
+                onApplyRoute={applyAiRouteDraft}
+                onSaveToDay={saveIntakeToDay}
+                navigateToTab={navigateToTab}
+                standalone
+              />
             ) : activeTab === "Contracts" ? (
               <ContractsDashboard teams={teams} claims={claims} isDark={isDark} navigateToTab={navigateToTab} />
             ) : activeTab === "Compliance" ? (
-              <ComplianceDashboard teams={teams} claims={claims} />
+              <ComplianceDashboard teams={teams} claims={claims} isDark={isDark} />
             ) : activeTab === "Claims" ? (
-              <ClaimsDashboard claims={claims} setClaims={setClaims} teams={teams} isDark={isDark} appSettings={appSettings} />
+              <ClaimsDashboard claims={claims} setClaims={setClaims} teams={teams} isDark={isDark} appSettings={appSettings} backendStatus={claimsBackendStatus} />
             ) : activeTab === "Teams" ? (
               <TeamsDashboard teams={teams} setTeams={setTeams} claims={claims} />
             ) : activeTab === "Reports" ? (
               <ReportsDashboard claims={claims} teams={teams} results={results} form={form} isDark={isDark} exportSummary={exportSummary} reportsHomeSignal={reportsHomeSignal} />
+            ) : activeTab === "Ask" ? (
+              <AskBusinessDashboard
+                claims={claims}
+                teams={teams}
+                results={results}
+                form={form}
+                savedDays={savedDays}
+                appSettings={appSettings}
+                isDark={isDark}
+                navigateToTab={navigateToTab}
+              />
             ) : activeTab === "Settings" ? (
-              <SettingsDashboard appSettings={appSettings} setAppSettings={setAppSettings} />
-            ) : (
+              <SettingsDashboard
+                appSettings={appSettings}
+                setAppSettings={setAppSettings}
+                appStateBackendStatus={appStateBackendStatus}
+                claimsBackendStatus={claimsBackendStatus}
+              />
+            ) : activeTab === "Profitability" ? (
               <ProfitabilityDashboard
                 form={form}
                 update={update}
@@ -769,6 +1252,8 @@ export default function App() {
                 isDark={isDark}
                 appSettings={appSettings}
               />
+            ) : (
+              <DashboardHome teams={teams} claims={claims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} />
             )}
           </motion.div>
         </main>

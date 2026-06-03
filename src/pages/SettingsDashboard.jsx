@@ -4,6 +4,7 @@ import {
   BarChart3,
   CheckCircle2,
   currency,
+  defaultSettings,
   DollarSign,
   FileText,
   Save,
@@ -156,10 +157,17 @@ function buildPreset(profile) {
   return next;
 }
 
-function SettingsDashboard({ appSettings, setAppSettings }) {
+function SettingsDashboard({ appSettings, setAppSettings, appStateBackendStatus, claimsBackendStatus }) {
   const selectedAccent = accentThemes?.[appSettings?.accentColor] || accentThemes?.blue || { from: "#2563eb", to: "#1d4ed8" };
   const isDark = appSettings?.themeMode === "dark";
-  const dashboardWidgets = appSettings?.dashboardWidgets || {};
+  const dashboardWidgets = {
+    ...defaultSettings.dashboardWidgets,
+    ...(appSettings?.dashboardWidgets || {}),
+  };
+  const defaultDashboardOrder = defaultSettings.dashboardWidgetOrder || Object.keys(defaultSettings.dashboardWidgets);
+  const dashboardWidgetOrder = [
+    ...new Set([...(appSettings?.dashboardWidgetOrder || []), ...defaultDashboardOrder]),
+  ].filter((key) => Object.prototype.hasOwnProperty.call(defaultSettings.dashboardWidgets, key));
   const marginFactors = {
     ...defaultMarginFactors,
     ...(appSettings?.marginFactors || {}),
@@ -170,6 +178,7 @@ function SettingsDashboard({ appSettings, setAppSettings }) {
 
   const [activeSettingsTab, setActiveSettingsTab] = useState("Margin Factors");
   const [savedFlash, setSavedFlash] = useState(false);
+  const [settingsNotice, setSettingsNotice] = useState("");
 
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
@@ -254,7 +263,12 @@ function SettingsDashboard({ appSettings, setAppSettings }) {
     setTimeout(() => setSavedFlash(false), 1600);
   };
 
-  const tabs = ["Company", "Defaults", "Margin Factors", "Claims", "Accessorials", "Labels", "Employees", "Notifications"];
+  const showNotice = (message) => {
+    setSettingsNotice(message);
+    setTimeout(() => setSettingsNotice(""), 2600);
+  };
+
+  const tabs = ["Company", "Dashboard Layout", "Margin Factors", "Claims", "Accessorials", "Labels", "Employees", "Notifications"];
 
   const categoryCards = [
     {
@@ -295,6 +309,7 @@ function SettingsDashboard({ appSettings, setAppSettings }) {
   };
 
   const dashboardWidgetLabels = [
+    ["periodMetrics", "Period Metric Cards", "The compact Day/Week/Month cards across the top."],
     ["todaysProfit", "Today's Profit"],
     ["financialSummary", "Financial Summary"],
     ["needsAttention", "Needs Attention"],
@@ -302,12 +317,71 @@ function SettingsDashboard({ appSettings, setAppSettings }) {
     ["routeEfficiency", "Route Efficiency"],
     ["recentClaims", "Recent Claims"],
     ["savedRoutes", "Saved Routes"],
+    ["recentActivity", "Recent Activity"],
     ["teamReadiness", "Team Readiness"],
     ["activeContracts", "Active Contracts"],
+    ["contractPerformance", "Contract Performance"],
     ["upcomingRenewals", "Upcoming Renewals"],
+    ["complianceStatus", "Compliance Status"],
     ["fuelCostTracker", "Fuel Cost Tracker"],
     ["documentExpirations", "Document Expirations"],
+    ["insuranceSummary", "Insurance Summary"],
   ];
+  const dashboardWidgetMeta = Object.fromEntries(
+    dashboardWidgetLabels.map(([key, label, description]) => [key, { label, description: description || "Dashboard card or section." }])
+  );
+  const enabledDashboardCount = dashboardWidgetOrder.filter((key) => dashboardWidgets[key] !== false).length;
+
+  const updateDashboardWidget = (key, value) => {
+    setAppSettings((current) => ({
+      ...current,
+      dashboardWidgets: {
+        ...defaultSettings.dashboardWidgets,
+        ...(current.dashboardWidgets || {}),
+        [key]: value,
+      },
+    }));
+  };
+
+  const updateDashboardOrder = (nextOrder) => {
+    setAppSettings((current) => ({
+      ...current,
+      dashboardWidgetOrder: nextOrder,
+    }));
+  };
+
+  const moveDashboardWidget = (key, direction) => {
+    const index = dashboardWidgetOrder.indexOf(key);
+    const nextIndex = index + direction;
+    if (index < 0 || nextIndex < 0 || nextIndex >= dashboardWidgetOrder.length) return;
+
+    const nextOrder = [...dashboardWidgetOrder];
+    [nextOrder[index], nextOrder[nextIndex]] = [nextOrder[nextIndex], nextOrder[index]];
+    updateDashboardOrder(nextOrder);
+  };
+
+  const setAllDashboardWidgets = (enabled) => {
+    setAppSettings((current) => ({
+      ...current,
+      dashboardWidgets: Object.fromEntries(defaultDashboardOrder.map((key) => [key, enabled])),
+    }));
+  };
+
+  const applyDashboardPreset = (preset) => {
+    const presets = {
+      Operations: ["periodMetrics", "needsAttention", "recentClaims", "teamReadiness", "routeHealth", "routeEfficiency", "recentActivity"],
+      Finance: ["periodMetrics", "todaysProfit", "financialSummary", "savedRoutes", "activeContracts", "contractPerformance", "fuelCostTracker"],
+      Compliance: ["periodMetrics", "needsAttention", "complianceStatus", "documentExpirations", "insuranceSummary", "upcomingRenewals", "recentActivity"],
+      Full: defaultDashboardOrder,
+    };
+    const enabledKeys = presets[preset] || defaultDashboardOrder;
+
+    setAppSettings((current) => ({
+      ...current,
+      dashboardWidgets: Object.fromEntries(defaultDashboardOrder.map((key) => [key, enabledKeys.includes(key)])),
+      dashboardWidgetOrder: [...enabledKeys, ...defaultDashboardOrder.filter((key) => !enabledKeys.includes(key))],
+    }));
+  };
 
   const accessorialSettings = appSettings?.accessorials || {
     haulAway: 35,
@@ -393,7 +467,7 @@ function SettingsDashboard({ appSettings, setAppSettings }) {
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => alert(`${label} is included when calculating or displaying ${card.title.toLowerCase()}.`)}
+                  onClick={() => showNotice(`${label} is included when calculating or displaying ${card.title.toLowerCase()}.`)}
                   className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] ${mutedText}`}
                 >
                   i
@@ -429,6 +503,29 @@ function SettingsDashboard({ appSettings, setAppSettings }) {
         </button>
       </div>
 
+      <div className={cardClass}>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3">
+            <div className={toneStyles.emerald + " flex h-11 w-11 items-center justify-center rounded-2xl"}>
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className={`text-lg font-black ${titleText}`}>Backend Sync</h2>
+              <p className={`text-sm ${mutedText}`}>Claims, settings, teams, saved days, and scenarios are prepared for Supabase.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-2 text-sm font-black sm:grid-cols-2 lg:min-w-[520px]">
+            <div className={isDark ? "rounded-xl border border-white/10 bg-slate-950/60 p-3 text-emerald-200" : "rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-emerald-700"}>
+              {claimsBackendStatus || "Claims sync pending."}
+            </div>
+            <div className={isDark ? "rounded-xl border border-white/10 bg-slate-950/60 p-3 text-blue-200" : "rounded-xl border border-blue-100 bg-blue-50 p-3 text-blue-700"}>
+              {appStateBackendStatus || "App state sync pending."}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className={`flex gap-7 overflow-x-auto border-b ${rowBorder}`}>
         {tabs.map((tab) => (
           <button
@@ -445,6 +542,12 @@ function SettingsDashboard({ appSettings, setAppSettings }) {
         ))}
       </div>
 
+      {settingsNotice && (
+        <div className={isDark ? "rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm font-bold text-blue-100" : "rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700"}>
+          {settingsNotice}
+        </div>
+      )}
+
       {activeSettingsTab !== "Margin Factors" ? (
         <div className={cardClass}>
           <div className="flex items-center gap-3">
@@ -455,7 +558,7 @@ function SettingsDashboard({ appSettings, setAppSettings }) {
               <h2 className={`text-xl font-black ${titleText}`}>{activeSettingsTab}</h2>
               <p className={`text-sm ${mutedText}`}>
                 {activeSettingsTab === "Company" && "Business identity, theme, and accent settings."}
-                {activeSettingsTab === "Defaults" && "Choose which dashboard widgets show by default."}
+                {activeSettingsTab === "Dashboard Layout" && "Control which dashboard sections show and the order they appear in."}
                 {activeSettingsTab === "Claims" && "Set claim review rules, including amount thresholds for risk levels."}
                 {activeSettingsTab === "Accessorials" && "Set default add-on charges used by contracts and route math."}
                 {activeSettingsTab === "Labels" && "Rename common app words to match how your business talks."}
@@ -512,22 +615,86 @@ function SettingsDashboard({ appSettings, setAppSettings }) {
             </div>
           )}
 
-          {activeSettingsTab === "Defaults" && (
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {dashboardWidgetLabels.map(([key, label]) => (
-                <div key={key} className={softCard}>
-                  <div className="flex items-center justify-between gap-3">
+          {activeSettingsTab === "Dashboard Layout" && (
+            <div className="mt-6 space-y-5">
+              <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
+                <div className={softCard}>
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <p className={`font-black ${titleText}`}>{label}</p>
-                      <p className={`text-sm ${mutedText}`}>Show on Dashboard</p>
+                      <h3 className={`text-lg font-black ${titleText}`}>Dashboard Order</h3>
+                      <p className={`mt-1 text-sm ${mutedText}`}>
+                        {enabledDashboardCount} of {dashboardWidgetOrder.length} sections are visible. Use the arrows to arrange what appears first.
+                      </p>
                     </div>
-                    <Toggle
-                      checked={appSettings?.dashboardWidgets?.[key] !== false}
-                      onClick={() => updateNestedSetting("dashboardWidgets", key, !(appSettings?.dashboardWidgets?.[key] !== false))}
-                    />
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => setAllDashboardWidgets(true)} className="rounded-xl border border-blue-200 px-3 py-2 text-xs font-black text-blue-600 hover:bg-blue-50">Show All</button>
+                      <button onClick={() => setAllDashboardWidgets(false)} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 hover:bg-slate-50">Hide All</button>
+                      <button onClick={() => updateDashboardOrder(defaultDashboardOrder)} className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white hover:bg-blue-500">Reset Order</button>
+                    </div>
                   </div>
                 </div>
-              ))}
+
+                <div className={softCard}>
+                  <h3 className={`text-sm font-black ${titleText}`}>Quick Presets</h3>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {["Operations", "Finance", "Compliance", "Full"].map((preset) => (
+                      <button
+                        key={preset}
+                        onClick={() => applyDashboardPreset(preset)}
+                        className={isDark ? "rounded-xl bg-white/10 px-3 py-2 text-xs font-black text-white hover:bg-white/15" : "rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3">
+                {dashboardWidgetOrder.map((key, index) => {
+                  const widget = dashboardWidgetMeta[key] || { label: key, description: "Dashboard section." };
+                  const enabled = dashboardWidgets[key] !== false;
+
+                  return (
+                    <div key={key} className={`${softCard} ${enabled ? "" : "opacity-60"}`}>
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex min-w-0 items-start gap-4">
+                          <div className={isDark ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-sm font-black text-slate-200" : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-sm font-black text-slate-700"}>
+                            {index + 1}
+                          </div>
+                          <div className="min-w-0">
+                            <p className={`font-black ${titleText}`}>{widget.label}</p>
+                            <p className={`mt-1 text-sm ${mutedText}`}>{widget.description}</p>
+                            <span className={enabled ? "mt-3 inline-flex rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-black text-emerald-700" : "mt-3 inline-flex rounded-full bg-slate-500/10 px-2.5 py-1 text-xs font-black text-slate-500"}>
+                              {enabled ? "Visible" : "Hidden"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                          <button
+                            type="button"
+                            onClick={() => moveDashboardWidget(key, -1)}
+                            disabled={index === 0}
+                            className={index === 0 ? "rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-300" : "rounded-xl border border-blue-200 px-3 py-2 text-xs font-black text-blue-600 hover:bg-blue-50"}
+                          >
+                            Up
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveDashboardWidget(key, 1)}
+                            disabled={index === dashboardWidgetOrder.length - 1}
+                            className={index === dashboardWidgetOrder.length - 1 ? "rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-300" : "rounded-xl border border-blue-200 px-3 py-2 text-xs font-black text-blue-600 hover:bg-blue-50"}
+                          >
+                            Down
+                          </button>
+                          <Toggle checked={enabled} onClick={() => updateDashboardWidget(key, !enabled)} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -725,7 +892,7 @@ function SettingsDashboard({ appSettings, setAppSettings }) {
                     {selectedCounts.total} factors included
                   </div>
                   <div className={`font-bold ${mutedText}`}>{selectedCounts.excluded} factors excluded</div>
-                  <button onClick={() => setActiveSettingsTab("Defaults")} className="font-black text-blue-600">View All</button>
+                  <button onClick={() => setActiveSettingsTab("Dashboard Layout")} className="font-black text-blue-600">View Layout</button>
                 </div>
               </div>
 
@@ -762,7 +929,7 @@ function SettingsDashboard({ appSettings, setAppSettings }) {
 
               <div className="grid gap-4 md:grid-cols-4">
                 {[
-                  ["Single Route", `${selectedCounts.revenue + selectedCounts.costs + selectedCounts.metrics} fields shown`, "emerald", DollarSign],
+                  ["Route Profit Check", `${selectedCounts.revenue + selectedCounts.costs + selectedCounts.metrics} fields shown`, "emerald", DollarSign],
                   ["All Contracts", `${selectedCounts.revenue + selectedCounts.costs} columns available`, "blue", FileText],
                   ["Reports", `${selectedCounts.metrics} metrics available`, "amber", BarChart3],
                   ["Exports", `${selectedCounts.total} factors exported`, "violet", Save],
@@ -792,19 +959,18 @@ function SettingsDashboard({ appSettings, setAppSettings }) {
                   ["Create Custom Factor", "Add a factor unique to your business"],
                   ["Manage Factor Order", "Reorder how factors appear in forms"],
                 ].map(([title, subtitle]) => (
-                  <button
+                  <div
                     key={title}
-                    onClick={() => alert(`${title} is ready for the next setup step.`)}
-                    className={isDark ? "w-full rounded-xl border border-white/10 bg-white/5 p-4 text-left hover:bg-white/10" : "w-full rounded-xl border border-slate-200 bg-white p-4 text-left hover:bg-slate-50"}
+                    className={isDark ? "w-full rounded-xl border border-white/10 bg-white/5 p-4 text-left" : "w-full rounded-xl border border-slate-200 bg-white p-4 text-left"}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className={`font-black ${titleText}`}>{title}</p>
                         <p className={`text-sm ${mutedText}`}>{subtitle}</p>
                       </div>
-                      <span className={mutedText}>›</span>
+                      <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500"}>Planned</span>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>

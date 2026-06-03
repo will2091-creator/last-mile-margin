@@ -52,8 +52,16 @@ import {
   XAxis,
   YAxis,
 } from "../shared";
+import {
+  ComplianceRiskPanel,
+  DocumentVaultTable,
+} from "../components/ProfitPlatformWidgets";
+import {
+  complianceRiskData,
+  documentVaultData,
+} from "../data/platformMockData";
 
-function ComplianceDashboard({ teams, claims }) {
+function ComplianceDashboard({ teams, claims, isDark }) {
   const photosUploaded = teams.filter((team) => team.photoStatus === "Uploaded").length;
   const atRiskTeams = teams.filter((team) => team.status === "At Risk").length;
   const totalClaimsExposure = claims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
@@ -115,6 +123,10 @@ function ComplianceDashboard({ teams, claims }) {
           </Card>
         ))}
       </div>
+
+      <ComplianceRiskPanel documents={documentVaultData} risks={complianceRiskData} isDark={isDark} />
+
+      <DocumentVaultTable documents={documentVaultData} isDark={isDark} />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card className="p-5">

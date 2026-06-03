@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import {
   AlertTriangle,
   BarChart3,
+  Bot,
   BriefcaseBusiness,
   Calculator,
   Camera,
@@ -11,6 +12,7 @@ import {
   FileDown,
   FileText,
   LayoutDashboard,
+  MessageCircle,
   Moon,
   Sun,
   RotateCcw,
@@ -39,6 +41,7 @@ import {
 export {
   AlertTriangle,
   BarChart3,
+  Bot,
   BriefcaseBusiness,
   Calculator,
   Camera,
@@ -48,6 +51,7 @@ export {
   FileDown,
   FileText,
   LayoutDashboard,
+  MessageCircle,
   Moon,
   Sun,
   RotateCcw,
@@ -291,6 +295,7 @@ export const defaultSettings = {
   themeMode: "light",
   accentColor: "blue",
   dashboardWidgets: {
+    periodMetrics: true,
     todaysProfit: true,
     financialSummary: true,
     needsAttention: true,
@@ -308,6 +313,25 @@ export const defaultSettings = {
     documentExpirations: false,
     insuranceSummary: false,
   },
+  dashboardWidgetOrder: [
+    "periodMetrics",
+    "todaysProfit",
+    "financialSummary",
+    "needsAttention",
+    "routeHealth",
+    "routeEfficiency",
+    "recentClaims",
+    "savedRoutes",
+    "recentActivity",
+    "teamReadiness",
+    "activeContracts",
+    "contractPerformance",
+    "upcomingRenewals",
+    "complianceStatus",
+    "fuelCostTracker",
+    "documentExpirations",
+    "insuranceSummary",
+  ],
   claimRiskThresholds: {
     medium: 200,
     high: 500,
@@ -455,14 +479,14 @@ export function SelectField({ label, value, onChange, options }) {
 
 export function MetricCard({ title, value, note, icon: Icon, color = "text-white" }) {
   return (
-    <Card className="p-5">
+    <Card className="overflow-hidden p-5">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-slate-400">{title}</p>
-          <p className={`mt-2 text-3xl font-black tracking-tight ${color}`}>{value}</p>
-          <p className="mt-1 text-xs text-slate-500">{note}</p>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm text-slate-400">{title}</p>
+          <p className={`safe-number mt-2 text-3xl font-black tracking-tight ${color}`} title={String(value)}>{value}</p>
+          <p className="mt-1 truncate text-xs text-slate-500">{note}</p>
         </div>
-        <div className="rounded-xl bg-white/5 p-3">
+        <div className="shrink-0 rounded-xl bg-white/5 p-3">
           <Icon className="h-5 w-5 text-blue-400" />
         </div>
       </div>
@@ -490,8 +514,8 @@ export function Section({ title, subtitle, icon: Icon, children }) {
 export function Row({ label, value, strong }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-white/5 py-2 last:border-0">
-      <span className={strong ? "font-semibold text-white" : "text-slate-400"}>{label}</span>
-      <span className={strong ? "font-bold text-white" : "text-slate-200"}>{value}</span>
+      <span className={strong ? "truncate font-semibold text-white" : "truncate text-slate-400"}>{label}</span>
+      <span className={strong ? "safe-number text-right font-bold text-white" : "safe-number text-right text-slate-200"} title={String(value)}>{value}</span>
     </div>
   );
 }

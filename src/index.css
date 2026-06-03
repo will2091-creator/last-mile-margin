@@ -9,3 +9,31 @@ body,
 body {
   margin: 0;
 }
+
+/*
+  Keep dashboard numbers inside their cards at narrow widths.
+  CSS grid/flex children default to min-width:auto, which lets long currency
+  values push past rounded boxes instead of shrinking.
+*/
+.app-card,
+.app-card *,
+button,
+button * {
+  min-width: 0;
+}
+
+.safe-number,
+.app-card :where(.text-2xl, .text-3xl, .text-4xl, .text-5xl, .text-6xl).font-black,
+button :where(.text-2xl, .text-3xl, .text-4xl, .text-5xl, .text-6xl).font-black {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.08;
+}
+
+td.safe-number,
+th.safe-number {
+  display: table-cell;
+}

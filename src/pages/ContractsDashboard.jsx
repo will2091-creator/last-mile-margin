@@ -53,10 +53,96 @@ import {
   YAxis,
 } from "../shared";
 
+const contractChargeOptions = [
+  ["routePay", "Flat Route Pay", "Base route rate for the day"],
+  ["perStopPay", "Per Stop Pay", "Stop or extra-stop rate"],
+  ["installPay", "Install Pay", "Appliance, setup, or service work"],
+  ["accessorialPay", "Accessorials", "Stairs, long carry, haul away, special handling"],
+  ["fuelSurcharge", "Fuel Surcharge", "Fuel recovery charge"],
+  ["reattemptPay", "Reattempt Pay", "Redelivery or second trip fee"],
+];
+
+const defaultChargeRules = {
+  routePay: true,
+  perStopPay: false,
+  installPay: false,
+  accessorialPay: false,
+  fuelSurcharge: false,
+  reattemptPay: false,
+};
+
+const chargeRuleDefaultsByRateCard = {
+  lowes: {
+    routePay: true,
+    perStopPay: true,
+    installPay: true,
+    accessorialPay: true,
+    fuelSurcharge: true,
+    reattemptPay: true,
+  },
+  "home-depot": {
+    routePay: true,
+    perStopPay: true,
+    accessorialPay: true,
+    fuelSurcharge: true,
+  },
+  "best-buy": {
+    routePay: false,
+    perStopPay: true,
+    installPay: true,
+    accessorialPay: true,
+    reattemptPay: true,
+  },
+  "rc-willey": {
+    routePay: true,
+    perStopPay: true,
+    accessorialPay: true,
+  },
+};
+
+const rateCardIdByContractId = {
+  "LOWES-APPL": "lowes",
+  "HD-LARGE": "home-depot",
+  "BB-TECH": "best-buy",
+  "RC-FURN": "rc-willey",
+};
+
+const getRateCardId = (contract) => rateCardIdByContractId[contract?.id] || String(contract?.id || "new-contract").toLowerCase();
+
+const getDefaultChargeRulesForRateCard = (rateCardId) => ({
+  ...defaultChargeRules,
+  ...(chargeRuleDefaultsByRateCard[rateCardId] || {}),
+});
+
 function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
   const [selectedContractId, setSelectedContractId] = useState("LOWES-APPL");
   const [selectedContractTab, setSelectedContractTab] = useState("Overview");
   const [isEditingContract, setIsEditingContract] = useState(false);
+  const [contractImportDraft, setContractImportDraft] = useState(() => {
+    try {
+      const savedDraft = localStorage.getItem("finalMileContractImportDraft");
+      return savedDraft ? JSON.parse(savedDraft) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [contractChargeRules, setContractChargeRules] = useState(() => {
+    try {
+      const savedRules = localStorage.getItem("finalMileContractChargeRules");
+      return savedRules ? JSON.parse(savedRules) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [contractCustomCharges, setContractCustomCharges] = useState(() => {
+    try {
+      const savedCharges = localStorage.getItem("finalMileContractCustomCharges");
+      return savedCharges ? JSON.parse(savedCharges) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [customChargeDraft, setCustomChargeDraft] = useState({ name: "", amount: "" });
 
   const [contracts, setContracts] = useState([
     {
@@ -209,8 +295,77 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
     setSelectedContractTab("Overview");
   };
 
+  const applyContractImportDraft = () => {
+    if (!contractImportDraft) return;
+
+    const newId = `CONTRACT-${Date.now()}`;
+    const routePay = Number(contractImportDraft.routePay || 0);
+    const perStop = Number(contractImportDraft.perStop || 0);
+    const installPay = Number(contractImportDraft.installPay || 0);
+    const newContract = {
+      id: newId,
+      name: `${contractImportDraft.customer || "New Customer"} Delivery`,
+      customer: contractImportDraft.customer || "New Customer",
+      customerType: "Retail",
+      location: "New Market",
+      type: "Delivery Contract",
+      payStructure: perStop > 0 ? `${currency.format(perStop)} / stop` : `${currency.format(routePay)} / route`,
+      payType: perStop > 0 ? "Per Stop" : "Flat Rate",
+      routePay,
+      perStop,
+      installPay,
+      monthlyRevenue: routePay * 13,
+      margin: 0,
+      status: "Pending",
+      risk: "Watch",
+      team: teams[0]?.name || "Unassigned",
+      drivers: "Not assigned",
+      schedule: "Review imported terms",
+      startDate: new Date().toLocaleDateString(),
+      renewalDate: "Not set",
+      renewalDays: 0,
+      overview: "AI imported contract draft. Review rates, terms, service area, and compliance requirements.",
+      logo: String(contractImportDraft.customer || "NEW").slice(0, 3).toUpperCase(),
+      notes: contractImportDraft.notes || "Imported by AI Quick Intake.",
+    };
+
+    setContracts((current) => [newContract, ...current]);
+    setSelectedContractId(newId);
+    setSelectedContractTab("Overview");
+    setIsEditingContract(true);
+    setContractImportDraft(null);
+    localStorage.removeItem("finalMileContractImportDraft");
+  };
+
+  const dismissContractImportDraft = () => {
+    setContractImportDraft(null);
+    localStorage.removeItem("finalMileContractImportDraft");
+  };
+
   const isViewingAllContracts = selectedContractId === "ALL";
   const selectedContract = isViewingAllContracts ? contracts[0] : contracts.find((contract) => contract.id === selectedContractId) || contracts[0];
+  const selectedRateCardId = getRateCardId(selectedContract);
+  const selectedChargeRules = {
+    ...getDefaultChargeRulesForRateCard(selectedRateCardId),
+    ...(contractChargeRules[selectedRateCardId] || {}),
+  };
+  const selectedCustomCharges = (contractCustomCharges[selectedRateCardId] || []).map((charge) => ({
+    ...charge,
+    amount: Number(charge.amount || 0),
+    enabled: charge.enabled !== false,
+  }));
+  const enabledStandardCharges = contractChargeOptions.filter(([key]) => selectedChargeRules[key] !== false);
+  const enabledCustomCharges = selectedCustomCharges.filter((charge) => charge.enabled);
+  const enabledChargeCount = enabledStandardCharges.length + enabledCustomCharges.length;
+  const enabledCustomChargeTotal = enabledCustomCharges.reduce((sum, charge) => sum + Number(charge.amount || 0), 0);
+
+  useEffect(() => {
+    localStorage.setItem("finalMileContractChargeRules", JSON.stringify(contractChargeRules));
+  }, [contractChargeRules]);
+
+  useEffect(() => {
+    localStorage.setItem("finalMileContractCustomCharges", JSON.stringify(contractCustomCharges));
+  }, [contractCustomCharges]);
 
   const updateContractField = (key, value) => {
     const numberFields = ["routePay", "perStop", "installPay", "monthlyRevenue", "margin", "renewalDays"];
@@ -239,6 +394,74 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
         return updatedContract;
       })
     );
+  };
+
+  const updateContractChargeRule = (rateCardId, key, enabled) => {
+    setContractChargeRules((current) => ({
+      ...current,
+      [rateCardId]: {
+        ...getDefaultChargeRulesForRateCard(rateCardId),
+        ...(current[rateCardId] || {}),
+        [key]: enabled,
+      },
+    }));
+  };
+
+  const addCustomContractCharge = (rateCardId) => {
+    const name = customChargeDraft.name.trim();
+    if (!name) return;
+
+    const amount = Number(customChargeDraft.amount || 0);
+    const newCharge = {
+      id: `custom-charge-${Date.now()}`,
+      name,
+      amount: Number.isFinite(amount) ? amount : 0,
+      enabled: true,
+    };
+
+    setContractCustomCharges((current) => ({
+      ...current,
+      [rateCardId]: [...(current[rateCardId] || []), newCharge],
+    }));
+    setCustomChargeDraft({ name: "", amount: "" });
+  };
+
+  const updateCustomContractCharge = (rateCardId, chargeId, key, value) => {
+    setContractCustomCharges((current) => ({
+      ...current,
+      [rateCardId]: (current[rateCardId] || []).map((charge) =>
+        charge.id === chargeId
+          ? {
+              ...charge,
+              [key]: key === "amount" ? Number(value || 0) : value,
+            }
+          : charge
+      ),
+    }));
+  };
+
+  const deleteCustomContractCharge = (rateCardId, chargeId) => {
+    setContractCustomCharges((current) => ({
+      ...current,
+      [rateCardId]: (current[rateCardId] || []).filter((charge) => charge.id !== chargeId),
+    }));
+  };
+
+  const openSelectedContractInRouteProfit = () => {
+    localStorage.setItem("finalMileRouteProfitContractId", selectedRateCardId);
+    localStorage.setItem("finalMileProfitabilityView", "Route Profit Check");
+    localStorage.setItem(
+      "finalMileRouteProfitContractDraft",
+      JSON.stringify({
+        rateCardId: selectedRateCardId,
+        scenarioName: selectedContract.name,
+        routePay: Number(selectedContract.routePay || 0),
+        perStopPay: Number(selectedContract.perStop || 0),
+        installPay: Number(selectedContract.installPay || 0),
+        routeType: selectedContract.type,
+      })
+    );
+    navigateToTab?.("Profitability");
   };
 
   useEffect(() => {
@@ -367,6 +590,28 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
           </button>
         </div>
       </div>
+
+      {contractImportDraft && (
+        <div className={isDark ? "rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5" : "rounded-2xl border border-blue-200 bg-blue-50 p-5"}>
+          <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wide text-blue-600">AI Contract Draft Ready</p>
+              <h2 className={`mt-1 text-xl font-black ${titleText}`}>{contractImportDraft.customer || "New customer"} terms found</h2>
+              <p className={`mt-2 text-sm ${mutedText}`}>
+                Route pay {currency.format(Number(contractImportDraft.routePay || 0))} · Per stop {currency.format(Number(contractImportDraft.perStop || 0))} · Install {currency.format(Number(contractImportDraft.installPay || 0))}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 lg:justify-end">
+              <button onClick={applyContractImportDraft} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500">
+                Create Contract Draft
+              </button>
+              <button onClick={dismissContractImportDraft} className={isDark ? "rounded-xl bg-white/10 px-4 py-2 text-sm font-black text-white hover:bg-white/15" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}>
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {kpis.map((kpi) => {
@@ -564,7 +809,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
           </div>
 
           <div className={`mb-6 flex gap-6 overflow-x-auto border-b pb-3 text-sm font-bold ${rowBorder}`}>
-            {["Overview", "Requirements", "Performance", "Compliance", "Notes"].map((tab) => (
+            {["Overview", "Rates", "Requirements", "Performance", "Compliance", "Notes"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setSelectedContractTab(tab)}
@@ -689,6 +934,182 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
 
           {selectedContractTab !== "Overview" && (
             <div className={isDark ? "mb-5 rounded-2xl border border-white/10 bg-white/5 p-5" : "mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-5"}>
+              {selectedContractTab === "Rates" && (
+                <div>
+                  <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wide text-blue-600">Contract Rate Card</p>
+                      <h3 className={`mt-1 text-xl font-black ${titleText}`}>Charges allowed for {selectedContract.name}</h3>
+                      <p className={`mt-2 max-w-3xl text-sm ${mutedText}`}>
+                        Turn on only the charges this contract pays for. Route Profit Check will hide anything turned off.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 lg:justify-end">
+                      <span className={isDark ? "rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-black text-emerald-200" : "rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700"}>
+                        {enabledChargeCount} active charges
+                      </span>
+                      <button
+                        onClick={openSelectedContractInRouteProfit}
+                        className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500"
+                      >
+                        Use in Route Profit
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+                    <div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {contractChargeOptions.map(([key, label, description]) => {
+                          const checked = selectedChargeRules[key] !== false;
+                          return (
+                            <label
+                              key={key}
+                              className={
+                                checked
+                                  ? isDark
+                                    ? "flex cursor-pointer items-start gap-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-4"
+                                    : "flex cursor-pointer items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4"
+                                  : isDark
+                                    ? "flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4 hover:bg-white/5"
+                                    : "flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 hover:border-blue-200"
+                              }
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(event) => updateContractChargeRule(selectedRateCardId, key, event.target.checked)}
+                                className="mt-1 h-4 w-4 accent-blue-600"
+                              />
+                              <span className="min-w-0">
+                                <span className={`block text-sm font-black ${checked ? titleText : mutedText}`}>{label}</span>
+                                <span className={`mt-1 block text-xs leading-snug ${mutedText}`}>{description}</span>
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+
+                      <div className={isDark ? "mt-4 rounded-2xl border border-white/10 bg-slate-950/60 p-4" : "mt-4 rounded-2xl border border-slate-200 bg-white p-4"}>
+                        <div className="mb-3">
+                          <p className={`text-sm font-black ${titleText}`}>Add Custom Charge</p>
+                          <p className={`mt-1 text-xs font-semibold ${mutedText}`}>Example: stairs over 2 flights, appliance removal, weekend delivery, premium install.</p>
+                        </div>
+                        <div className="grid gap-3 md:grid-cols-[1fr_150px_auto]">
+                          <input
+                            value={customChargeDraft.name}
+                            onChange={(event) => setCustomChargeDraft((current) => ({ ...current, name: event.target.value }))}
+                            placeholder="Charge name"
+                            className={inputClass}
+                          />
+                          <div className="relative">
+                            <span className={`absolute left-3 top-2.5 text-sm font-black ${mutedText}`}>$</span>
+                            <input
+                              type="number"
+                              value={customChargeDraft.amount}
+                              onChange={(event) => setCustomChargeDraft((current) => ({ ...current, amount: event.target.value }))}
+                              placeholder="0"
+                              className={isDark ? "w-full rounded-xl border border-white/10 bg-slate-950/70 py-2.5 pl-7 pr-3 text-sm text-white outline-none focus:border-blue-500" : "w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-7 pr-3 text-sm text-slate-950 outline-none focus:border-blue-500"}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => addCustomContractCharge(selectedRateCardId)}
+                            className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500"
+                          >
+                            + Add Charge
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-950/60 p-4" : "rounded-2xl border border-slate-200 bg-white p-4"}>
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div>
+                          <p className={`text-sm font-black ${titleText}`}>Active Rate Card</p>
+                          <p className={`mt-1 text-xs font-semibold ${mutedText}`}>What Route Profit Check will show.</p>
+                        </div>
+                        <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
+                          {selectedContract.payType}
+                        </span>
+                      </div>
+
+                      <div className={`divide-y ${isDark ? "divide-white/10" : "divide-slate-200"}`}>
+                        {enabledStandardCharges.map(([key, label]) => {
+                          const value =
+                            key === "routePay"
+                              ? selectedContract.routePay
+                              : key === "perStopPay"
+                                ? selectedContract.perStop
+                                : key === "installPay"
+                                  ? selectedContract.installPay
+                                  : 0;
+
+                          return (
+                            <div key={key} className="flex items-center justify-between gap-4 py-3">
+                              <p className={`text-sm font-semibold ${mutedText}`}>{label}</p>
+                              <p className={`whitespace-nowrap text-sm font-black ${titleText}`}>{value ? currency.format(value) : "On"}</p>
+                            </div>
+                          );
+                        })}
+
+                        {selectedCustomCharges.map((charge) => (
+                          <div key={charge.id} className="py-3">
+                            <div className="mb-2 flex items-center justify-between gap-2">
+                              <label className="flex min-w-0 items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={charge.enabled}
+                                  onChange={(event) => updateCustomContractCharge(selectedRateCardId, charge.id, "enabled", event.target.checked)}
+                                  className="h-4 w-4 accent-emerald-600"
+                                />
+                                <span className={`truncate text-sm font-black ${charge.enabled ? titleText : mutedText}`}>{charge.name}</span>
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => deleteCustomContractCharge(selectedRateCardId, charge.id)}
+                                className={isDark ? "rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-red-300" : "rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-red-600"}
+                                title="Delete custom charge"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+
+                            <div className="grid gap-2 sm:grid-cols-[1fr_120px]">
+                              <input
+                                value={charge.name}
+                                onChange={(event) => updateCustomContractCharge(selectedRateCardId, charge.id, "name", event.target.value)}
+                                className={isDark ? "w-full rounded-lg border border-white/10 bg-slate-900/80 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-500" : "w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-950 outline-none focus:border-emerald-500"}
+                              />
+                              <div className="relative">
+                                <span className={`absolute left-3 top-2 text-sm font-black ${mutedText}`}>$</span>
+                                <input
+                                  type="number"
+                                  value={charge.amount}
+                                  onChange={(event) => updateCustomContractCharge(selectedRateCardId, charge.id, "amount", event.target.value)}
+                                  className={isDark ? "w-full rounded-lg border border-white/10 bg-slate-900/80 py-2 pl-7 pr-3 text-sm font-bold text-white outline-none focus:border-emerald-500" : "w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-7 pr-3 text-sm font-bold text-slate-950 outline-none focus:border-emerald-500"}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {selectedCustomCharges.length === 0 && (
+                        <div className={isDark ? "mt-4 rounded-xl border border-dashed border-white/10 p-4 text-sm font-semibold text-slate-400" : "mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-500"}>
+                          No custom charges yet.
+                        </div>
+                      )}
+
+                      <div className={isDark ? "mt-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4" : "mt-5 rounded-2xl border border-emerald-100 bg-emerald-50 p-4"}>
+                        <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Custom Charge Total</p>
+                        <p className="mt-1 text-2xl font-black text-emerald-700">{currency.format(enabledCustomChargeTotal)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {selectedContractTab === "Requirements" && (
                 <div>
                   <h3 className={`text-lg font-black ${titleText}`}>Operating Requirements</h3>
@@ -781,22 +1202,43 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
 
             <div className="grid min-w-0 gap-5 xl:grid-cols-2">
               <div className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-5" : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"}>
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700">
-                    <DollarSign className="h-5 w-5" />
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700">
+                      <DollarSign className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className={`text-lg font-black ${titleText}`}>Pay Structure</p>
+                      <p className={`text-xs font-semibold ${mutedText}`}>{enabledChargeCount} active charges</p>
+                    </div>
                   </div>
-                  <p className={`text-lg font-black ${titleText}`}>Pay Structure</p>
+                  <button onClick={() => setSelectedContractTab("Rates")} className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-black text-blue-600 hover:bg-blue-50">
+                    Configure
+                  </button>
                 </div>
 
                 <div className={`divide-y ${isDark ? "divide-white/10" : "divide-slate-200"}`}>
-                  {[
-                    ["Route Pay (Flat)", currency.format(selectedContract.routePay)],
-                    ["Per Additional Stop", currency.format(selectedContract.perStop)],
-                    ["Installation Pay", currency.format(selectedContract.installPay)],
-                  ].map(([label, value]) => (
+                  {enabledStandardCharges.map(([key, label]) => {
+                    const value =
+                      key === "routePay"
+                        ? selectedContract.routePay
+                        : key === "perStopPay"
+                          ? selectedContract.perStop
+                          : key === "installPay"
+                            ? selectedContract.installPay
+                            : 0;
+
+                    return (
                     <div key={label} className="flex items-center justify-between gap-4 py-3">
                       <p className={`text-sm font-semibold ${mutedText}`}>{label}</p>
-                      <p className={`whitespace-nowrap text-sm font-black ${titleText}`}>{value}</p>
+                      <p className={`whitespace-nowrap text-sm font-black ${titleText}`}>{value ? currency.format(value) : "On"}</p>
+                    </div>
+                    );
+                  })}
+                  {enabledCustomCharges.map((charge) => (
+                    <div key={charge.id} className="flex items-center justify-between gap-4 py-3">
+                      <p className={`min-w-0 truncate text-sm font-semibold ${mutedText}`}>{charge.name}</p>
+                      <p className={`whitespace-nowrap text-sm font-black ${titleText}`}>{currency.format(charge.amount)}</p>
                     </div>
                   ))}
                 </div>
