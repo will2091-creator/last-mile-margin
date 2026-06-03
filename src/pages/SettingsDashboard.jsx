@@ -13,6 +13,7 @@ import {
   Truck,
   Users,
 } from "../shared";
+import { roleOptions } from "../lib/teamAccessRepository";
 
 const defaultMarginFactors = {
   profile: "Appliance Delivery",
@@ -157,7 +158,17 @@ function buildPreset(profile) {
   return next;
 }
 
-function SettingsDashboard({ appSettings, setAppSettings, appStateBackendStatus, claimsBackendStatus }) {
+function SettingsDashboard({
+  appSettings,
+  setAppSettings,
+  appStateBackendStatus,
+  claimsBackendStatus,
+  teamMembers = [],
+  currentUserRole = "owner",
+  teamAccessStatus = "",
+  onInviteTeamMember,
+  onUpdateTeamMemberRole,
+}) {
   const selectedAccent = accentThemes?.[appSettings?.accentColor] || accentThemes?.blue || { from: "#2563eb", to: "#1d4ed8" };
   const isDark = appSettings?.themeMode === "dark";
   const dashboardWidgets = {
@@ -179,6 +190,8 @@ function SettingsDashboard({ appSettings, setAppSettings, appStateBackendStatus,
   const [activeSettingsTab, setActiveSettingsTab] = useState("Margin Factors");
   const [savedFlash, setSavedFlash] = useState(false);
   const [settingsNotice, setSettingsNotice] = useState("");
+  const [inviteDraft, setInviteDraft] = useState({ email: "", role: "dispatcher" });
+  const [isInviting, setIsInviting] = useState(false);
 
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
@@ -268,7 +281,7 @@ function SettingsDashboard({ appSettings, setAppSettings, appStateBackendStatus,
     setTimeout(() => setSettingsNotice(""), 2600);
   };
 
-  const tabs = ["Company", "Dashboard Layout", "Margin Factors", "Claims", "Accessorials", "Labels", "Employees", "Notifications"];
+  const tabs = ["Company", "Team Access", "Dashboard Layout", "Margin Factors", "Claims", "Accessorials", "Labels", "Employees", "Notifications"];
 
   const categoryCards = [
     {
@@ -331,6 +344,8 @@ function SettingsDashboard({ appSettings, setAppSettings, appStateBackendStatus,
     dashboardWidgetLabels.map(([key, label, description]) => [key, { label, description: description || "Dashboard card or section." }])
   );
   const enabledDashboardCount = dashboardWidgetOrder.filter((key) => dashboardWidgets[key] !== false).length;
+  const canManageTeamAccess = ["owner", "admin"].includes(currentUserRole);
+  const roleLabelByValue = Object.fromEntries(roleOptions.map((role) => [role.value, role.label]));
 
   const updateDashboardWidget = (key, value) => {
     setAppSettings((current) => ({
@@ -381,6 +396,22 @@ function SettingsDashboard({ appSettings, setAppSettings, appStateBackendStatus,
       dashboardWidgets: Object.fromEntries(defaultDashboardOrder.map((key) => [key, enabledKeys.includes(key)])),
       dashboardWidgetOrder: [...enabledKeys, ...defaultDashboardOrder.filter((key) => !enabledKeys.includes(key))],
     }));
+  };
+
+  const submitInvite = async (event) => {
+    event.preventDefault();
+    if (!onInviteTeamMember || !canManageTeamAccess) return;
+
+    setIsInviting(true);
+    const result = await onInviteTeamMember(inviteDraft);
+    setIsInviting(false);
+
+    if (result?.ok) {
+      setInviteDraft({ email: "", role: "dispatcher" });
+      showNotice("Team member saved as a pending invite.");
+    } else {
+      showNotice(result?.error || "Could not save team member.");
+    }
   };
 
   const accessorialSettings = appSettings?.accessorials || {
@@ -558,6 +589,7 @@ function SettingsDashboard({ appSettings, setAppSettings, appStateBackendStatus,
               <h2 className={`text-xl font-black ${titleText}`}>{activeSettingsTab}</h2>
               <p className={`text-sm ${mutedText}`}>
                 {activeSettingsTab === "Company" && "Business identity, theme, and accent settings."}
+                {activeSettingsTab === "Team Access" && "Invite users and control what each role can access."}
                 {activeSettingsTab === "Dashboard Layout" && "Control which dashboard sections show and the order they appear in."}
                 {activeSettingsTab === "Claims" && "Set claim review rules, including amount thresholds for risk levels."}
                 {activeSettingsTab === "Accessorials" && "Set default add-on charges used by contracts and route math."}
@@ -611,6 +643,122 @@ function SettingsDashboard({ appSettings, setAppSettings, appStateBackendStatus,
                     background: `linear-gradient(90deg, ${selectedAccent.from}, ${selectedAccent.to})`,
                   }}
                 />
+              </div>
+            </div>
+          )}
+
+          {activeSettingsTab === "Team Access" && (
+            <div className="mt-6 space-y-5">
+              <div className="grid gap-4 xl:grid-cols-[1fr_380px]">
+                <div className={softCard}>
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <h3 className={`text-lg font-black ${titleText}`}>Business Users</h3>
+                      <p className={`mt-1 text-sm leading-6 ${mutedText}`}>
+                        Your account is the owner. Add people here first, then they can be connected to Supabase Auth when the invite email flow is turned on.
+                      </p>
+                    </div>
+                    <span className={isDark ? "w-fit rounded-full bg-blue-500/10 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-200" : "w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700"}>
+                      You are {roleLabelByValue[currentUserRole] || currentUserRole}
+                    </span>
+                  </div>
+
+                  <div className={`mt-4 rounded-xl border px-4 py-3 text-sm font-bold ${isDark ? "border-white/10 bg-slate-950/70 text-slate-200" : "border-slate-200 bg-white text-slate-700"}`}>
+                    {teamAccessStatus || "Team access status will appear here."}
+                  </div>
+                </div>
+
+                <form onSubmit={submitInvite} className={softCard}>
+                  <h3 className={`text-lg font-black ${titleText}`}>Add Team Member</h3>
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Email</label>
+                      <input
+                        type="email"
+                        value={inviteDraft.email}
+                        disabled={!canManageTeamAccess}
+                        onChange={(event) => setInviteDraft((current) => ({ ...current, email: event.target.value }))}
+                        className={inputClass}
+                        placeholder="dispatcher@company.com"
+                      />
+                    </div>
+                    <div>
+                      <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Role</label>
+                      <select
+                        value={inviteDraft.role}
+                        disabled={!canManageTeamAccess}
+                        onChange={(event) => setInviteDraft((current) => ({ ...current, role: event.target.value }))}
+                        className={inputClass}
+                      >
+                        {roleOptions.filter((role) => role.value !== "owner").map((role) => (
+                          <option key={role.value} value={role.value}>{role.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={!canManageTeamAccess || isInviting}
+                      className={!canManageTeamAccess ? "w-full rounded-xl bg-slate-300 px-4 py-3 text-sm font-black text-slate-500" : "w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-500"}
+                    >
+                      {isInviting ? "Saving..." : "Save Pending Invite"}
+                    </button>
+                  </div>
+                  <p className={`mt-3 text-xs leading-5 ${mutedText}`}>
+                    This saves the access record now. Sending invite emails requires a secure backend function because Supabase service keys cannot live in the browser.
+                  </p>
+                </form>
+              </div>
+
+              <div className={cardClass}>
+                <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <h3 className={`text-lg font-black ${titleText}`}>Members and Roles</h3>
+                    <p className={`text-sm ${mutedText}`}>{teamMembers.length} user{teamMembers.length === 1 ? "" : "s"} connected to this business workspace.</p>
+                  </div>
+                </div>
+
+                <div className={`overflow-hidden rounded-2xl border ${rowBorder}`}>
+                  <div className={isDark ? "grid grid-cols-[1.3fr_160px_140px] gap-3 bg-slate-950/70 px-4 py-3 text-xs font-black uppercase tracking-wide text-slate-400" : "grid grid-cols-[1.3fr_160px_140px] gap-3 bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-wide text-slate-500"}>
+                    <span>User</span>
+                    <span>Role</span>
+                    <span>Status</span>
+                  </div>
+
+                  {teamMembers.length === 0 ? (
+                    <div className={`px-4 py-6 text-sm font-bold ${mutedText}`}>No team members loaded yet.</div>
+                  ) : (
+                    teamMembers.map((member) => (
+                      <div key={member.id} className={`grid grid-cols-[1.3fr_160px_140px] items-center gap-3 border-t px-4 py-4 ${rowBorder}`}>
+                        <div className="min-w-0">
+                          <p className={`truncate font-black ${titleText}`}>{member.name || member.email}</p>
+                          <p className={`truncate text-sm ${mutedText}`}>{member.email}</p>
+                        </div>
+                        <select
+                          value={member.role}
+                          disabled={!canManageTeamAccess || member.role === "owner"}
+                          onChange={(event) => onUpdateTeamMemberRole?.({ memberId: member.id, role: event.target.value })}
+                          className={inputClass}
+                        >
+                          {roleOptions.map((role) => (
+                            <option key={role.value} value={role.value}>{role.label}</option>
+                          ))}
+                        </select>
+                        <span className={member.status === "active" ? "w-fit rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700" : "w-fit rounded-full bg-amber-500/10 px-3 py-1 text-xs font-black text-amber-700"}>
+                          {member.status}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {roleOptions.map((role) => (
+                  <div key={role.value} className={softCard}>
+                    <p className={`font-black ${titleText}`}>{role.label}</p>
+                    <p className={`mt-2 text-sm leading-6 ${mutedText}`}>{role.description}</p>
+                  </div>
+                ))}
               </div>
             </div>
           )}

@@ -16,6 +16,7 @@ import AiQuickIntake from "./components/AiQuickIntake";
 import { loadAppStateFromSupabase, saveAppStateToSupabase } from "./lib/appStateRepository";
 import { loadClaimsFromSupabase, syncClaimsToSupabase } from "./lib/claimsRepository";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
+import { addTeamMember, loadTeamAccess, updateTeamMemberRole } from "./lib/teamAccessRepository";
 import {
   accentThemes,
   Bot,
@@ -148,6 +149,9 @@ export default function App() {
   );
   const [authUser, setAuthUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(isSupabaseConfigured);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [currentUserRole, setCurrentUserRole] = useState("owner");
+  const [teamAccessStatus, setTeamAccessStatus] = useState("Team access will load after sign in.");
 
   useEffect(() => {
     localStorage.setItem("finalMileSettings", JSON.stringify(appSettings));
@@ -156,6 +160,19 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("finalMileLoggedIn", String(isLoggedIn));
   }, [isLoggedIn]);
+
+  const refreshTeamAccess = async () => {
+    const result = await loadTeamAccess();
+    if (result.ok) {
+      setTeamMembers(result.members);
+      setCurrentUserRole(result.currentRole);
+      setTeamAccessStatus("Team access synced to Supabase.");
+    } else {
+      setTeamAccessStatus(`Team access unavailable: ${result.error}`);
+    }
+
+    return result;
+  };
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
@@ -185,6 +202,34 @@ export default function App() {
       listener.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!authUser) {
+      setTeamMembers([]);
+      setCurrentUserRole("owner");
+      setTeamAccessStatus("Team access will load after sign in.");
+      return;
+    }
+
+    let isMounted = true;
+    const loadAccess = async () => {
+      const result = await loadTeamAccess();
+      if (!isMounted) return;
+
+      if (result.ok) {
+        setTeamMembers(result.members);
+        setCurrentUserRole(result.currentRole);
+        setTeamAccessStatus("Team access synced to Supabase.");
+      } else {
+        setTeamAccessStatus(`Team access unavailable: ${result.error}`);
+      }
+    };
+
+    loadAccess();
+    return () => {
+      isMounted = false;
+    };
+  }, [authUser]);
 
   useEffect(() => {
     localStorage.setItem("finalMileTeams", JSON.stringify(teams));
@@ -770,6 +815,30 @@ export default function App() {
     setIsLoggedIn(false);
   };
 
+  const inviteTeamMember = async ({ email, role }) => {
+    const result = await addTeamMember({ email, role });
+    if (result.ok) {
+      await refreshTeamAccess();
+      setTeamAccessStatus("Team member saved as a pending invite.");
+    } else {
+      setTeamAccessStatus(`Could not save team member: ${result.error}`);
+    }
+
+    return result;
+  };
+
+  const changeTeamMemberRole = async ({ memberId, role }) => {
+    const result = await updateTeamMemberRole({ memberId, role });
+    if (result.ok) {
+      await refreshTeamAccess();
+      setTeamAccessStatus("Team member role updated.");
+    } else {
+      setTeamAccessStatus(`Could not update role: ${result.error}`);
+    }
+
+    return result;
+  };
+
   if (isAuthLoading) {
     return (
       <div className={isDark ? "flex min-h-screen items-center justify-center bg-slate-950 text-white" : "flex min-h-screen items-center justify-center bg-slate-100 text-slate-950"}>
@@ -974,6 +1043,7 @@ export default function App() {
           <div className="mt-10 text-sm text-slate-500">
             <p>{appSettings.companyName}</p>
             <p>{authUser?.email || "Owner Account"}</p>
+            <p className="mt-1 text-xs font-black uppercase tracking-wide">{currentUserRole}</p>
               <button onClick={signOut} className="mt-3 rounded-lg px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-500/10">Sign Out</button>
           </div>
         </aside>
@@ -1235,6 +1305,11 @@ export default function App() {
                 setAppSettings={setAppSettings}
                 appStateBackendStatus={appStateBackendStatus}
                 claimsBackendStatus={claimsBackendStatus}
+                teamMembers={teamMembers}
+                currentUserRole={currentUserRole}
+                teamAccessStatus={teamAccessStatus}
+                onInviteTeamMember={inviteTeamMember}
+                onUpdateTeamMemberRole={changeTeamMemberRole}
               />
             ) : activeTab === "Profitability" ? (
               <ProfitabilityDashboard
