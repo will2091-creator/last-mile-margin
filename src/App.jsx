@@ -920,8 +920,8 @@ export default function App() {
         }
       `}</style>
 
-      <div className="flex min-h-screen">
-        <aside className={isDark ? "sticky top-0 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-slate-950 p-5 lg:block" : "sticky top-0 hidden h-screen w-72 overflow-y-auto border-r border-slate-200 bg-white p-5 lg:block"}>
+      <div className="flex min-h-screen overflow-x-hidden">
+        <aside className={isDark ? "sticky top-0 hidden h-screen w-72 shrink-0 overflow-y-auto border-r border-white/10 bg-slate-950 p-5 lg:block" : "sticky top-0 hidden h-screen w-72 shrink-0 overflow-y-auto border-r border-slate-200 bg-white p-5 lg:block"}>
           <div className="mb-6 flex justify-center">
             <img
               src={isDark ? lastMileMarginLogoDark : lastMileMarginLogo}
@@ -978,7 +978,7 @@ export default function App() {
           </div>
         </aside>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
           <div className="mx-auto mb-5 flex max-w-[1600px] flex-wrap items-center justify-end gap-3">
             <button
               onClick={saveCurrentDay}
