@@ -58,7 +58,7 @@ export default function FinanceDashboard({
 
   return (
     <div>
-      <section className={shellClass}>
+      <section data-tour="finance-header" className={shellClass}>
         <p className="text-xs font-black uppercase tracking-wide text-blue-600">Finance</p>
         <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -93,7 +93,7 @@ export default function FinanceDashboard({
         </div>
       )}
 
-      <section className={isDark ? "mb-5 grid gap-3 rounded-2xl border border-white/10 bg-slate-900/80 p-4 shadow-xl shadow-black/20 md:grid-cols-3" : "mb-5 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-3"}>
+      <section data-tour="finance-sections" className={isDark ? "mb-5 grid gap-3 rounded-2xl border border-white/10 bg-slate-900/80 p-4 shadow-xl shadow-black/20 md:grid-cols-3" : "mb-5 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-3"}>
         {[
           ["Profitability", "Route math", Calculator, "Revenue, costs, margin"],
           ["Receipts", "Expense proof", ReceiptText, "Gas, tools, maintenance"],
@@ -113,30 +113,36 @@ export default function FinanceDashboard({
       </section>
 
       {activeSection === "Receipts" ? (
-        <ReceiptsDashboard isDark={isDark} isBlankDemo={isBlankDemo} isDemoMode={isDemoMode} navigateToTab={navigateToTab} />
+        <div data-tour="finance-active-workflow">
+          <ReceiptsDashboard isDark={isDark} isBlankDemo={isBlankDemo} isDemoMode={isDemoMode} navigateToTab={navigateToTab} />
+        </div>
       ) : activeSection === "Contracts" ? (
-        <ContractsDashboard teams={teams} claims={claims} isDark={isDark} navigateToTab={navigateToTab} isBlankDemo={isBlankDemo} isDemoMode={isDemoMode} />
+        <div data-tour="finance-active-workflow">
+          <ContractsDashboard teams={teams} claims={claims} isDark={isDark} navigateToTab={navigateToTab} isBlankDemo={isBlankDemo} isDemoMode={isDemoMode} />
+        </div>
       ) : (
-        <ProfitabilityDashboard
-          form={form}
-          update={update}
-          results={results}
-          grade={grade}
-          risks={risks}
-          savedScenarios={savedScenarios}
-          saveScenario={saveScenario}
-          loadScenario={loadScenario}
-          deleteScenario={deleteScenario}
-          exportSummary={exportSummary}
-          resetForm={resetForm}
-          isDark={isDark}
-          appSettings={appSettings}
-          isBlankDemo={isBlankDemo}
-          isDemoMode={isDemoMode}
-          navigateToTab={navigateToTab}
-          teams={teams}
-          claims={claims}
-        />
+        <div data-tour="finance-active-workflow">
+          <ProfitabilityDashboard
+            form={form}
+            update={update}
+            results={results}
+            grade={grade}
+            risks={risks}
+            savedScenarios={savedScenarios}
+            saveScenario={saveScenario}
+            loadScenario={loadScenario}
+            deleteScenario={deleteScenario}
+            exportSummary={exportSummary}
+            resetForm={resetForm}
+            isDark={isDark}
+            appSettings={appSettings}
+            isBlankDemo={isBlankDemo}
+            isDemoMode={isDemoMode}
+            navigateToTab={navigateToTab}
+            teams={teams}
+            claims={claims}
+          />
+        </div>
       )}
     </div>
   );

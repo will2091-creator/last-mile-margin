@@ -676,7 +676,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
   return (
     <div className="space-y-5">
       {standalone && (
-        <div>
+        <div data-tour="intake-header">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-black uppercase tracking-wide text-white">Intake</span>
             {isDemoMode && (
@@ -696,7 +696,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
       )}
 
       {standalone && (
-        <section className={isDark ? "rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4" : "rounded-2xl border border-blue-100 bg-blue-50 p-4"}>
+        <section data-tour="intake-examples" className={isDark ? "rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4" : "rounded-2xl border border-blue-100 bg-blue-50 p-4"}>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             {[
               ["Claim emails", AlertTriangle, "damage, penalties, cargo, property"],
@@ -737,6 +737,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
       )}
 
       <div
+        data-tour="intake-drop-zone"
         onDragEnter={(event) => {
           event.preventDefault();
           setIsDragging(true);
@@ -825,7 +826,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.45fr_0.85fr]">
-        <div className={cardClass}>
+        <div data-tour="intake-review-draft" className={cardClass}>
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -930,7 +931,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
           </div>
         </div>
 
-        <div className={cardClass}>
+        <div data-tour="intake-next-step" className={cardClass}>
           <h2 className={`text-lg font-black ${titleText}`}>Next Step</h2>
           <p className={`mt-2 text-sm leading-6 ${mutedText}`}>
             {isClaimDraft ? "Save the draft when the claim details look right." : "Choose where you want to send this intake after review."}
@@ -1027,7 +1028,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
-        <div className={cardClass}>
+        <div data-tour="intake-recent" className={cardClass}>
           <h2 className={`text-lg font-black ${titleText}`}>Recent Intakes</h2>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[680px] text-left text-sm">

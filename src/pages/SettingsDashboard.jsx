@@ -548,7 +548,7 @@ function SettingsDashboard({
 
   return (
     <div className={pageClass}>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div data-tour="settings-header" className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className={`text-3xl font-black tracking-tight ${titleText}`}>Settings</h1>
           <p className={`mt-1 text-sm ${mutedText}`}>Configure your business, dashboard, and margin calculation preferences.</p>
@@ -563,7 +563,7 @@ function SettingsDashboard({
         </button>
       </div>
 
-      <div className={cardClass}>
+      <div data-tour="settings-backend-sync" className={cardClass}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
             <div className={toneStyles.emerald + " flex h-11 w-11 items-center justify-center rounded-2xl"}>
@@ -586,7 +586,7 @@ function SettingsDashboard({
         </div>
       </div>
 
-      <div className={isDemoMode ? (isDark ? "rounded-2xl border border-blue-400/30 bg-blue-500/15 p-5 shadow-xl shadow-black/20" : "rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm") : cardClass}>
+      <div data-tour="settings-demo-workspace" className={isDemoMode ? (isDark ? "rounded-2xl border border-blue-400/30 bg-blue-500/15 p-5 shadow-xl shadow-black/20" : "rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm") : cardClass}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
             <div className={toneStyles.blue + " flex h-11 w-11 items-center justify-center rounded-2xl"}>
@@ -642,7 +642,7 @@ function SettingsDashboard({
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+      <div data-tour="settings-onboarding-controls" className="grid gap-5 xl:grid-cols-[1fr_360px]">
         <div className={cardClass}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -696,7 +696,7 @@ function SettingsDashboard({
         </div>
       </div>
 
-      <div className={`flex gap-7 overflow-x-auto border-b ${rowBorder}`}>
+      <div data-tour="settings-tab-selector" className={`flex gap-7 overflow-x-auto border-b ${rowBorder}`}>
         {tabs.map((tab) => (
           <button
             key={tab}
@@ -719,7 +719,7 @@ function SettingsDashboard({
       )}
 
       {activeSettingsTab !== "Margin Factors" ? (
-        <div className={cardClass}>
+        <div data-tour="settings-active-panel" className={cardClass}>
           <div className="flex items-center gap-3">
             <div className={toneStyles.blue + " flex h-12 w-12 items-center justify-center rounded-2xl"}>
               <Settings className="h-6 w-6" />
@@ -774,7 +774,7 @@ function SettingsDashboard({
                   ))}
                 </select>
               </div>
-              <div className={softCard}>
+              <div data-tour="settings-formula-preview" className={softCard}>
                 <p className={`text-sm font-black ${mutedText}`}>Selected Accent</p>
                 <div
                   className="mt-3 h-10 rounded-xl"
@@ -1277,14 +1277,14 @@ function SettingsDashboard({
             </div>
           </div>
 
-          <div className="grid gap-5 xl:grid-cols-3">
+          <div data-tour="settings-factor-cards" className="grid gap-5 xl:grid-cols-3">
             {categoryCards.map((card) => (
               <FactorCard key={card.key} card={card} />
             ))}
           </div>
 
           <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
-            <div className={cardClass}>
+            <div data-tour="settings-preview-impact" className={cardClass}>
               <div className="mb-5 flex items-center gap-3">
                 <div className={toneStyles.blue + " flex h-11 w-11 items-center justify-center rounded-2xl"}>
                   <FileText className="h-5 w-5" />
@@ -1311,7 +1311,7 @@ function SettingsDashboard({
               </div>
             </div>
 
-            <div className={cardClass}>
+            <div data-tour="settings-advanced-options" className={cardClass}>
               <div className="mb-5 flex items-center gap-3">
                 <div className={toneStyles.blue + " flex h-11 w-11 items-center justify-center rounded-2xl"}>
                   <ShieldCheck className="h-5 w-5" />

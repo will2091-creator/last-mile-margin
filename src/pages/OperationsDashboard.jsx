@@ -108,7 +108,7 @@ export default function OperationsDashboard({
 
   return (
     <div>
-      <section className={shellClass}>
+      <section data-tour="operations-header" className={shellClass}>
         <p className="text-xs font-black uppercase tracking-wide text-blue-600">Operations</p>
         <div className="mt-2">
           <div>
@@ -120,7 +120,7 @@ export default function OperationsDashboard({
         </div>
       </section>
 
-      <section className={subTabShellClass}>
+      <section data-tour="operations-sections" className={subTabShellClass}>
         <div className="grid gap-2 lg:grid-cols-4">
           {operationTabs.map((tab) => {
             const Icon = tab.icon;
@@ -185,7 +185,7 @@ export default function OperationsDashboard({
         </div>
       ) : null}
 
-      <section className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section data-tour="operations-metrics" className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <OperationMetric
           isDark={isDark}
           icon={FileText}
@@ -224,7 +224,7 @@ export default function OperationsDashboard({
         />
       </section>
 
-      <section className={actionClass}>
+      <section data-tour="operations-next-move" className={actionClass}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <div className={isDark ? "rounded-2xl bg-blue-400/15 p-3 text-blue-200" : "rounded-2xl bg-white p-3 text-blue-600 shadow-sm"}>
@@ -248,13 +248,21 @@ export default function OperationsDashboard({
       </section>
 
       {activeSection === "Dispatch" ? (
-        <DispatchBoard teams={teams} claims={openClaims} isDark={isDark} setActiveSection={goToSection} />
+        <div data-tour="operations-active-workflow">
+          <DispatchBoard teams={teams} claims={openClaims} isDark={isDark} setActiveSection={goToSection} />
+        </div>
       ) : activeSection === "Teams" ? (
-        <TeamsDashboard teams={teams} setTeams={setTeams} claims={claims} isDark={isDark} />
+        <div data-tour="operations-active-workflow">
+          <TeamsDashboard teams={teams} setTeams={setTeams} claims={claims} isDark={isDark} />
+        </div>
       ) : activeSection === "Compliance" ? (
-        <ComplianceDashboard teams={teams} claims={claims} isDark={isDark} navigateToTab={navigateToTab} />
+        <div data-tour="operations-active-workflow">
+          <ComplianceDashboard teams={teams} claims={claims} isDark={isDark} navigateToTab={navigateToTab} />
+        </div>
       ) : (
-        <ClaimsDashboard claims={claims} setClaims={setClaims} teams={teams} isDark={isDark} appSettings={appSettings} backendStatus={claimsBackendStatus} navigateToTab={navigateToTab} />
+        <div data-tour="operations-active-workflow">
+          <ClaimsDashboard claims={claims} setClaims={setClaims} teams={teams} isDark={isDark} appSettings={appSettings} backendStatus={claimsBackendStatus} navigateToTab={navigateToTab} />
+        </div>
       )}
     </div>
   );

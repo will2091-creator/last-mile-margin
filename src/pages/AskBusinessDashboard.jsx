@@ -716,7 +716,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
 
   return (
     <div className={isDark ? "space-y-5 text-white" : "space-y-5 text-slate-950"}>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div data-tour="ask-header" className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-black uppercase tracking-wide text-white">Ask My Business</span>
@@ -729,7 +729,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
         </div>
       </div>
 
-      <div className={isDark ? "rounded-2xl border border-blue-400/20 bg-blue-500/10 p-5" : "rounded-2xl border border-blue-100 bg-blue-50 p-5"}>
+      <div data-tour="ask-briefing" className={isDark ? "rounded-2xl border border-blue-400/20 bg-blue-500/10 p-5" : "rounded-2xl border border-blue-100 bg-blue-50 p-5"}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white">
@@ -747,14 +747,16 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
         </div>
       </div>
 
-      <DataHealthChecklist
-        isDark={isDark}
-        status={setupStatus}
-        compact
-        onAction={(item) => item?.tab && navigateToTab(item.tab)}
-      />
+      <div data-tour="ask-data-health">
+        <DataHealthChecklist
+          isDark={isDark}
+          status={setupStatus}
+          compact
+          onAction={(item) => item?.tab && navigateToTab(item.tab)}
+        />
+      </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div data-tour="ask-suggested-prompts" className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {suggestedModes.map((mode) => {
           const Icon = mode.icon;
           return (
@@ -780,7 +782,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
-        <div className={cardClass}>
+        <div data-tour="ask-answer-panel" className={cardClass}>
           <div className="flex items-start gap-4">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white">
               <Brain className="h-6 w-6" />
@@ -836,7 +838,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
           </div>
         </div>
 
-        <div className={cardClass}>
+        <div data-tour="ask-question-box" className={cardClass}>
           <div className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-blue-600" />
             <h2 className={`text-lg font-black ${titleText}`}>Ask a Question</h2>
@@ -875,7 +877,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
       </div>
 
       {conversation.length > 0 && (
-        <div className={cardClass}>
+        <div data-tour="ask-recent-questions" className={cardClass}>
           <h2 className={`text-lg font-black ${titleText}`}>Recent Questions</h2>
           <div className="mt-4 space-y-3">
             {conversation.map((item) => (
@@ -895,7 +897,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
         </div>
       )}
 
-      <div className={isDark ? "rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4" : "rounded-2xl border border-amber-200 bg-amber-50 p-4"}>
+      <div data-tour="ask-disclaimer" className={isDark ? "rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4" : "rounded-2xl border border-amber-200 bg-amber-50 p-4"}>
         <div className="flex items-start gap-3">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
           <p className={isDark ? "text-sm font-semibold leading-6 text-amber-100" : "text-sm font-semibold leading-6 text-amber-900"}>

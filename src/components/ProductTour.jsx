@@ -33,7 +33,7 @@ function getElementRect(element) {
   };
 }
 
-export default function ProductTour({ isOpen, isDark = false, onFinish, onSkip }) {
+export default function ProductTour({ isOpen, isDark = false, onFinish, onSkip, onNavigate }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
   const tooltipRef = useRef(null);
@@ -53,17 +53,21 @@ export default function ProductTour({ isOpen, isDark = false, onFinish, onSkip }
   useEffect(() => {
     if (!isOpen) return undefined;
 
-    const element = findStepElement(step);
-    if (element) {
-      element.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
-    }
+    onNavigate?.(step.tab);
 
+    const scrollTimer = window.setTimeout(() => {
+      const element = findStepElement(step);
+      if (element) {
+        element.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+      }
+    }, 90);
     const frame = window.requestAnimationFrame(updateTargetRect);
-    const timer = window.setTimeout(updateTargetRect, 260);
+    const timer = window.setTimeout(updateTargetRect, 360);
     window.addEventListener("resize", updateTargetRect);
     window.addEventListener("scroll", updateTargetRect, true);
 
     return () => {
+      window.clearTimeout(scrollTimer);
       window.cancelAnimationFrame(frame);
       window.clearTimeout(timer);
       window.removeEventListener("resize", updateTargetRect);

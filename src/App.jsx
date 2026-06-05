@@ -1923,6 +1923,7 @@ export default function App() {
           isDark={isDark}
           onFinish={finishProductTour}
           onSkip={skipProductTour}
+          onNavigate={navigateToTab}
         />
         <GuidedDemoTour
           isOpen={isGuidedDemoOpen}

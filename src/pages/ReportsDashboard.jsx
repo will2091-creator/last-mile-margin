@@ -424,7 +424,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
 
   return (
     <div className={isDark ? "space-y-6 text-white" : "space-y-6 text-slate-950"}>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div data-tour="reports-header" className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className={`text-3xl font-black tracking-tight sm:text-4xl ${titleText}`}>Reports</h1>
           <p className={`mt-2 text-sm sm:text-base ${mutedText}`}>
@@ -459,10 +459,12 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
         />
       )}
 
-      <DataHealthChecklist isDark={isDark} status={setupStatus} compact onAction={(item) => item?.tab && navigateToTab?.(item.tab)} />
+      <div data-tour="reports-data-health">
+        <DataHealthChecklist isDark={isDark} status={setupStatus} compact onAction={(item) => item?.tab && navigateToTab?.(item.tab)} />
+      </div>
 
       {selectedReport && (
-        <div className={cardClass}>
+        <div data-tour="reports-preview" className={cardClass}>
           <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm font-bold text-blue-600">Report Preview</p>
@@ -503,7 +505,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
         </div>
       )}
 
-      <div className={cardClass}>
+      <div data-tour="reports-center" className={cardClass}>
         <h2 className={`text-xl font-black ${titleText}`}>Report Center</h2>
 
         <div className="mt-5 grid gap-5 xl:grid-cols-3">
@@ -566,7 +568,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
       </div>
 
       <div className="grid gap-6 xl:grid-cols-12">
-        <div className={`${cardClass} xl:col-span-3`}>
+        <div data-tour="reports-filters" className={`${cardClass} xl:col-span-3`}>
           <h2 className={`text-lg font-black ${titleText}`}>Filters</h2>
 
           <div className="mt-5 space-y-4">
@@ -623,7 +625,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
           </div>
         </div>
 
-        <div className={`${cardClass} xl:col-span-6`}>
+        <div data-tour="reports-recent-exports" className={`${cardClass} xl:col-span-6`}>
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h2 className={`text-lg font-black ${titleText}`}>Recent Exports</h2>
@@ -676,7 +678,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
           </button>
         </div>
 
-        <div className={`${cardClass} xl:col-span-3`}>
+        <div data-tour="reports-insights" className={`${cardClass} xl:col-span-3`}>
           <h2 className={`text-lg font-black ${titleText}`}>Report Insights</h2>
           <p className={`text-sm ${mutedText}`}>Key metrics from this period.</p>
 
