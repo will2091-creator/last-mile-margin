@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowRight, CheckCircle2, Map, X } from "lucide-react";
-import { businessJourney, guidedDemoSteps } from "./guidedDemoContent";
+import { CheckCircle2, X } from "lucide-react";
+import { guidedDemoSteps } from "./guidedDemoContent";
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
@@ -94,7 +94,7 @@ export default function GuidedDemoTour({ isOpen, isDark = false, onClose, onComp
   const panelPosition = useMemo(() => {
     if (typeof window === "undefined") return {};
     const width = Math.min(460, window.innerWidth - 32);
-    const estimatedHeight = step.completion ? 560 : 500;
+    const estimatedHeight = step.walkthrough?.length ? 640 : 560;
 
     if (!targetRect) {
       return {
@@ -194,29 +194,42 @@ export default function GuidedDemoTour({ isOpen, isDark = false, onClose, onComp
           <p className={isDark ? "mt-1 text-sm font-bold leading-6 text-emerald-50" : "mt-1 text-sm font-bold leading-6 text-emerald-900"}>{step.story}</p>
         </div>
 
-        {step.completion ? (
-          <div className="mt-4">
-            <div className="flex items-center gap-2">
-              <Map className="h-4 w-4 text-blue-600" />
-              <p className={`text-sm font-black ${titleText}`}>Business Journey Map</p>
-            </div>
+        {step.walkthrough?.length > 0 && (
+          <div className={isDark ? "mt-3 rounded-2xl border border-white/10 bg-slate-950/60 p-4" : "mt-3 rounded-2xl border border-slate-200 bg-white p-4"}>
+            <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>Dashboard readout</p>
             <div className="mt-3 grid gap-2">
-              {businessJourney.map((item, index) => (
-                <div key={item} className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white">{index + 1}</span>
-                  <span className={isDark ? "flex-1 rounded-xl bg-white/5 px-3 py-2 text-sm font-black text-white" : "flex-1 rounded-xl bg-slate-50 px-3 py-2 text-sm font-black text-slate-800"}>{item}</span>
-                  {index < businessJourney.length - 1 && <ArrowRight className="h-4 w-4 text-blue-600" />}
+              {step.walkthrough.map((item, index) => (
+                <div key={item} className="flex gap-2">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[10px] font-black text-white">{index + 1}</span>
+                  <p className={`text-xs font-bold leading-5 ${mutedText}`}>{item}</p>
                 </div>
               ))}
             </div>
           </div>
-        ) : (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {step.metrics.map((metric) => (
-              <span key={metric} className={isDark ? "rounded-full bg-white/5 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
-                {metric}
-              </span>
-            ))}
+        )}
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {step.metrics.map((metric) => (
+            <span key={metric} className={isDark ? "rounded-full bg-white/5 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
+              {metric}
+            </span>
+          ))}
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-3" : "rounded-2xl border border-slate-200 bg-slate-50 p-3"}>
+            <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>What to enter</p>
+            <p className={`mt-1 text-xs font-bold leading-5 ${mutedText}`}>{step.dataToEnter}</p>
+          </div>
+          <div className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-3" : "rounded-2xl border border-slate-200 bg-slate-50 p-3"}>
+            <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>Owner decision</p>
+            <p className={`mt-1 text-xs font-bold leading-5 ${mutedText}`}>{step.ownerDecision}</p>
+          </div>
+        </div>
+
+        {step.nextTab && step.nextTab !== "Complete" && (
+          <div className={isDark ? "mt-3 rounded-xl bg-white/5 px-3 py-2 text-xs font-black text-slate-300" : "mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs font-black text-slate-600"}>
+            Next tab: {step.nextTab}
           </div>
         )}
 
@@ -254,9 +267,9 @@ export default function GuidedDemoTour({ isOpen, isDark = false, onClose, onComp
             className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500"
           >
             {isLast ? (
-              <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Finish</span>
+              <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> {step.nextLabel || "Finish Walkthrough"}</span>
             ) : (
-              "Next"
+              step.nextLabel || "Next Step"
             )}
           </button>
         </div>

@@ -3,258 +3,284 @@ export const guidedDemoSteps = [
     id: "dashboard",
     tab: "Dashboard",
     eyebrow: "Step 1",
-    title: "Dashboard: the margin command center",
+    title: "Dashboard: your command center",
     lesson:
-      "Final Mile Margin shows whether a route business is making money after labor, fuel, trucks, claims, receipts, and contract terms are counted.",
+      "Start every day here. The Dashboard gives the owner the Today, Week, Month, Quarter, and Year view of the business so profit, revenue, costs, claims exposure, margin, route health, saved routes, recent claims, team readiness, compliance, recent activity, and needs-attention items are visible before you click anywhere else.",
     why:
-      "Start here to see revenue, profit, claims exposure, compliance, teams, and contracts in one owner view.",
+      "This page exists so a contractor can quickly understand what is happening, what is costing money, and what needs action today.",
     story:
-      "Demo Fleet runs Route 14 for Lowe's Appliance Delivery. This week the route generated revenue, picked up fuel and toll costs, and received one property damage claim that now affects margin.",
-    metrics: ["Weekly revenue", "Net profit", "Open claims", "Compliance score", "Active teams"],
-    outcome: "Owners know what needs attention before money leaks become normal.",
+      "In the demo, Route 14 starts as the main business story. The Dashboard shows whether the route is healthy, whether claims are creating exposure, whether teams are ready, and what the owner should click next.",
+    walkthrough: [
+      "Time views: switch Today, Week, Month, Quarter, or Year to see margin over different operating windows.",
+      "Profit, revenue, costs, and margin: show whether the work is worth running.",
+      "Claims exposure and recent claims: show money at risk before it becomes normal loss.",
+      "Route health, saved routes, and saved days: show which routes and periods have history.",
+      "Needs attention: turns scattered problems into a short owner action list.",
+      "Team readiness and compliance: show whether the people, trucks, proof, and documents are ready for work.",
+      "Recent activity: shows what changed recently so the owner does not have to hunt.",
+      "Next action: tells the user exactly which tab to open next.",
+    ],
+    dataToEnter:
+      "The Dashboard is mostly a readout. It becomes useful after contracts, teams, route costs, claims, receipts, compliance items, and saved snapshots are entered.",
+    ownerDecision:
+      "The owner decides what needs attention first: set up contracts, fix a claim, review profit, check team readiness, or save a snapshot.",
+    metrics: ["Today / Week / Month / Qtr / Year", "Profit", "Revenue", "Costs", "Claims exposure", "Margin", "Route health", "Needs attention"],
+    outcome: "The owner gets a daily command center instead of guessing from spreadsheets, texts, and emails.",
+    nextTab: "Contracts",
+    nextLabel: "Next: Set Up Contracts",
     selector: '[data-tour="dashboard-overview"]',
   },
   {
-    id: "operations",
-    tab: "Operations",
+    id: "contracts",
+    tab: "Contracts",
     eyebrow: "Step 2",
-    title: "Operations: where route execution happens",
+    title: "Contracts: rate terms come before profit",
     lesson:
-      "Operations connects dispatch, teams, claims, and compliance so field work has an owner and every issue can be followed back to the route.",
+      "Contracts come before profitability because the app needs the rate terms first: retailer or customer, route pay, stop pay, weekly route count, contract terms, active contracts, renewals, and contract performance.",
     why:
-      "This is the daily execution layer. It tells you who ran the work, what went wrong, and what must be cleaned up.",
+      "If the contract terms are wrong, every profit calculation after this is wrong.",
     story:
-      "Route 14 is assigned to North Route Team. When a claim appears, Operations shows the team, route, photos, and compliance context.",
-    metrics: ["Ready teams", "Missing photos", "Open exposure", "Compliance blockers"],
-    outcome: "Field problems become trackable work instead of scattered texts and emails.",
-    selector: '[data-tour-nav="operations"]',
+      "Route 14 runs under the Lowe's Appliance Delivery contract. That contract tells the app how revenue is created before costs and claims are subtracted.",
+    dataToEnter:
+      "Retailer/customer, route pay, stop pay, weekly route count, contract status, renewal date, active terms, claim terms, and any accessorial pay rules.",
+    ownerDecision:
+      "The owner can decide whether a contract is worth keeping, needs renegotiation, or deserves more route capacity.",
+    metrics: ["Retailer / customer", "Route pay", "Stops", "Weekly route count", "Renewals", "Contract performance"],
+    outcome: "Revenue has a trusted source before the app starts calculating margin.",
+    nextTab: "Teams",
+    nextLabel: "Next: Add Teams",
+    selector: '[data-tour="contracts"], [data-tour-nav="finance"]',
   },
   {
     id: "teams",
     tab: "Teams",
     eyebrow: "Step 3",
-    title: "Teams: drivers, helpers, trucks, and assignments",
+    title: "Teams: who is doing the work",
     lesson:
-      "Teams stores the people and equipment doing the work: driver, helper, truck, route assignment, readiness, and photo status.",
+      "Teams explains the people and trucks behind the route: drivers, helpers, trucks, readiness, assigned routes, compliance status, and photo proof or daily requirements.",
     why:
-      "Profit and claims only make sense when they can be tied back to the team that ran the route.",
+      "Profit and claims need an owner. Teams connect field execution to route performance, claim risk, and compliance.",
     story:
-      "North Route Team runs Route 14 with Truck 214. Their route revenue, claim exposure, and compliance score all feed other pages.",
-    metrics: ["Route owner", "Photo status", "Compliance score", "Routes completed"],
-    outcome: "You can coach teams, prove readiness, and see which crews protect margin.",
+      "North Route Team runs Route 14 with Truck 214. Their readiness, photo proof, and compliance status flow into Dashboard, Claims, Profitability, Reports, and Ask.",
+    dataToEnter:
+      "Drivers, helpers, trucks, assigned routes, route teams, readiness status, compliance score, daily photo proof, and route requirements.",
+    ownerDecision:
+      "The owner can decide which teams are ready, which teams need coaching, and which team should own a route or claim.",
+    metrics: ["Drivers", "Helpers", "Trucks", "Assigned routes", "Readiness", "Compliance status", "Photo proof"],
+    outcome: "Work is tied to accountable teams instead of floating around without ownership.",
+    nextTab: "Profitability",
+    nextLabel: "Next: Review Profitability",
     selector: '[data-tour="teams"], [data-tour-nav="operations"]',
-  },
-  {
-    id: "claims",
-    tab: "Claims",
-    eyebrow: "Step 4",
-    title: "Claims: damage, chargebacks, disputes, and resolutions",
-    lesson:
-      "Claims tracks damage claims, customer issues, chargebacks, dispute status, evidence gaps, and the financial exposure tied to a route.",
-    why:
-      "Claims directly reduce profit and can affect contractor scorecards, renewals, and customer trust.",
-    story:
-      "A wall damage claim on Route 14 is assigned to North Route Team. The claim appears in Operations, reduces profitability, and rolls into Reports and Ask.",
-    metrics: ["Open exposure", "Under review", "Closed claims", "Dispute readiness"],
-    outcome: "Losses become measurable and disputable instead of silently eating margin.",
-    selector: '[data-tour="claims"], [data-tour-nav="operations"]',
-  },
-  {
-    id: "compliance",
-    tab: "Compliance",
-    eyebrow: "Step 5",
-    title: "Compliance: audit readiness and document control",
-    lesson:
-      "Compliance tracks insurance, driver documents, vehicle documents, proof photos, expirations, and readiness blockers.",
-    why:
-      "Retail delivery work depends on being ready for audits, route requirements, and claim packet reviews.",
-    story:
-      "Truck 214 and the Route 14 driver have documents tied to the same business story as the contract, claims, and team records.",
-    metrics: ["Compliance score", "Expiring documents", "Missing photos", "Audit blockers"],
-    outcome: "You reduce preventable penalties and keep routes eligible for work.",
-    selector: '[data-tour-nav="operations"]',
-  },
-  {
-    id: "finance",
-    tab: "Finance",
-    eyebrow: "Step 6",
-    title: "Finance: are you actually making money?",
-    lesson:
-      "Finance groups contract terms, receipts, and route profitability because margin only works when revenue and expenses are connected.",
-    why:
-      "A route can look busy and still lose money. Finance shows the truth after costs and claims.",
-    story:
-      "Lowe's pays route and stop revenue, receipts add fuel and toll costs, and the claim reduces profit. Finance puts those together.",
-    metrics: ["Revenue", "Expenses", "Net profit", "Margin percentage"],
-    outcome: "Owners can decide what to renegotiate, fix, or stop doing.",
-    selector: '[data-tour-nav="finance"]',
-  },
-  {
-    id: "contracts",
-    tab: "Contracts",
-    eyebrow: "Step 7",
-    title: "Contracts: the source of route revenue",
-    lesson:
-      "Contracts store customer agreements, route pay, stop pay, accessorials, renewal dates, and claim terms.",
-    why:
-      "Contract terms drive revenue calculations and explain why one route pays better than another.",
-    story:
-      "The Lowe's Appliance Delivery contract powers Route 14 revenue: base route pay, per-stop pay, install pay, fuel surcharge, and claim packet rules.",
-    metrics: ["Route pay", "Stop pay", "Claim terms", "Renewal date", "Contract margin"],
-    outcome: "You can see which customers and routes deserve more trucks, higher rates, or renegotiation.",
-    selector: '[data-tour="contracts"], [data-tour-nav="finance"]',
-  },
-  {
-    id: "receipts",
-    tab: "Receipts",
-    eyebrow: "Step 8",
-    title: "Receipts: proof of expenses",
-    lesson:
-      "Receipts capture fuel, maintenance, tolls, supplies, tools, and other route costs from the field.",
-    why:
-      "Expenses reduce margin. Without receipts, route profit is just a guess.",
-    story:
-      "Route 14 includes a fuel receipt and toll receipt. Those costs lower net profit and appear in finance reports.",
-    metrics: ["Fuel", "Maintenance", "Tolls", "Supplies", "Owner expenses"],
-    outcome: "You get cleaner margins, better reimbursement records, and stronger reporting.",
-    selector: '[data-tour-nav="finance"]',
   },
   {
     id: "profitability",
     tab: "Profitability",
-    eyebrow: "Step 9",
-    title: "Profitability: how margin is calculated",
+    eyebrow: "Step 4",
+    title: "Profitability: how the money is calculated",
     lesson:
-      "Profitability subtracts labor, fuel, truck, insurance, maintenance, claims, and other costs from route revenue.",
+      "Profitability turns contract revenue into real margin by subtracting labor, fuel, truck insurance, maintenance, claims, and other costs. It shows profit per route, profit per stop, margin, saved scenarios, and saved days.",
     why:
-      "This is where revenue becomes net profit, profit per stop, profit per mile, and profit per labor hour.",
+      "A route can look busy and still lose money. This tab shows whether the route actually pays after the real costs are counted.",
     story:
-      "Route 14 starts with contract revenue, then subtracts driver/helper pay, fuel, truck costs, maintenance reserve, and claim exposure.",
-    metrics: ["Net profit", "Profit per stop", "Profit per mile", "Profit per hour", "Target profit"],
-    outcome: "You can price routes, coach teams, and spot money leaks before they repeat.",
+      "Route 14 starts with Lowe's contract revenue, then subtracts driver/helper labor, fuel, truck insurance, maintenance reserve, claim exposure, and other costs.",
+    dataToEnter:
+      "Revenue terms, labor, fuel, truck insurance, maintenance, claims reserve, tolls, parking, other costs, target profit, and scenario details.",
+    ownerDecision:
+      "The owner can decide whether to keep running the route, raise rates, change staffing, reduce costs, or save the scenario/day for reporting.",
+    metrics: ["Revenue", "Labor", "Fuel", "Insurance", "Maintenance", "Claims", "Other costs", "Profit per route", "Profit per stop", "Margin"],
+    outcome: "The business can price routes and spot money leaks before they repeat.",
+    nextTab: "Claims",
+    nextLabel: "Next: Control Claims",
     selector: '[data-tour="expenses"], [data-tour-nav="finance"]',
+  },
+  {
+    id: "claims",
+    tab: "Claims",
+    eyebrow: "Step 5",
+    title: "Claims: the money leak control center",
+    lesson:
+      "Claims tracks open claims, needs-review items, risk level, claim amount, evidence needed, assigned driver, dispute readiness, and resolved claims.",
+    why:
+      "Claims directly reduce profit. This tab helps stop chargebacks and disputes from silently eating route margin.",
+    story:
+      "The Route 14 wall damage claim is tied to North Route Team and reduces profit until evidence is collected, reviewed, disputed, or resolved.",
+    dataToEnter:
+      "Claim type, amount, route, team, driver, risk level, status, evidence needs, notes, dispute readiness, and resolution outcome.",
+    ownerDecision:
+      "The owner can decide which claims need evidence, which can be disputed, which are high risk, and which are already resolved.",
+    metrics: ["Open claims", "Needs review", "Risk level", "Claim amount", "Evidence needed", "Driver assigned", "Dispute readiness", "Resolved claims"],
+    outcome: "Claim losses become visible, prioritized, and actionable.",
+    nextTab: "Intake",
+    nextLabel: "Next: Import Documents",
+    selector: '[data-tour="claims"], [data-tour-nav="operations"]',
+  },
+  {
+    id: "intake",
+    tab: "Intake",
+    eyebrow: "Step 6",
+    title: "Intake: raw business info comes in here",
+    lesson:
+      "Intake is where unstructured business information enters the system: claim emails, contract notes, receipts, route sheets, documents, and AI Quick Intake results.",
+    why:
+      "Contractors do not want to manually type everything. Intake lets them paste or upload raw info, review it, and save it to Claims, Receipts, Contracts, or route records.",
+    story:
+      "A Lowe's rate card, Route 14 sheet, Shell fuel receipt, and wall damage claim email can all start here before being routed into the right tab.",
+    dataToEnter:
+      "Claim emails, contract notes, receipts, route sheets, documents, screenshots, PDFs, and notes for AI Quick Intake to process.",
+    ownerDecision:
+      "The owner can decide what the AI extracted correctly and where the reviewed information should be saved.",
+    metrics: ["Claim emails", "Contract notes", "Receipts", "Route sheets", "Documents", "AI Quick Intake", "Save to Claims / Receipts / Contracts"],
+    outcome: "Manual entry drops and the rest of the system gets cleaner data faster.",
+    nextTab: "Receipts",
+    nextLabel: "Next: Attach Receipts",
+    selector: '[data-tour-nav="intake"]',
+  },
+  {
+    id: "receipts",
+    tab: "Receipts",
+    eyebrow: "Step 7",
+    title: "Receipts: expense proof",
+    lesson:
+      "Receipts prove the expenses that reduce margin: fuel, tools, repairs, parking, tolls, maintenance, and other owner costs.",
+    why:
+      "Profitability should be based on proof, not guesses. Receipts give Finance and Reports a cleaner cost record.",
+    story:
+      "Route 14 includes fuel and toll receipts. Those receipts support the expense side of the profit calculation.",
+    dataToEnter:
+      "Fuel, tools, repairs, parking, tolls, maintenance, supplies, vendor, amount, date, notes, and route or contract connection.",
+    ownerDecision:
+      "The owner can decide whether route costs are normal, creeping up, missing proof, or cutting too deep into margin.",
+    metrics: ["Fuel", "Tools", "Repairs", "Parking", "Tolls", "Maintenance", "Attach receipts to profitability"],
+    outcome: "Expense proof connects field spending to real margin.",
+    nextTab: "Compliance",
+    nextLabel: "Next: Check Compliance",
+    selector: '[data-tour-nav="finance"]',
+  },
+  {
+    id: "compliance",
+    tab: "Compliance",
+    eyebrow: "Step 8",
+    title: "Compliance: operational protection",
+    lesson:
+      "Compliance protects the operation with insurance, DOT/FMCSA documents, driver documents, expiring documents, readiness score, and items needing review.",
+    why:
+      "Even profitable routes can create risk if documents, insurance, or readiness requirements are missing.",
+    story:
+      "Truck 214 and the Route 14 team need document readiness and photo proof so the business can defend claims and stay route-ready.",
+    dataToEnter:
+      "Insurance, DOT/FMCSA documents, driver files, vehicle documents, expiration dates, readiness items, proof status, and review notes.",
+    ownerDecision:
+      "The owner can decide what must be updated before dispatch, audit review, retailer scorecards, or claim packet submission.",
+    metrics: ["Insurance", "DOT / FMCSA docs", "Driver documents", "Expiring documents", "Readiness score", "Needs review"],
+    outcome: "The business reduces preventable penalties, audit risk, and missing-proof problems.",
+    nextTab: "Reports",
+    nextLabel: "Next: Review Reports",
+    selector: '[data-tour-nav="operations"]',
   },
   {
     id: "reports",
     tab: "Reports",
-    eyebrow: "Step 10",
-    title: "Reports: turning data into decisions",
+    eyebrow: "Step 9",
+    title: "Reports: owner review and history",
     lesson:
-      "Reports convert contracts, teams, claims, receipts, and snapshots into weekly summaries and owner-ready exports.",
+      "Reports are where the owner reviews history: profit snapshots, claims reports, route reports, PDF exports, trend review, and saved daily, weekly, or monthly performance.",
     why:
-      "Reports are where patterns become decisions: which route is profitable, which claim type repeats, and which team needs support.",
+      "Daily work becomes useful only when the owner can review trends and make decisions from history.",
     story:
-      "Route 14 appears in weekly profit, claims impact, team performance, and financial reports.",
-    metrics: ["Weekly report", "Claims report", "Team report", "Financial report"],
-    outcome: "The business gets a repeatable review rhythm instead of reactive guessing.",
+      "Route 14 appears in profit snapshots, claims impact, route reports, and financial summaries after the data is saved.",
+    dataToEnter:
+      "Saved daily snapshots, weekly/monthly performance periods, report filters, route selections, claims data, team data, and export choices.",
+    ownerDecision:
+      "The owner can decide which routes are improving, which claims hurt margin, what to export, and what to fix next week.",
+    metrics: ["Profit snapshots", "Claims reports", "Route reports", "PDF export", "Trend review", "Daily / weekly / monthly performance"],
+    outcome: "The business gets a repeatable owner review rhythm.",
+    nextTab: "Ask",
+    nextLabel: "Next: Ask AI",
     selector: '[data-tour="reports"], [data-tour-nav="reports"]',
   },
   {
     id: "ask",
     tab: "Ask",
-    eyebrow: "Step 11",
-    title: "Ask AI: questions across the whole business",
+    eyebrow: "Step 10",
+    title: "Ask: AI is last because it needs data",
     lesson:
-      "Ask uses data from teams, claims, contracts, receipts, profitability, and reports to answer business questions.",
+      "Ask becomes useful after the other tabs have data. It can answer business questions about what is hurting margin, which routes lose money, which teams create the most claims, and what needs attention today.",
     why:
-      "Contractors should not have to dig through screens to understand what needs attention.",
+      "AI should not guess from an empty workspace. It should use contracts, teams, profitability, claims, intake, receipts, compliance, and reports.",
     story:
-      "Ask can explain why Route 14 margin dropped, which claim to dispute first, or what to fix before next week.",
-    metrics: ["Money leaks", "Claim priorities", "Team risk", "Report summaries"],
-    outcome: "Owners get faster answers from the data they already entered.",
+      "After Route 14 has contract terms, a team, costs, a claim, receipts, compliance status, and reports, Ask can explain what is happening and what to do next.",
+    dataToEnter:
+      "Plain-English questions like: What is hurting margin? Which route loses money? Which team creates the most claims? What needs attention today?",
+    ownerDecision:
+      "The owner can decide what to fix first based on the full business context instead of digging through every tab manually.",
+    metrics: ["Ask business questions", "Margin leaks", "Route losses", "Team claim patterns", "Needs attention today"],
+    outcome: "The owner gets fast insight from the data already entered across the system.",
+    nextTab: "Complete",
+    nextLabel: "Finish Walkthrough",
     selector: '[data-tour="ask-assistant"], [data-tour-nav="ask"]',
-  },
-  {
-    id: "intake",
-    tab: "Intake",
-    eyebrow: "Step 12",
-    title: "Intake: upload or paste what you already have",
-    lesson:
-      "Intake processes claim emails, contracts, receipts, route sheets, screenshots, PDFs, and notes so setup is faster.",
-    why:
-      "The fastest workflow is upload, review, approve, and let the system route the data to the right page.",
-    story:
-      "A Lowe's rate card, Route 14 sheet, Shell fuel receipt, and wall damage claim email can all start in Intake.",
-    metrics: ["Extracted revenue", "Claim details", "Receipt costs", "Route notes"],
-    outcome: "Manual entry drops, and the data starts flowing to the business system.",
-    selector: '[data-tour-nav="intake"]',
-  },
-  {
-    id: "completion",
-    tab: "Dashboard",
-    eyebrow: "Complete",
-    title: "Congratulations, you've completed the walkthrough",
-    lesson:
-      "Final Mile Margin connects the business journey from contract terms to AI insights so route owners can protect profit.",
-    why:
-      "Each page matters because it owns one part of the money flow.",
-    story:
-      "Contract -> Team -> Operations -> Claims -> Receipts -> Profitability -> Reports -> AI Insights.",
-    metrics: ["Connected workflow", "Margin visibility", "Operational accountability", "Faster decisions"],
-    outcome: "You now know what every page does, why it matters, and how money moves through the business.",
-    selector: '[data-tour="dashboard-overview"]',
-    completion: true,
   },
 ];
 
 export const businessJourney = [
-  "Contract",
-  "Team",
-  "Operations",
-  "Claims",
-  "Receipts",
+  "Dashboard",
+  "Contracts",
+  "Teams",
   "Profitability",
+  "Claims",
+  "Intake",
+  "Receipts",
+  "Compliance",
   "Reports",
-  "AI Insights",
+  "Ask",
 ];
 
 export const navPreviewContent = {
   Dashboard: {
     title: "Dashboard",
     description:
-      "Shows the daily owner view: revenue, profit, claims, compliance, teams, contracts, and the next action.",
-    matters: "Keeps the business focused on what needs attention today.",
-    metrics: ["Revenue", "Profit", "Claims", "Compliance"],
+      "Shows the command center: time views, profit, revenue, costs, claims exposure, margin, route health, readiness, compliance, and next action.",
+    matters: "Keeps the owner focused on what needs attention today.",
+    metrics: ["Profit", "Revenue", "Costs", "Claims", "Margin"],
     outcome: "Faster daily decisions.",
   },
   Ask: {
     title: "Ask AI",
     description:
-      "Answers business questions using teams, claims, contracts, receipts, reports, and profitability data.",
-    matters: "Contractors can ask for the answer instead of hunting through every page.",
-    metrics: ["Money leaks", "Claim priorities", "Team risk"],
+      "Answers business questions after the workspace has contracts, teams, profitability, claims, receipts, compliance, and reports.",
+    matters: "AI is most useful after real business data exists.",
+    metrics: ["Margin leaks", "Route losses", "Team claim patterns"],
     outcome: "Faster insight from existing data.",
   },
   Intake: {
     title: "Intake",
     description:
-      "Processes claim emails, contracts, receipts, route sheets, screenshots, PDFs, and notes.",
-    matters: "Reduces manual input and sends reviewed data to the right workflow.",
-    metrics: ["Uploads", "Extracted fields", "Review status"],
+      "Processes claim emails, contract notes, receipts, route sheets, documents, screenshots, PDFs, and raw notes.",
+    matters: "Reduces manual input and sends reviewed data to Claims, Receipts, Contracts, and other workflows.",
+    metrics: ["AI Quick Intake", "Uploads", "Extracted fields"],
     outcome: "Quicker setup and cleaner data.",
   },
   Operations: {
     title: "Operations",
     description:
-      "Where route execution happens: teams, claims, compliance, readiness, and field blockers.",
-    matters: "Connects daily work to claims, proof, and route accountability.",
-    metrics: ["Ready teams", "Open claims", "Missing photos", "Blockers"],
+      "Groups the field execution areas: teams, claims, compliance, route readiness, and blockers.",
+    matters: "Connects who did the work to proof, issues, risk, and claim outcomes.",
+    metrics: ["Teams", "Claims", "Compliance", "Readiness"],
     outcome: "Cleaner execution and fewer preventable losses.",
   },
   Finance: {
     title: "Finance",
     description:
-      "Combines profitability, receipts, and contracts to show whether routes are actually making money.",
-    matters: "Busy routes can still lose money when costs and claims are counted.",
-    metrics: ["Revenue", "Expenses", "Net profit", "Margin"],
-    outcome: "Better pricing and renegotiation decisions.",
+      "Groups contracts, profitability, and receipts so route revenue and route costs connect.",
+    matters: "A busy route can still lose money when costs and claims are counted.",
+    metrics: ["Contracts", "Profitability", "Receipts", "Margin"],
+    outcome: "Better pricing and route decisions.",
   },
   Reports: {
     title: "Reports",
     description:
-      "Turns contracts, teams, claims, receipts, and snapshots into weekly, claims, team, and financial reports.",
-    matters: "Converts daily activity into owner decisions and customer-ready summaries.",
-    metrics: ["Weekly trends", "Claims impact", "Team performance"],
+      "Turns saved snapshots, claims, routes, teams, and financial data into reviewable reports and exports.",
+    matters: "Converts daily activity into owner decisions and historical trend review.",
+    metrics: ["Snapshots", "Claims reports", "Route reports", "PDF export"],
     outcome: "Repeatable business review rhythm.",
   },
   Settings: {
