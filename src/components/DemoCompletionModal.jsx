@@ -51,7 +51,7 @@ export default function DemoCompletionModal({ isOpen, isDark = false, onClose, o
               Congratulations, you completed the Final Mile Margin walkthrough.
             </h2>
             <p className={`mt-3 max-w-3xl text-sm font-semibold leading-6 ${mutedText}`}>
-              You have seen how contracts, teams, operations, claims, receipts, profitability, reports, and AI connect into one business workflow.
+              You have seen how contracts, teams, operations, claims, receipts, profitability, reports, and AI connect into one business workflow. The sample demo numbers have been cleared so the workspace is ready for real setup.
             </p>
           </div>
 

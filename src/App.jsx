@@ -17,6 +17,7 @@ import { navPreviewContent } from "./components/guidedDemoContent";
 import { loadAppStateFromSupabase, saveAppStateToSupabase } from "./lib/appStateRepository";
 import { loadClaimsFromSupabase, syncClaimsToSupabase } from "./lib/claimsRepository";
 import {
+  clearDemoWorkspaceData,
   demoStorageKeys,
   getDemoWorkspaceData,
   isDemoModeActive,
@@ -907,6 +908,7 @@ export default function App() {
   const finishProductTour = () => {
     setProductTourStatus(markProductTourCompleted());
     setIsProductTourOpen(false);
+    clearCompletedDemoWorkspace();
     setIsDemoCompletionOpen(true);
   };
 
@@ -918,6 +920,31 @@ export default function App() {
   const handleProductTourStepChange = useCallback((stepIndex, stepId) => {
     setProductTourStatus(markProductTourProgress(stepIndex, stepId));
   }, []);
+
+  const clearCompletedDemoWorkspace = () => {
+    if (!isDemoWorkspace) return;
+    clearDemoWorkspaceData();
+    resetBlankDemoStorage();
+    sessionStorage.setItem("finalMileBlankDemo", "true");
+    setDemoModeActive(false);
+    setIsDemoMode(false);
+    setIsDemoWorkspace(true);
+    setForm(blankDemoForm);
+    setSavedScenarios([]);
+    setSavedDays([]);
+    setLoadedSavedDay(null);
+    setClaims([]);
+    setTeams([]);
+    setAppSettings(blankDemoSettings);
+    setClaimsBackendStatus("Demo complete. Sample claims were cleared.");
+    setAppStateBackendStatus("Demo complete. Sample data was cleared.");
+    setActiveTab("Dashboard");
+    setActiveOperationsTab("Dispatch");
+    setActiveFinanceTab("Profitability");
+    setShowSavedDays(false);
+    setShowDatePicker(false);
+    window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
+  };
 
   const loadDemoWorkspace = ({ reset = false, startTour = false, startGuidedDemo = false, resetTour = false } = {}) => {
     if (resetTour) {
@@ -1026,6 +1053,7 @@ export default function App() {
   const completeGuidedDemo = () => {
     setProductTourStatus(markProductTourCompleted());
     setIsGuidedDemoOpen(false);
+    clearCompletedDemoWorkspace();
     setIsDemoCompletionOpen(true);
     navigateToTab("Dashboard");
   };

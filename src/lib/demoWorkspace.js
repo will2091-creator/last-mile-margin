@@ -461,6 +461,12 @@ export function seedDemoWorkspace({ reset = false } = {}) {
   return demo;
 }
 
+export function clearDemoWorkspaceData() {
+  if (!canUseStorage()) return;
+  Object.values(demoStorageKeys).forEach((key) => window.localStorage.removeItem(key));
+  window.localStorage.removeItem(DEMO_DATA_VERSION_KEY);
+}
+
 export function setDemoModeActive(active) {
   if (!canUseStorage()) return;
   window.localStorage.setItem(DEMO_MODE_KEY, String(Boolean(active)));
