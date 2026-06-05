@@ -220,6 +220,7 @@ export default function App() {
   const [isProductTourOpen, setIsProductTourOpen] = useState(false);
   const [isGuidedDemoOpen, setIsGuidedDemoOpen] = useState(false);
   const [isDemoCompletionOpen, setIsDemoCompletionOpen] = useState(false);
+  const [tourInitialStepIndex, setTourInitialStepIndex] = useState(() => readProductTourStatus().tourStepIndex || 0);
   const [hasAutoStartedBlankDemoTour, setHasAutoStartedBlankDemoTour] = useState(false);
   const [productTourStatus, setProductTourStatus] = useState(readProductTourStatus);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -342,7 +343,7 @@ export default function App() {
 
   useEffect(() => {
     if (!isLoggedIn || isDemoMode || activeTab !== "Dashboard") return;
-    if (isProductTourOpen || hasAutoStartedBlankDemoTour) return;
+    if (isProductTourOpen || isGuidedDemoOpen || hasAutoStartedBlankDemoTour) return;
     const contractKey = isBlankDemoWorkspace ? "finalMileBlankDemoRollupRows" : "finalMileRollupRows";
     const importKey = isBlankDemoWorkspace ? "finalMileBlankDemoOnboardingImports" : "finalMileOnboardingImports";
     const hasStoredContracts = loadFromLocalStorage(contractKey, []).length > 0;
@@ -356,9 +357,12 @@ export default function App() {
       !hasStoredImports;
     if (!isEmptyWorkspace) return;
     setHasAutoStartedBlankDemoTour(true);
-    const tourTimer = window.setTimeout(() => setIsProductTourOpen(true), 450);
+    const tourTimer = window.setTimeout(() => {
+      setTourInitialStepIndex(readProductTourStatus().tourStepIndex || 0);
+      setIsProductTourOpen(true);
+    }, 450);
     return () => window.clearTimeout(tourTimer);
-  }, [activeTab, claims.length, hasAutoStartedBlankDemoTour, isBlankDemoWorkspace, isDemoMode, isLoggedIn, isProductTourOpen, savedDays.length, savedScenarios.length, teams.length]);
+  }, [activeTab, claims.length, hasAutoStartedBlankDemoTour, isBlankDemoWorkspace, isDemoMode, isGuidedDemoOpen, isLoggedIn, isProductTourOpen, savedDays.length, savedScenarios.length, teams.length]);
 
   const refreshTeamAccess = async () => {
     const result = await loadTeamAccess();
@@ -894,9 +898,13 @@ export default function App() {
   };
 
   const startProductTour = () => {
+    const nextStatus = productTourStatus.hasCompletedTour ? resetProductTourStatus() : readProductTourStatus();
     if (productTourStatus.hasCompletedTour) {
-      setProductTourStatus(resetProductTourStatus());
+      setProductTourStatus(nextStatus);
     }
+    setTourInitialStepIndex(nextStatus.tourStepIndex || 0);
+    setIsGuidedDemoOpen(false);
+    setIsDemoCompletionOpen(false);
     if (isBlankDemoWorkspace || isDemoMode) {
       loadDemoWorkspace({ reset: true, startTour: true });
       return;
@@ -918,7 +926,7 @@ export default function App() {
   };
 
   const handleProductTourStepChange = useCallback((stepIndex, stepId) => {
-    setProductTourStatus(markProductTourProgress(stepIndex, stepId));
+    markProductTourProgress(stepIndex, stepId);
   }, []);
 
   const clearCompletedDemoWorkspace = () => {
@@ -947,9 +955,12 @@ export default function App() {
   };
 
   const loadDemoWorkspace = ({ reset = false, startTour = false, startGuidedDemo = false, resetTour = false } = {}) => {
+    let nextTourStatus = readProductTourStatus();
     if (resetTour) {
-      setProductTourStatus(resetProductTourStatus());
+      nextTourStatus = resetProductTourStatus();
+      setProductTourStatus(nextTourStatus);
     }
+    const resumeStepIndex = nextTourStatus.tourStepIndex || 0;
     const demo = seedDemoWorkspace({ reset });
     sessionStorage.removeItem("finalMileBlankDemo");
     setDemoModeActive(true);
@@ -978,12 +989,15 @@ export default function App() {
     setShowSavedDays(false);
     setShowDatePicker(false);
     setIsProductTourOpen(false);
+    setIsGuidedDemoOpen(false);
     setIsDemoCompletionOpen(false);
     window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
     if (startTour) {
+      setTourInitialStepIndex(resumeStepIndex);
       window.setTimeout(() => setIsProductTourOpen(true), 180);
     }
     if (startGuidedDemo) {
+      setTourInitialStepIndex(resumeStepIndex);
       window.setTimeout(() => setIsGuidedDemoOpen(true), 220);
     }
   };
@@ -1039,9 +1053,13 @@ export default function App() {
   };
 
   const startInteractiveDemo = () => {
+    const nextStatus = productTourStatus.hasCompletedTour ? resetProductTourStatus() : readProductTourStatus();
     if (productTourStatus.hasCompletedTour) {
-      setProductTourStatus(resetProductTourStatus());
+      setProductTourStatus(nextStatus);
     }
+    setTourInitialStepIndex(nextStatus.tourStepIndex || 0);
+    setIsProductTourOpen(false);
+    setIsDemoCompletionOpen(false);
     loadDemoWorkspace({ reset: true, startGuidedDemo: true });
   };
 
@@ -1981,7 +1999,7 @@ export default function App() {
         <ProductTour
           isOpen={isProductTourOpen}
           isDark={isDark}
-          initialStepIndex={productTourStatus.tourStepIndex}
+          initialStepIndex={tourInitialStepIndex}
           onFinish={finishProductTour}
           onSkip={skipProductTour}
           onNavigate={navigateToTab}
@@ -1990,7 +2008,7 @@ export default function App() {
         <GuidedDemoTour
           isOpen={isGuidedDemoOpen}
           isDark={isDark}
-          initialStepIndex={productTourStatus.tourStepIndex}
+          initialStepIndex={tourInitialStepIndex}
           onClose={closeGuidedDemo}
           onComplete={completeGuidedDemo}
           onNavigate={navigateToTab}
