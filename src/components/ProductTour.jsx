@@ -6,11 +6,17 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 function findStepElement(step) {
   if (typeof document === "undefined") return null;
+  let fallback = null;
   for (const selector of step.selectors || []) {
-    const element = document.querySelector(selector);
-    if (element) return element;
+    const elements = Array.from(document.querySelectorAll(selector));
+    const visibleElement = elements.find((element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    });
+    if (visibleElement) return visibleElement;
+    if (!fallback && elements[0]) fallback = elements[0];
   }
-  return null;
+  return fallback;
 }
 
 function getElementRect(element) {
@@ -199,7 +205,7 @@ export default function ProductTour({ isOpen, isDark = false, onFinish, onSkip }
             onClick={() => (isLastStep ? onFinish?.() : setStepIndex((current) => Math.min(current + 1, productTourSteps.length - 1)))}
             className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500"
           >
-            {isLastStep ? "Finish Tour" : "Next"}
+            {isLastStep ? "Finish Tour" : step.nextLabel || "Next"}
           </button>
         </div>
       </div>

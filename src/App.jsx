@@ -891,6 +891,10 @@ export default function App() {
   };
 
   const startProductTour = () => {
+    if (isBlankDemoWorkspace || isDemoMode) {
+      loadDemoWorkspace({ reset: true, startTour: true });
+      return;
+    }
     navigateToTab("Dashboard");
     window.setTimeout(() => setIsProductTourOpen(true), 120);
   };
