@@ -966,8 +966,35 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                 </div>
               </div>
             </div>
-            <div className="h-44 min-w-[280px] flex-1">
-              {renderTrendArea("dashboardHeroTrendWidget")}
+            <div className={isDark ? "min-w-[280px] flex-1 rounded-2xl border border-white/10 bg-slate-950/60 p-4" : "min-w-[280px] flex-1 rounded-2xl border border-blue-100 bg-white/80 p-4 shadow-sm"}>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>Money Flow</p>
+                  <p className={`mt-1 text-sm font-black ${titleText}`}>What created today’s profit</p>
+                </div>
+                <span className={todayProfit >= 0 ? "rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700" : "rounded-full bg-red-500/10 px-3 py-1 text-xs font-black text-red-600"}>
+                  {todayProfit >= 0 ? "Positive" : "Loss"}
+                </span>
+              </div>
+              <div className={`divide-y ${isDark ? "divide-white/10" : "divide-slate-200"}`}>
+                {[
+                  ["Revenue", currency.format(dashboardRevenue), "text-blue-600"],
+                  ["Costs", `-${currency.format(dashboardCosts)}`, "text-amber-700"],
+                  ["Claim Risk", `-${currency.format(periodClaimsExposure)}`, "text-red-600"],
+                  ["Net Profit", currency.format(todayProfit), todayProfit >= 0 ? "text-emerald-700" : "text-red-600"],
+                ].map(([label, value, tone]) => (
+                  <div key={label} className="flex items-center justify-between gap-4 py-2.5">
+                    <p className={`text-sm font-bold ${mutedText}`}>{label}</p>
+                    <p className={`safe-number text-lg font-black ${tone}`} title={value}>{value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className={isDark ? "mt-3 rounded-xl bg-white/5 px-3 py-2" : "mt-3 rounded-xl bg-blue-50 px-3 py-2"}>
+                <p className={isDark ? "text-xs font-black uppercase tracking-wide text-blue-200" : "text-xs font-black uppercase tracking-wide text-blue-700"}>Next owner move</p>
+                <p className={`mt-1 text-sm font-bold leading-5 ${mutedText}`}>
+                  {periodClaimsExposure > 0 ? "Control claim exposure before it eats the route margin." : todayProfit >= 0 ? "Protect this margin by keeping costs and proof tight." : "Review route pricing and cost assumptions before running more work."}
+                </p>
+              </div>
             </div>
           </div>
         </button>
