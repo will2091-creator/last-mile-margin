@@ -33,7 +33,9 @@ function getElementRect(element) {
   };
 }
 
-export default function ProductTour({ isOpen, isDark = false, onFinish, onSkip, onNavigate }) {
+const clampStepIndex = (value) => Math.floor(clamp(Number(value || 0), 0, productTourSteps.length - 1));
+
+export default function ProductTour({ isOpen, isDark = false, initialStepIndex = 0, onFinish, onSkip, onNavigate, onStepChange }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
   const tooltipRef = useRef(null);
@@ -47,8 +49,13 @@ export default function ProductTour({ isOpen, isDark = false, onFinish, onSkip, 
 
   useEffect(() => {
     if (!isOpen) return;
-    setStepIndex(0);
-  }, [isOpen]);
+    setStepIndex(clampStepIndex(initialStepIndex));
+  }, [isOpen, initialStepIndex]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    onStepChange?.(stepIndex, step.id);
+  }, [isOpen, stepIndex, step.id, onStepChange]);
 
   useEffect(() => {
     if (!isOpen) return undefined;

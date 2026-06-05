@@ -757,11 +757,13 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   const showGuidedSetup = !setupIsComplete && (isBlankDemo || !hasStartedWorkspace || setupCompleteCount > 0 || setupSkippedCount > 0);
   const showDemoProgressLauncher = Boolean(onStartTour || onStartGuidedDemo);
   const demoTotalSteps = guidedDemoSteps.length;
-  const demoCompletedSteps = productTourStatus?.hasCompletedTour ? demoTotalSteps : 0;
+  const demoSavedStepIndex = Math.min(Math.max(Number(productTourStatus?.tourStepIndex || 0), 0), Math.max(demoTotalSteps - 1, 0));
+  const hasDemoProgress = Boolean(productTourStatus?.tourUpdatedAt || productTourStatus?.tourSkippedAt);
+  const demoCompletedSteps = productTourStatus?.hasCompletedTour ? demoTotalSteps : hasDemoProgress ? Math.min(demoSavedStepIndex + 1, demoTotalSteps) : 0;
   const demoPercent = Math.round((demoCompletedSteps / Math.max(demoTotalSteps, 1)) * 100);
-  const demoStatusLabel = productTourStatus?.hasCompletedTour ? "Completed" : productTourStatus?.tourSkippedAt ? "Paused" : "Ready";
-  const demoCurrentLesson = productTourStatus?.hasCompletedTour ? "Completed walkthrough" : guidedDemoSteps[0]?.title || "Dashboard command center";
-  const demoPrimaryAction = productTourStatus?.hasCompletedTour ? "Restart Full Walkthrough" : productTourStatus?.tourSkippedAt ? "Restart Walkthrough" : "Start Full Walkthrough";
+  const demoStatusLabel = productTourStatus?.hasCompletedTour ? "Completed" : productTourStatus?.tourSkippedAt ? "Paused" : hasDemoProgress ? "In progress" : "Ready";
+  const demoCurrentLesson = productTourStatus?.hasCompletedTour ? "Completed walkthrough" : guidedDemoSteps[demoSavedStepIndex]?.title || "Dashboard command center";
+  const demoPrimaryAction = productTourStatus?.hasCompletedTour ? "Restart Full Walkthrough" : hasDemoProgress ? "Resume Walkthrough" : "Start Full Walkthrough";
   const demoLearningPath = ["Dashboard data", "Ask", "Intake", "Operations", "Finance", "Reports", "Settings"];
   const setupTourTargets = {
     contract: "contracts",
@@ -1375,7 +1377,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                 {!isDemoMode && onLaunchDemo && (
                   <button
                     type="button"
-                    onClick={() => onLaunchDemo({ reset: true, startGuidedDemo: true })}
+                    onClick={() => onLaunchDemo({ reset: true, startGuidedDemo: true, resetTour: true })}
                     className={isDark ? "rounded-xl bg-emerald-500/15 px-4 py-2.5 text-sm font-black text-emerald-200 hover:bg-emerald-500/20" : "rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500"}
                   >
                     Start Fresh Demo

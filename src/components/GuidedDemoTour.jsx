@@ -34,7 +34,9 @@ function readRect(element) {
   };
 }
 
-export default function GuidedDemoTour({ isOpen, isDark = false, onClose, onComplete, onNavigate }) {
+const clampStepIndex = (value) => Math.floor(clamp(Number(value || 0), 0, guidedDemoSteps.length - 1));
+
+export default function GuidedDemoTour({ isOpen, isDark = false, initialStepIndex = 0, onClose, onComplete, onNavigate, onStepChange }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
   const panelRef = useRef(null);
@@ -50,8 +52,13 @@ export default function GuidedDemoTour({ isOpen, isDark = false, onClose, onComp
 
   useEffect(() => {
     if (!isOpen) return;
-    setStepIndex(0);
-  }, [isOpen]);
+    setStepIndex(clampStepIndex(initialStepIndex));
+  }, [isOpen, initialStepIndex]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    onStepChange?.(stepIndex, step.id);
+  }, [isOpen, stepIndex, step.id, onStepChange]);
 
   useEffect(() => {
     if (!isOpen) return undefined;

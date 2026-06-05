@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import lastMileMarginLogo from "./assets/last-mile-margin-logo-transparent.svg";
 import lastMileMarginLogoDark from "./assets/last-mile-margin-logo-transparent-dark.svg";
@@ -24,7 +24,7 @@ import {
 } from "./lib/demoWorkspace";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 import { addTeamMember, loadTeamAccess, updateTeamMemberRole } from "./lib/teamAccessRepository";
-import { emptyTourStatus, markProductTourCompleted, markProductTourSkipped, readProductTourStatus, resetProductTourStatus } from "./lib/tourStorage";
+import { emptyTourStatus, markProductTourCompleted, markProductTourProgress, markProductTourSkipped, readProductTourStatus, resetProductTourStatus } from "./lib/tourStorage";
 import {
   accentThemes,
   Bot,
@@ -891,6 +891,9 @@ export default function App() {
   };
 
   const startProductTour = () => {
+    if (productTourStatus.hasCompletedTour) {
+      setProductTourStatus(resetProductTourStatus());
+    }
     if (isBlankDemoWorkspace || isDemoMode) {
       loadDemoWorkspace({ reset: true, startTour: true });
       return;
@@ -909,7 +912,14 @@ export default function App() {
     setIsProductTourOpen(false);
   };
 
-  const loadDemoWorkspace = ({ reset = false, startTour = false, startGuidedDemo = false } = {}) => {
+  const handleProductTourStepChange = useCallback((stepIndex, stepId) => {
+    setProductTourStatus(markProductTourProgress(stepIndex, stepId));
+  }, []);
+
+  const loadDemoWorkspace = ({ reset = false, startTour = false, startGuidedDemo = false, resetTour = false } = {}) => {
+    if (resetTour) {
+      setProductTourStatus(resetProductTourStatus());
+    }
     const demo = seedDemoWorkspace({ reset });
     sessionStorage.removeItem("finalMileBlankDemo");
     setDemoModeActive(true);
@@ -989,18 +999,22 @@ export default function App() {
   };
 
   const resetDemoWorkspace = () => {
-    loadDemoWorkspace({ reset: true });
+    loadDemoWorkspace({ reset: true, resetTour: true });
   };
 
   const restartGuidedDemo = () => {
-    loadDemoWorkspace({ reset: true, startGuidedDemo: true });
+    loadDemoWorkspace({ reset: true, startGuidedDemo: true, resetTour: true });
   };
 
   const startInteractiveDemo = () => {
+    if (productTourStatus.hasCompletedTour) {
+      setProductTourStatus(resetProductTourStatus());
+    }
     loadDemoWorkspace({ reset: true, startGuidedDemo: true });
   };
 
   const closeGuidedDemo = () => {
+    setProductTourStatus(markProductTourSkipped());
     setIsGuidedDemoOpen(false);
   };
 
@@ -1922,16 +1936,20 @@ export default function App() {
         <ProductTour
           isOpen={isProductTourOpen}
           isDark={isDark}
+          initialStepIndex={productTourStatus.tourStepIndex}
           onFinish={finishProductTour}
           onSkip={skipProductTour}
           onNavigate={navigateToTab}
+          onStepChange={handleProductTourStepChange}
         />
         <GuidedDemoTour
           isOpen={isGuidedDemoOpen}
           isDark={isDark}
+          initialStepIndex={productTourStatus.tourStepIndex}
           onClose={closeGuidedDemo}
           onComplete={completeGuidedDemo}
           onNavigate={navigateToTab}
+          onStepChange={handleProductTourStepChange}
         />
       </div>
     </div>

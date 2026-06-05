@@ -2,11 +2,17 @@ const TOUR_COMPLETED_KEY = "hasCompletedTour";
 const TOUR_COMPLETED_AT_KEY = "tourCompletedAt";
 const TOUR_SKIPPED_AT_KEY = "tourSkippedAt";
 const TOUR_STATUS_KEY = "finalMileProductTourStatus";
+const TOUR_STEP_INDEX_KEY = "tourStepIndex";
+const TOUR_STEP_ID_KEY = "tourStepId";
+const TOUR_UPDATED_AT_KEY = "tourUpdatedAt";
 
 const emptyTourStatus = {
   hasCompletedTour: false,
   tourCompletedAt: null,
   tourSkippedAt: null,
+  tourStepIndex: 0,
+  tourStepId: null,
+  tourUpdatedAt: null,
 };
 
 export { emptyTourStatus };
@@ -29,6 +35,15 @@ export function readProductTourStatus() {
       tourSkippedAt:
         localStorage.getItem(TOUR_SKIPPED_AT_KEY) ||
         legacyStatus?.tourSkippedAt ||
+        null,
+      tourStepIndex: Math.max(0, Number(localStorage.getItem(TOUR_STEP_INDEX_KEY) || legacyStatus?.tourStepIndex || 0)),
+      tourStepId:
+        localStorage.getItem(TOUR_STEP_ID_KEY) ||
+        legacyStatus?.tourStepId ||
+        null,
+      tourUpdatedAt:
+        localStorage.getItem(TOUR_UPDATED_AT_KEY) ||
+        legacyStatus?.tourUpdatedAt ||
         null,
     };
   } catch (error) {
@@ -53,6 +68,19 @@ function writeProductTourStatus(status) {
     localStorage.removeItem(TOUR_SKIPPED_AT_KEY);
   }
 
+  localStorage.setItem(TOUR_STEP_INDEX_KEY, String(Math.max(0, Number(status.tourStepIndex || 0))));
+  if (status.tourStepId) {
+    localStorage.setItem(TOUR_STEP_ID_KEY, status.tourStepId);
+  } else {
+    localStorage.removeItem(TOUR_STEP_ID_KEY);
+  }
+
+  if (status.tourUpdatedAt) {
+    localStorage.setItem(TOUR_UPDATED_AT_KEY, status.tourUpdatedAt);
+  } else {
+    localStorage.removeItem(TOUR_UPDATED_AT_KEY);
+  }
+
   localStorage.setItem(TOUR_STATUS_KEY, JSON.stringify(status));
   return status;
 }
@@ -62,6 +90,9 @@ export function markProductTourCompleted() {
     hasCompletedTour: true,
     tourCompletedAt: new Date().toISOString(),
     tourSkippedAt: null,
+    tourStepIndex: 0,
+    tourStepId: null,
+    tourUpdatedAt: new Date().toISOString(),
   });
 }
 
@@ -71,6 +102,20 @@ export function markProductTourSkipped() {
     hasCompletedTour: current.hasCompletedTour,
     tourCompletedAt: current.tourCompletedAt,
     tourSkippedAt: new Date().toISOString(),
+    tourStepIndex: current.tourStepIndex,
+    tourStepId: current.tourStepId,
+    tourUpdatedAt: new Date().toISOString(),
+  });
+}
+
+export function markProductTourProgress(stepIndex, stepId = null) {
+  return writeProductTourStatus({
+    hasCompletedTour: false,
+    tourCompletedAt: null,
+    tourSkippedAt: null,
+    tourStepIndex: Math.max(0, Number(stepIndex || 0)),
+    tourStepId: stepId,
+    tourUpdatedAt: new Date().toISOString(),
   });
 }
 
@@ -80,6 +125,9 @@ export function resetProductTourStatus() {
   localStorage.removeItem(TOUR_COMPLETED_KEY);
   localStorage.removeItem(TOUR_COMPLETED_AT_KEY);
   localStorage.removeItem(TOUR_SKIPPED_AT_KEY);
+  localStorage.removeItem(TOUR_STEP_INDEX_KEY);
+  localStorage.removeItem(TOUR_STEP_ID_KEY);
+  localStorage.removeItem(TOUR_UPDATED_AT_KEY);
   localStorage.removeItem(TOUR_STATUS_KEY);
   return emptyTourStatus;
 }
