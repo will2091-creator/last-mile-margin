@@ -60,6 +60,7 @@ export default function ProductTour({ isOpen, isDark = false, initialStepIndex =
   useEffect(() => {
     if (!isOpen) return undefined;
 
+    tooltipRef.current?.scrollTo({ top: 0 });
     onNavigate?.(step.tab);
 
     const scrollTimer = window.setTimeout(() => {
@@ -139,6 +140,12 @@ export default function ProductTour({ isOpen, isDark = false, initialStepIndex =
         boxShadow: "0 0 0 9999px rgba(15, 23, 42, 0.58)",
       }
     : null;
+  const panelClass = isDark
+    ? "pointer-events-auto fixed max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950 p-5 pb-0 text-white shadow-2xl shadow-black/40 outline-none"
+    : "pointer-events-auto fixed max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 pb-0 text-slate-950 shadow-2xl shadow-slate-950/25 outline-none";
+  const footerClass = isDark
+    ? "sticky bottom-0 -mx-5 mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-slate-950/95 px-5 py-4 backdrop-blur"
+    : "sticky bottom-0 -mx-5 mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white/95 px-5 py-4 backdrop-blur";
 
   return createPortal(
     <div className="fixed inset-0 z-[1000] pointer-events-auto">
@@ -158,11 +165,7 @@ export default function ProductTour({ isOpen, isDark = false, initialStepIndex =
         role="dialog"
         aria-modal="false"
         aria-label={`${step.title}. Step ${stepIndex + 1} of ${productTourSteps.length}`}
-        className={
-          isDark
-            ? "pointer-events-auto fixed rounded-2xl border border-white/10 bg-slate-950 p-5 text-white shadow-2xl shadow-black/40 outline-none"
-            : "pointer-events-auto fixed rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-2xl shadow-slate-950/25 outline-none"
-        }
+        className={panelClass}
         style={tooltipPosition}
       >
         <div className="mb-4 flex items-center justify-between gap-3">
@@ -196,7 +199,7 @@ export default function ProductTour({ isOpen, isDark = false, initialStepIndex =
           />
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <div className={footerClass}>
           <button
             type="button"
             disabled={stepIndex === 0}

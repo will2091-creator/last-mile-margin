@@ -63,6 +63,7 @@ export default function GuidedDemoTour({ isOpen, isDark = false, initialStepInde
   useEffect(() => {
     if (!isOpen) return undefined;
 
+    panelRef.current?.scrollTo({ top: 0 });
     onNavigate?.(step.tab);
     const scrollTimer = window.setTimeout(() => {
       const element = findTarget(step.selector);
@@ -133,8 +134,11 @@ export default function GuidedDemoTour({ isOpen, isDark = false, initialStepInde
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-300" : "text-slate-600";
   const panelClass = isDark
-    ? "pointer-events-auto fixed max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950 p-5 text-white shadow-2xl shadow-black/50 outline-none"
-    : "pointer-events-auto fixed max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-2xl shadow-slate-950/25 outline-none";
+    ? "pointer-events-auto fixed max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950 p-5 pb-0 text-white shadow-2xl shadow-black/50 outline-none"
+    : "pointer-events-auto fixed max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 pb-0 text-slate-950 shadow-2xl shadow-slate-950/25 outline-none";
+  const footerClass = isDark
+    ? "sticky bottom-0 -mx-5 mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-slate-950/95 px-5 py-4 backdrop-blur"
+    : "sticky bottom-0 -mx-5 mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white/95 px-5 py-4 backdrop-blur";
   const highlightStyle = targetRect
     ? {
         top: targetRect.top - 8,
@@ -250,7 +254,7 @@ export default function GuidedDemoTour({ isOpen, isDark = false, initialStepInde
           Outcome: {step.outcome}
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <div className={footerClass}>
           <div className="flex gap-2">
             <button
               type="button"
