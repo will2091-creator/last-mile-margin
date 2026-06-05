@@ -933,17 +933,39 @@ export default function App() {
     if (!isDemoWorkspace) return;
     clearDemoWorkspaceData();
     resetBlankDemoStorage();
-    sessionStorage.setItem("finalMileBlankDemo", "true");
+    sessionStorage.removeItem("finalMileBlankDemo");
     setDemoModeActive(false);
     setIsDemoMode(false);
-    setIsDemoWorkspace(true);
-    setForm(blankDemoForm);
-    setSavedScenarios([]);
-    setSavedDays([]);
+    setIsDemoWorkspace(false);
+    setForm(defaultForm);
+    setSavedScenarios(loadFromLocalStorage("finalMileSavedScenarios", []));
+    setSavedDays(loadFromLocalStorage("finalMileSavedDays", []));
     setLoadedSavedDay(null);
-    setClaims([]);
-    setTeams([]);
-    setAppSettings(blankDemoSettings);
+    setClaims(loadFromLocalStorage("finalMileClaims", initialClaims));
+    setTeams(loadFromLocalStorage("finalMileTeams", initialTeams));
+    const savedSettings = loadFromLocalStorage("finalMileSettings", defaultSettings);
+    setAppSettings({
+      ...defaultSettings,
+      ...savedSettings,
+      dashboardWidgets: {
+        ...defaultSettings.dashboardWidgets,
+        ...(savedSettings.dashboardWidgets || {}),
+      },
+      dashboardWidgetOrder: [
+        ...new Set([
+          ...(savedSettings.dashboardWidgetOrder || []),
+          ...(defaultSettings.dashboardWidgetOrder || Object.keys(defaultSettings.dashboardWidgets)),
+        ]),
+      ].filter((key) => Object.prototype.hasOwnProperty.call(defaultSettings.dashboardWidgets, key)),
+      claimRiskThresholds: {
+        ...defaultSettings.claimRiskThresholds,
+        ...(savedSettings.claimRiskThresholds || {}),
+      },
+      profitabilityBenchmarks: {
+        ...defaultSettings.profitabilityBenchmarks,
+        ...(savedSettings.profitabilityBenchmarks || {}),
+      },
+    });
     setClaimsBackendStatus("Demo complete. Sample claims were cleared.");
     setAppStateBackendStatus("Demo complete. Sample data was cleared.");
     setActiveTab("Dashboard");

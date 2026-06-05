@@ -276,10 +276,11 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   const isCleanBlankWorkspace = !hasStartedWorkspace;
 
   useEffect(() => {
+    if (productTourStatus?.hasCompletedTour) return;
     if (!onStartTour || !isCleanBlankWorkspace || isDemoMode || hasAutoStartedBlankTour) return;
     setHasAutoStartedBlankTour(true);
     window.setTimeout(onStartTour, 650);
-  }, [hasAutoStartedBlankTour, isCleanBlankWorkspace, isDemoMode, onStartTour]);
+  }, [hasAutoStartedBlankTour, isCleanBlankWorkspace, isDemoMode, onStartTour, productTourStatus?.hasCompletedTour]);
 
   const savedRoutes = hasQuickContracts ? quickContracts.slice(0, 4).map((row) => {
     const revenue = Number(row.revenue || 0);
@@ -756,7 +757,8 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   const setupIsComplete = setupCompleteCount === setupSteps.length;
   const setupNextStep = setupSteps.find((step) => !step.complete && !step.skipped) || setupSteps.find((step) => !step.complete) || setupSteps[setupSteps.length - 1];
   const showGuidedSetup = !setupIsComplete && (isBlankDemo || !hasStartedWorkspace || setupCompleteCount > 0 || setupSkippedCount > 0);
-  const showDemoProgressLauncher = Boolean(onStartTour || onStartGuidedDemo);
+  const showDemoActions = !productTourStatus?.hasCompletedTour && Boolean(onStartTour || onStartGuidedDemo);
+  const showDemoProgressLauncher = showDemoActions;
   const demoTotalSteps = guidedDemoSteps.length;
   const demoSavedStepIndex = Math.min(Math.max(Number(productTourStatus?.tourStepIndex || 0), 0), Math.max(demoTotalSteps - 1, 0));
   const hasDemoProgress = Boolean(productTourStatus?.tourUpdatedAt || productTourStatus?.tourSkippedAt);
@@ -1307,11 +1309,11 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {onStartTour && (
+          {showDemoActions && onStartTour && (
             <TakeTourButton onClick={onStartTour} isDark={isDark} />
           )}
 
-          {onStartGuidedDemo && (
+          {showDemoActions && onStartGuidedDemo && (
             <button
               data-tour="dashboard-interactive-demo"
               type="button"
@@ -1322,7 +1324,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
             </button>
           )}
 
-          {!isDemoMode && onLaunchDemo && (
+          {showDemoActions && !isDemoMode && onLaunchDemo && (
             <button
               data-tour="dashboard-launch-demo"
               type="button"
@@ -1463,12 +1465,12 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                     <button onClick={() => openSetupStep(setupNextStep.id)} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500">
                       Continue Setup
                     </button>
-                    {!isDemoMode && onLaunchDemo && (
+                    {showDemoActions && !isDemoMode && onLaunchDemo && (
                       <button onClick={() => onLaunchDemo({ reset: false })} className={isDark ? "rounded-xl bg-emerald-500/15 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/20" : "rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500"}>
                         Launch Demo Workspace
                       </button>
                     )}
-                    {onStartGuidedDemo && (
+                    {showDemoActions && onStartGuidedDemo && (
                       <button onClick={onStartGuidedDemo} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500">
                         Interactive Demo
                       </button>
