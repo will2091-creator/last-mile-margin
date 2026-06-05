@@ -7,11 +7,17 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 function findTarget(selector) {
   if (typeof document === "undefined" || !selector) return null;
+  let fallback = null;
   for (const option of selector.split(",")) {
-    const element = document.querySelector(option.trim());
-    if (element) return element;
+    const elements = Array.from(document.querySelectorAll(option.trim()));
+    const visibleElement = elements.find((element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    });
+    if (visibleElement) return visibleElement;
+    if (!fallback && elements[0]) fallback = elements[0];
   }
-  return null;
+  return fallback;
 }
 
 function readRect(element) {

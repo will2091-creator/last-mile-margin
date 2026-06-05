@@ -153,6 +153,39 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   });
 
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem(contractStorageKey);
+      const parsed = saved ? JSON.parse(saved) : [];
+      setQuickContracts(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      setQuickContracts([]);
+    }
+  }, [contractStorageKey]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(importStorageKey);
+      const parsed = saved ? JSON.parse(saved) : [];
+      setQuickImports(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      setQuickImports([]);
+    }
+  }, [importStorageKey]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(setupStorageKey);
+      const parsed = saved ? JSON.parse(saved) : { skipped: {}, previewed: false };
+      setSetupWizard({
+        skipped: parsed.skipped && typeof parsed.skipped === "object" ? parsed.skipped : {},
+        previewed: Boolean(parsed.previewed),
+      });
+    } catch {
+      setSetupWizard({ skipped: {}, previewed: false });
+    }
+  }, [setupStorageKey]);
+
+  useEffect(() => {
     localStorage.setItem(setupStorageKey, JSON.stringify(setupWizard));
   }, [setupStorageKey, setupWizard]);
 
@@ -793,6 +826,12 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     ["Claim Exposure", currency.format(periodClaimsExposure), "text-red-600", "Claims", "Open claim risk"],
     ["Team Photos", `${photosUploaded}/${activeTeams}`, "text-amber-600", "Teams", "Daily readiness proof"],
   ];
+  const periodCardTourTargets = {
+    "Net Profit": "dashboard-period-card-net-profit",
+    "Open Claims": "dashboard-period-card-open-claims",
+    "Claim Exposure": "dashboard-period-card-claim-exposure",
+    "Team Photos": "dashboard-period-card-team-photos",
+  };
 
   const widgetSpan = {
     periodMetrics: "xl:col-span-12",
@@ -881,6 +920,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           {dashboardPeriodCards.map(([label, value, tone, tab, source]) => (
             <button
               key={label}
+              data-tour={periodCardTourTargets[label]}
               onClick={() => goToSource(tab)}
               className={`${isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-4 hover:border-blue-500/50 hover:bg-slate-900" : "rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm hover:border-blue-300 hover:bg-blue-50/40"} overflow-hidden text-left transition`}
             >
@@ -1476,9 +1516,10 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {quickContractCards.map((contract) => (
+            {quickContractCards.map((contract, index) => (
               <button
                 key={contract.id}
+                data-tour={`dashboard-contract-card-${index}`}
                 onClick={() => setActiveTab("Finance")}
                 className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-blue-500/50" : "rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-blue-300 hover:bg-white"}
               >
