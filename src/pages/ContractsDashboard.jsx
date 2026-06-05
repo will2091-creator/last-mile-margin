@@ -1,57 +1,31 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import EmptyState from "../components/EmptyState";
 import {
   AlertTriangle,
-  Area,
-  AreaChart,
   BarChart3,
   BriefcaseBusiness,
-  Calculator,
-  Camera,
-  Card,
-  CartesianGrid,
   Cell,
-  CheckCircle2,
-  claimTypeOptions,
   ClipboardCheck,
-  CostPieChart,
   currency,
-  defaultForm,
-  defaultSettings,
   DollarSign,
-  Field,
-  FileDown,
   FileText,
-  getGrade,
-  initialClaims,
-  initialTeams,
-  LayoutDashboard,
-  MetricCard,
-  Moon,
   number,
   Pie,
   PieChart,
-  ProfitTrendChart,
   ResponsiveContainer,
-  RotateCcw,
-  Row,
-  Save,
-  Section,
-  SelectField,
-  Settings,
   ShieldCheck,
-  StatusBadge,
-  Sun,
-  TextField,
-  toNum,
   Tooltip,
   Trash2,
   Truck,
-  Upload,
-  UserPlus,
   Users,
-  XAxis,
-  YAxis,
 } from "../shared";
+
+const CONTRACT_STORAGE_KEY = "finalMileContracts";
+const BLANK_CONTRACT_STORAGE_KEY = "finalMileBlankDemoContracts";
+const DEMO_CONTRACT_STORAGE_KEY = "finalMileDemoContracts";
+const QUICK_CONTRACT_STORAGE_KEY = "finalMileRollupRows";
+const BLANK_QUICK_CONTRACT_STORAGE_KEY = "finalMileBlankDemoRollupRows";
+const DEMO_QUICK_CONTRACT_STORAGE_KEY = "finalMileDemoRollupRows";
 
 const contractChargeOptions = [
   ["routePay", "Flat Route Pay", "Base route rate for the day"],
@@ -114,8 +88,54 @@ const getDefaultChargeRulesForRateCard = (rateCardId) => ({
   ...(chargeRuleDefaultsByRateCard[rateCardId] || {}),
 });
 
-function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
-  const [selectedContractId, setSelectedContractId] = useState("LOWES-APPL");
+const readStoredArray = (key) => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const buildContractFromSetupRow = (row, index = 0) => {
+  const contractName = row?.contract || row?.name || "New Delivery Contract";
+  const routePay = Number(row?.revenue || row?.routePay || 0);
+  const routes = Number(row?.routes || 1);
+  const stops = Number(row?.stops || 0);
+
+  return {
+    id: row?.id || `SETUP-CONTRACT-${Date.now()}-${index}`,
+    name: contractName,
+    customer: contractName,
+    customerType: "Retail",
+    location: row?.location || "Market not set",
+    type: row?.routeType || "Delivery Contract",
+    payStructure: routePay > 0 ? `${currency.format(routePay)} / route` : "Rate not set",
+    payType: "Flat Rate",
+    routePay,
+    perStop: stops > 0 && routePay > 0 ? Math.round(routePay / stops) : 0,
+    installPay: Number(row?.installPay || 0),
+    monthlyRevenue: routePay * routes * 4,
+    margin: Number(row?.margin || 0),
+    status: "Pending",
+    risk: "Watch",
+    team: row?.team || "Unassigned",
+    drivers: "Not assigned",
+    schedule: `${routes || 1} route${routes === 1 ? "" : "s"} / week`,
+    startDate: new Date().toLocaleDateString(),
+    renewalDate: row?.renewalDate || "Not set",
+    renewalDays: 0,
+    overview: "Imported from dashboard setup. Review rate terms, claim rules, service area, and renewal dates.",
+    logo: String(contractName).slice(0, 3).toUpperCase(),
+    notes: "Created from setup contract data.",
+  };
+};
+
+function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo = false, isDemoMode = false }) {
+  const [quickSetupContracts, setQuickSetupContracts] = useState(() =>
+    readStoredArray(isDemoMode ? DEMO_QUICK_CONTRACT_STORAGE_KEY : isBlankDemo ? BLANK_QUICK_CONTRACT_STORAGE_KEY : QUICK_CONTRACT_STORAGE_KEY)
+  );
+  const [selectedContractId, setSelectedContractId] = useState(isBlankDemo ? "" : isDemoMode ? "DEMO-LOWES-APPL" : "LOWES-APPL");
   const [selectedContractTab, setSelectedContractTab] = useState("Overview");
   const [isEditingContract, setIsEditingContract] = useState(false);
   const [contractImportDraft, setContractImportDraft] = useState(() => {
@@ -144,8 +164,13 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
   });
   const [customChargeDraft, setCustomChargeDraft] = useState({ name: "", amount: "" });
 
-  const [contracts, setContracts] = useState([
-    {
+  const [contracts, setContracts] = useState(() => {
+    const storedContracts = readStoredArray(isDemoMode ? DEMO_CONTRACT_STORAGE_KEY : isBlankDemo ? BLANK_CONTRACT_STORAGE_KEY : CONTRACT_STORAGE_KEY);
+    if (storedContracts.length > 0) return storedContracts;
+    if (isBlankDemo) return [];
+
+    return [
+      {
       id: "LOWES-APPL",
       name: "Lowe's Appliance Delivery",
       customer: "Lowe's",
@@ -248,29 +273,20 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
       overview: "Furniture delivery with white-glove placement and customer damage prevention expectations.",
       logo: "RC",
       notes: "Strong margin, but team claim activity should be watched.",
-    },
-  ]);
-
-  const contractTypeOptions = [
-    "Appliance Delivery",
-    "Large Item Delivery",
-    "Tech Delivery",
-    "Furniture Delivery",
-    "Mattress Delivery",
-    "White Glove Delivery",
-    "Delivery Contract",
-  ];
+      },
+    ];
+  });
 
   const addContract = () => {
     const newId = `CONTRACT-${Date.now()}`;
     const newContract = {
       id: newId,
-      name: "New Contract",
-      customer: "New Customer",
+      name: "New delivery contract",
+      customer: "Customer name needed",
       customerType: "Retail",
-      location: "New Market",
+      location: "Market not set",
       type: "Delivery Contract",
-      payStructure: "$0 / route",
+      payStructure: "Rate not set",
       payType: "Flat Rate",
       routePay: 0,
       perStop: 0,
@@ -285,7 +301,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
       startDate: new Date().toLocaleDateString(),
       renewalDate: "Not set",
       renewalDays: 0,
-      overview: "New contract added. Update contract details when edit mode is added.",
+      overview: "Add the customer, route type, rate structure, claim terms, and renewal details.",
       logo: "NEW",
       notes: "New contract needs terms, team assignment, and compliance requirements.",
     };
@@ -293,6 +309,16 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
     setContracts((current) => [newContract, ...current]);
     setSelectedContractId(newId);
     setSelectedContractTab("Overview");
+    setIsEditingContract(true);
+  };
+
+  const importSetupContract = (row, index = 0) => {
+    const newContract = buildContractFromSetupRow(row, index);
+    setContracts((current) => [newContract, ...current]);
+    setQuickSetupContracts((current) => current.filter((candidate, candidateIndex) => candidateIndex !== index));
+    setSelectedContractId(newContract.id);
+    setSelectedContractTab("Overview");
+    setIsEditingContract(true);
   };
 
   const applyContractImportDraft = () => {
@@ -342,8 +368,22 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
     localStorage.removeItem("finalMileContractImportDraft");
   };
 
+  const selectContract = (contractId) => {
+    setSelectedContractId(contractId);
+    setSelectedContractTab("Overview");
+    setIsEditingContract(false);
+  };
+
+  useEffect(() => {
+    localStorage.setItem(isDemoMode ? DEMO_CONTRACT_STORAGE_KEY : isBlankDemo ? BLANK_CONTRACT_STORAGE_KEY : CONTRACT_STORAGE_KEY, JSON.stringify(contracts));
+  }, [contracts, isBlankDemo, isDemoMode]);
+
+  useEffect(() => {
+    localStorage.setItem(isDemoMode ? DEMO_QUICK_CONTRACT_STORAGE_KEY : isBlankDemo ? BLANK_QUICK_CONTRACT_STORAGE_KEY : QUICK_CONTRACT_STORAGE_KEY, JSON.stringify(quickSetupContracts));
+  }, [quickSetupContracts, isBlankDemo, isDemoMode]);
+
   const isViewingAllContracts = selectedContractId === "ALL";
-  const selectedContract = isViewingAllContracts ? contracts[0] : contracts.find((contract) => contract.id === selectedContractId) || contracts[0];
+  const selectedContract = isViewingAllContracts ? contracts[0] : contracts.find((contract) => contract.id === selectedContractId) || contracts[0] || null;
   const selectedRateCardId = getRateCardId(selectedContract);
   const selectedChargeRules = {
     ...getDefaultChargeRulesForRateCard(selectedRateCardId),
@@ -448,6 +488,11 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
   };
 
   const openSelectedContractInRouteProfit = () => {
+    if (!selectedContract) {
+      addContract();
+      return;
+    }
+
     localStorage.setItem("finalMileRouteProfitContractId", selectedRateCardId);
     localStorage.setItem("finalMileProfitabilityView", "Route Profit Check");
     localStorage.setItem(
@@ -464,11 +509,6 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
     navigateToTab?.("Profitability");
   };
 
-  useEffect(() => {
-    setSelectedContractTab("Overview");
-    setIsEditingContract(false);
-  }, [selectedContractId]);
-
   const totalRevenue = contracts.reduce((sum, contract) => sum + contract.monthlyRevenue, 0);
   const averageMargin = contracts.reduce((sum, contract) => sum + contract.margin, 0) / Math.max(contracts.length, 1);
   const atRiskContracts = contracts.filter((contract) => contract.risk === "At Risk" || contract.risk === "Watch").length;
@@ -479,7 +519,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
     const matchingTeam = teams.find((team) => team.name === claim.team);
     return matchingTeam?.lead || "";
   };
-  const selectedTeam = teams.find((team) => team.name === selectedContract.team);
+  const selectedTeam = selectedContract ? teams.find((team) => team.name === selectedContract.team) : null;
   const selectedDrivers = [selectedTeam?.lead, selectedTeam?.helper].filter(Boolean);
   const selectedClaims = isViewingAllContracts ? claims : claims.filter((claim) => selectedDrivers.includes(getClaimDriver(claim)));
   const selectedExposure = isViewingAllContracts ? totalClaimsExposure : selectedClaims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
@@ -517,28 +557,28 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
     {
       label: "Active Contracts",
       value: contracts.length,
-      note: "1 vs prior 30 days",
+      note: contracts.length === 0 ? "Create a contract to start" : "Contracts saved in this workspace",
       icon: FileText,
       tone: "blue",
     },
     {
       label: "Monthly Revenue",
       value: currency.format(totalRevenue),
-      note: "12.4% vs prior 30 days",
+      note: totalRevenue > 0 ? "From saved contract records" : "Add route pay to calculate",
       icon: DollarSign,
       tone: "green",
     },
     {
       label: "Average Margin",
       value: `${number.format(averageMargin)}%`,
-      note: "3.1% vs prior 30 days",
+      note: averageMargin > 0 ? "Across saved contracts" : "Add cost data to calculate",
       icon: BarChart3,
       tone: "blue",
     },
     {
       label: "At-Risk Contracts",
       value: atRiskContracts,
-      note: "1 vs prior 30 days",
+      note: atRiskContracts > 0 ? "Review watch items and terms" : "No contract risks flagged",
       icon: AlertTriangle,
       tone: "amber",
     },
@@ -570,6 +610,115 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
       </div>
     );
   };
+
+  if (contracts.length === 0) {
+    const requiredFields = [
+      "Customer / retailer",
+      "Route type",
+      "Rate structure",
+      "Route pay or stop pay",
+      "Claim terms",
+      "Renewal date",
+    ];
+
+    return (
+      <div className={isDark ? "space-y-6 text-white" : "space-y-6 text-slate-950"}>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className={`text-3xl font-black tracking-tight sm:text-4xl ${titleText}`}>Contracts</h1>
+            <p className={`mt-2 text-sm sm:text-base ${mutedText}`}>
+              Contracts are your customer terms: what they pay, what claims they can charge back, and when rates need review.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={addContract}
+              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
+            >
+              + Add Contract
+            </button>
+          </div>
+        </div>
+
+        {contractImportDraft && (
+          <div className={isDark ? "rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5" : "rounded-2xl border border-blue-200 bg-blue-50 p-5"}>
+            <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-blue-600">AI Contract Draft Ready</p>
+                <h2 className={`mt-1 text-xl font-black ${titleText}`}>{contractImportDraft.customer || "New customer"} terms found</h2>
+                <p className={`mt-2 text-sm ${mutedText}`}>
+                  Route pay {currency.format(Number(contractImportDraft.routePay || 0))} · Per stop {currency.format(Number(contractImportDraft.perStop || 0))} · Install {currency.format(Number(contractImportDraft.installPay || 0))}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 lg:justify-end">
+                <button type="button" onClick={applyContractImportDraft} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500">
+                  Create Contract Draft
+                </button>
+                <button type="button" onClick={dismissContractImportDraft} className={isDark ? "rounded-xl bg-white/10 px-4 py-2 text-sm font-black text-white hover:bg-white/15" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}>
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <EmptyState
+          isDark={isDark}
+          eyebrow="Finance setup"
+          title="Create your first contract or import one"
+          description="Once a contract exists, Finance can calculate margin, Operations can assign teams, Claims can tie chargebacks to customer terms, and Reports can stop being empty."
+          Icon={BriefcaseBusiness}
+          primaryAction={{ label: "Create First Contract", onClick: addContract }}
+          secondaryActions={[
+            { label: "Open Intake", onClick: () => navigateToTab?.("Intake") },
+            { label: "Open Profit Calculator", onClick: () => navigateToTab?.("Profitability") },
+            { label: "Review Claims", onClick: () => navigateToTab?.("Claims") },
+          ]}
+        >
+          <div className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+            <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-950/50 p-4" : "rounded-2xl border border-blue-100 bg-white p-4"}>
+              <p className={`text-sm font-black ${titleText}`}>Starter contract fields</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {requiredFields.map((field) => (
+                  <div key={field} className={isDark ? "rounded-xl bg-white/5 px-3 py-2 text-xs font-black text-slate-300" : "rounded-xl bg-slate-50 px-3 py-2 text-xs font-black text-slate-600"}>
+                    {field}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-950/50 p-4" : "rounded-2xl border border-blue-100 bg-white p-4"}>
+              <p className={`text-sm font-black ${titleText}`}>Setup contracts ready</p>
+              {quickSetupContracts.length > 0 ? (
+                <div className="mt-3 space-y-2">
+                  {quickSetupContracts.slice(0, 3).map((row, index) => (
+                    <button
+                      key={`${row?.contract || "setup"}-${index}`}
+                      type="button"
+                      onClick={() => importSetupContract(row, index)}
+                      className={isDark ? "flex w-full items-center justify-between gap-3 rounded-xl bg-white/5 px-3 py-3 text-left hover:bg-white/10" : "flex w-full items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-3 text-left hover:bg-blue-50"}
+                    >
+                      <span>
+                        <span className={`block text-sm font-black ${titleText}`}>{row?.contract || "Setup contract"}</span>
+                        <span className={`mt-1 block text-xs font-bold ${mutedText}`}>{currency.format(Number(row?.revenue || 0))} route pay</span>
+                      </span>
+                      <span className="shrink-0 text-xs font-black text-blue-600">Import</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className={`mt-3 text-sm font-semibold leading-6 ${mutedText}`}>
+                  No setup contracts have been saved yet. Use Dashboard setup or Intake when you want to pull contract terms from a note, email, or document.
+                </p>
+              )}
+            </div>
+          </div>
+        </EmptyState>
+      </div>
+    );
+  }
 
   return (
     <div className={isDark ? "space-y-6 text-white" : "space-y-6 text-slate-950"}>
@@ -625,9 +774,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
                 <div>
                   <p className={`text-sm font-bold ${mutedText}`}>{kpi.label}</p>
                   <p className={`mt-2 text-2xl font-black ${titleText}`}>{kpi.value}</p>
-                  <p className={kpi.tone === "amber" ? "mt-1 text-xs font-bold text-red-600" : "mt-1 text-xs font-bold text-emerald-700"}>
-                    ↗ {kpi.note}
-                  </p>
+                  <p className={kpi.tone === "amber" ? "mt-1 text-xs font-bold text-red-600" : "mt-1 text-xs font-bold text-emerald-700"}>{kpi.note}</p>
                 </div>
               </div>
             </div>
@@ -653,7 +800,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
               <label className="mb-2 block text-xs font-black uppercase tracking-wide text-blue-600">Change Contract</label>
               <select
                 value={isViewingAllContracts ? "ALL" : selectedContract.id}
-                onChange={(event) => setSelectedContractId(event.target.value)}
+                onChange={(event) => selectContract(event.target.value)}
                 className={
                   isDark
                     ? "w-full rounded-2xl border-2 border-blue-400/60 bg-slate-950 px-5 py-4 text-lg font-black text-white shadow-lg shadow-black/20 outline-none focus:border-blue-300"
@@ -745,7 +892,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
                       </td>
                       <td className={`border-b py-4 text-right ${rowBorder}`}>
                         <button
-                          onClick={() => setSelectedContractId(contract.id)}
+                          onClick={() => selectContract(contract.id)}
                           className={isDark ? "rounded-lg border border-white/10 px-3 py-1.5 text-xs font-black text-white hover:bg-white/10" : "rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-black text-blue-600 hover:bg-blue-50"}
                         >
                           View
@@ -1430,7 +1577,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab }) {
               <h2 className={`text-lg font-black ${titleText}`}>Upcoming Renewals</h2>
               <p className={`text-sm ${mutedText}`}>Contracts nearing renewal dates.</p>
             </div>
-            <button onClick={() => setSelectedContractId("ALL")} className="text-sm font-bold text-blue-600">View All</button>
+            <button type="button" onClick={() => selectContract("ALL")} className="text-sm font-bold text-blue-600">View All</button>
           </div>
 
           <div className="space-y-3">

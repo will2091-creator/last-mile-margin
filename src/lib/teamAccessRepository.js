@@ -67,31 +67,66 @@ export const loadTeamAccess = async () => {
   if (!userResult.ok) return { ok: false, members: [], currentRole: "owner", error: userResult.error };
 
   const profileError = await upsertProfile(userResult.user);
-  const ownerError = await ensureOwnerMembership(userResult.user);
-  if (profileError || ownerError) {
+  if (profileError) {
     return {
       ok: false,
       members: [],
       currentRole: "owner",
-      error: profileError || ownerError,
+      error: profileError,
     };
   }
+
+  const userEmail = normalizeEmail(userResult.user.email);
+  const { data: membershipRows, error: membershipError } = await supabase
+    .from("team_memberships")
+    .select("id,owner_id,email,display_name,role,status,created_at,user_id")
+    .or(`user_id.eq.${userResult.user.id},email.eq.${userEmail}`)
+    .order("created_at", { ascending: true });
+
+  if (membershipError) return { ok: false, members: [], currentRole: "owner", error: membershipError.message };
+
+  let currentMembership = (membershipRows || []).find((row) => row.user_id === userResult.user.id)
+    || (membershipRows || []).find((row) => normalizeEmail(row.email) === userEmail && row.status === "active")
+    || (membershipRows || []).find((row) => normalizeEmail(row.email) === userEmail);
+
+  if (!currentMembership) {
+    const ownerError = await ensureOwnerMembership(userResult.user);
+    if (ownerError) {
+      return {
+        ok: false,
+        members: [],
+        currentRole: "owner",
+        error: ownerError,
+      };
+    }
+
+    currentMembership = {
+      owner_id: userResult.user.id,
+      email: userEmail,
+      role: "owner",
+      status: "active",
+      user_id: userResult.user.id,
+    };
+  }
+
+  const workspaceOwnerId = currentMembership.owner_id || userResult.user.id;
 
   const { data, error } = await supabase
     .from("team_memberships")
     .select("id,email,display_name,role,status,created_at,user_id,profiles:profiles!team_memberships_user_id_fkey(email,display_name)")
-    .eq("owner_id", userResult.user.id)
+    .eq("owner_id", workspaceOwnerId)
     .order("created_at", { ascending: true });
 
   if (error) return { ok: false, members: [], currentRole: "owner", error: error.message };
 
   const members = (data || []).map(toTeamMember);
-  const currentMember = members.find((member) => normalizeEmail(member.email) === normalizeEmail(userResult.user.email));
+  const currentMember = members.find((member) => member.id === currentMembership.id)
+    || members.find((member) => normalizeEmail(member.email) === userEmail);
 
   return {
     ok: true,
     members,
-    currentRole: currentMember?.role || "owner",
+    currentRole: currentMember?.role || currentMembership.role || "driver",
     error: "",
   };
 };

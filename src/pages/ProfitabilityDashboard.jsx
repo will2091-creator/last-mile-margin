@@ -5,6 +5,7 @@ import {
   BarChart3,
   CartesianGrid,
   currency,
+  defaultSettings,
   DollarSign,
   FileDown,
   FileText,
@@ -17,6 +18,7 @@ import {
   XAxis,
   YAxis,
 } from "../shared";
+import EmptyState from "../components/EmptyState";
 
 const chargeOptions = [
   ["routePay", "Flat Route Pay", "Base route rate"],
@@ -117,6 +119,9 @@ function ProfitabilityDashboard({
   resetForm,
   isDark,
   appSettings,
+  isBlankDemo = false,
+  isDemoMode = false,
+  navigateToTab,
 }) {
   const [profitabilityView, setProfitabilityView] = useState(() => {
     const savedView = localStorage.getItem("finalMileProfitabilityView");
@@ -133,7 +138,8 @@ function ProfitabilityDashboard({
   const rollupEditorRef = useRef(null);
   const routeEditorRef = useRef(null);
   const chartPopupRef = useRef(null);
-  const [selectedRouteContractId, setSelectedRouteContractId] = useState(() => localStorage.getItem("finalMileRouteProfitContractId") || "lowes");
+  const rollupStorageKey = isDemoMode ? "finalMileDemoRollupRows" : isBlankDemo ? "finalMileBlankDemoRollupRows" : "finalMileRollupRows";
+  const [selectedRouteContractId, setSelectedRouteContractId] = useState(() => isBlankDemo ? "new-contract" : isDemoMode ? "DEMO-LOWES-APPL" : localStorage.getItem("finalMileRouteProfitContractId") || "lowes");
   const [contractChargeRules, setContractChargeRules] = useState(() => {
     try {
       const saved = localStorage.getItem("finalMileContractChargeRules");
@@ -151,6 +157,7 @@ function ProfitabilityDashboard({
     }
   });
   const [customChargeDraft, setCustomChargeDraft] = useState({ name: "", amount: "" });
+  const [routeContractSaveStatus, setRouteContractSaveStatus] = useState("");
 
   const applyRouteContractDefaults = (contractId, explicitDefaults) => {
     const defaults = explicitDefaults || routeContractDefaults[contractId];
@@ -163,9 +170,34 @@ function ProfitabilityDashboard({
     });
   };
 
+  const loadSavedRouteContract = (contractId) => {
+    const row = rollupRows.find((item) => item.id === contractId);
+    if (!row) return false;
 
-  const [rollupRows, setRollupRows] = useState([
-    {
+    update("scenarioName", row.contract || "");
+    update("routePay", row.revenue || 0);
+    update("stops", row.stops || 0);
+    update("driverPay", row.labor || 0);
+    update("dailyTruckPayment", row.truckInsurance || 0);
+    update("maintenancePerMile", 0);
+    update("claimsChargebacks", row.claims || 0);
+    update("otherCosts", row.other || 0);
+    return true;
+  };
+
+
+  const [rollupRows, setRollupRows] = useState(() => {
+    try {
+      const saved = localStorage.getItem(rollupStorageKey);
+      const parsed = saved ? JSON.parse(saved) : null;
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      // Ignore malformed saved rows and fall back below.
+    }
+
+    if (isBlankDemo) return [];
+
+    return [{
       id: "rc-willey",
       logo: "RC",
       logoClass: "bg-blue-700 text-white",
@@ -224,16 +256,20 @@ function ProfitabilityDashboard({
       maintenance: 800,
       claims: 1625,
       other: 1525,
-    },
-  ]);
+    }];
+  });
 
   useEffect(() => {
     localStorage.setItem("finalMileProfitabilityView", profitabilityView);
   }, [profitabilityView]);
 
   useEffect(() => {
-    localStorage.setItem("finalMileRouteProfitContractId", selectedRouteContractId);
-  }, [selectedRouteContractId]);
+    localStorage.setItem(rollupStorageKey, JSON.stringify(rollupRows));
+  }, [rollupRows, rollupStorageKey]);
+
+  useEffect(() => {
+    localStorage.setItem(isDemoMode ? "finalMileDemoRouteProfitContractId" : "finalMileRouteProfitContractId", selectedRouteContractId);
+  }, [isDemoMode, selectedRouteContractId]);
 
   useEffect(() => {
     localStorage.setItem("finalMileContractChargeRules", JSON.stringify(contractChargeRules));
@@ -416,8 +452,12 @@ function ProfitabilityDashboard({
     return total;
   }, [rowsWithTotals]);
 
-  const bestContract = rowsWithTotals.reduce((best, row) => (row.margin > best.margin ? row : best), rowsWithTotals[0]);
-  const worstContract = rowsWithTotals.reduce((worst, row) => (row.margin < worst.margin ? row : worst), rowsWithTotals[0]);
+  const bestContract = rowsWithTotals.length
+    ? rowsWithTotals.reduce((best, row) => (row.margin > best.margin ? row : best), rowsWithTotals[0])
+    : null;
+  const worstContract = rowsWithTotals.length
+    ? rowsWithTotals.reduce((worst, row) => (row.margin < worst.margin ? row : worst), rowsWithTotals[0])
+    : null;
 
   const profitChartData = rowsWithTotals
     .slice()
@@ -439,16 +479,19 @@ function ProfitabilityDashboard({
     { name: "Other Costs", value: totals.other },
   ].filter((item) => item.value > 0);
 
-  const trendData = [
-    { week: "Mar 24", profit: 5200 },
-    { week: "Mar 31", profit: 5300 },
-    { week: "Apr 7", profit: 10100 },
-    { week: "Apr 14", profit: 12600 },
-    { week: "Apr 21", profit: 19000 },
-    { week: "Apr 28", profit: 20400 },
-    { week: "May 5", profit: 20550 },
-    { week: "May 12", profit: 19950 },
-  ];
+  const trendData = isBlankDemo && rowsWithTotals.length === 0
+    ? []
+    : [
+      { week: "Mar 24", profit: 5200 },
+      { week: "Mar 31", profit: 5300 },
+      { week: "Apr 7", profit: 10100 },
+      { week: "Apr 14", profit: 12600 },
+      { week: "Apr 21", profit: 19000 },
+      { week: "Apr 28", profit: 20400 },
+      { week: "May 5", profit: 20550 },
+      { week: "May 12", profit: 19950 },
+    ];
+  const hasTrendData = trendData.length > 0;
 
   const normalizeRollupRow = (row) => ({
     ...row,
@@ -757,6 +800,15 @@ function ProfitabilityDashboard({
 
   const totalCostPercent = (value) => (totals.totalCosts > 0 ? ((value / totals.totalCosts) * 100).toFixed(1) : "0.0");
   const clampPercent = (value) => Math.max(0, Math.min(100, value));
+  const profitabilityBenchmarks = {
+    ...defaultSettings.profitabilityBenchmarks,
+    ...(appSettings?.profitabilityBenchmarks || {}),
+    targetMargin: Number(appSettings?.profitabilityBenchmarks?.targetMargin ?? defaultSettings.profitabilityBenchmarks.targetMargin),
+    claimsReserveTarget: Number(appSettings?.profitabilityBenchmarks?.claimsReserveTarget ?? defaultSettings.profitabilityBenchmarks.claimsReserveTarget),
+    reviewLineMargin: Number(appSettings?.profitabilityBenchmarks?.reviewLineMargin ?? defaultSettings.profitabilityBenchmarks.reviewLineMargin),
+  };
+  const hasSavedContractData = rowsWithTotals.length > 0;
+  const showBenchmarkTargets = hasSavedContractData && profitabilityBenchmarks.enabled !== false;
   const getKpiBreakdown = (title) => {
     const revenue = Math.max(totals.revenue, 1);
     const cost = Math.max(totals.totalCosts, 0);
@@ -771,34 +823,61 @@ function ProfitabilityDashboard({
     }
 
     if (title === "Net Profit") {
-      return [
+      const rows = [
         { label: "Actual margin", value: `${totals.margin.toFixed(1)}%`, width: clampPercent((totals.margin / 35) * 100), color: "bg-emerald-500" },
-        { label: "Target margin", value: "25.0%", width: 71, color: "bg-blue-500" },
       ];
+      if (showBenchmarkTargets) {
+        rows.push({
+          label: "Target margin",
+          value: `${profitabilityBenchmarks.targetMargin.toFixed(1)}%`,
+          width: clampPercent((profitabilityBenchmarks.targetMargin / 35) * 100),
+          color: "bg-blue-500",
+        });
+      }
+      return rows;
     }
 
     if (title === "Claims Exposure") {
-      return [
+      const rows = [
         { label: "Exposure", value: currency.format(claims), width: clampPercent((claims / 4000) * 100), color: "bg-red-500" },
-        { label: "Reserve target", value: currency.format(2500), width: 63, color: "bg-amber-500" },
       ];
+      if (showBenchmarkTargets) {
+        rows.push({
+          label: "Reserve target",
+          value: currency.format(profitabilityBenchmarks.claimsReserveTarget),
+          width: clampPercent((profitabilityBenchmarks.claimsReserveTarget / 4000) * 100),
+          color: "bg-amber-500",
+        });
+      }
+      return rows;
     }
 
-    return [
+    const rows = [
       { label: "Average", value: `${totals.margin.toFixed(1)}%`, width: clampPercent((totals.margin / 40) * 100), color: "bg-purple-500" },
-      { label: "Review line", value: "20.0%", width: 50, color: "bg-slate-500" },
     ];
+    if (showBenchmarkTargets) {
+      rows.push({
+        label: "Review line",
+        value: `${profitabilityBenchmarks.reviewLineMargin.toFixed(1)}%`,
+        width: clampPercent((profitabilityBenchmarks.reviewLineMargin / 40) * 100),
+        color: "bg-slate-500",
+      });
+    }
+    return rows;
   };
 
   if (profitabilityView === "Route Profit Check") {
-    const selectedRouteContract = rowsWithTotals.find((row) => row.id === selectedRouteContractId) || rowsWithTotals[0];
+    const isNewRouteContract = selectedRouteContractId === "new-contract" || rowsWithTotals.length === 0;
+    const selectedRouteContract = isNewRouteContract ? null : rowsWithTotals.find((row) => row.id === selectedRouteContractId) || rowsWithTotals[0];
+    const activeRouteContractId = selectedRouteContract?.id || "new-contract";
+    const activeRouteContractName = selectedRouteContract?.contract || form.scenarioName || "";
     const selectedChargeRules = {
-      ...getDefaultChargeRulesForContract(selectedRouteContract?.id),
-      ...(contractChargeRules[selectedRouteContract?.id] || {}),
+      ...getDefaultChargeRulesForContract(activeRouteContractId),
+      ...(contractChargeRules[activeRouteContractId] || {}),
     };
     const chargeEnabled = (key) => selectedChargeRules[key] !== false;
     const enabledChargeLabels = chargeOptions.filter(([key]) => chargeEnabled(key)).map(([, label]) => label);
-    const customCharges = (contractCustomCharges[selectedRouteContract?.id] || []).map((charge) => ({
+    const customCharges = (contractCustomCharges[activeRouteContractId] || []).map((charge) => ({
       ...charge,
       amount: Number(charge.amount || 0),
       enabled: charge.enabled !== false,
@@ -969,6 +1048,76 @@ function ProfitabilityDashboard({
       red: isDark ? "bg-red-500/10 text-red-300" : "bg-red-50 text-red-600",
       purple: isDark ? "bg-purple-500/10 text-purple-300" : "bg-purple-50 text-purple-600",
     };
+    const getContractLogo = (name) => {
+      const initials = name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase();
+
+      return initials || "NEW";
+    };
+    const saveRouteContract = () => {
+      const contractName = activeRouteContractName.trim();
+      if (!contractName) {
+        setRouteContractSaveStatus("Enter a contract name first.");
+        return;
+      }
+
+      const id = selectedRouteContract?.id || `contract-${Date.now()}`;
+      const savedRow = {
+        id,
+        logo: selectedRouteContract?.logo || getContractLogo(contractName),
+        logoClass: selectedRouteContract?.logoClass || "bg-slate-700 text-white",
+        contract: contractName,
+        routes: Math.max(toNumber(form.routesPerWeek), 1),
+        stops: extraStops,
+        revenue: totalRouteRevenue,
+        labor: laborCost,
+        fuel: fuelCost,
+        truckInsurance: truckCost + insuranceCost + phoneSoftware,
+        maintenance: maintenanceCost,
+        claims: claimsReserve,
+        other: tollsParking + otherCosts,
+      };
+
+      setRollupRows((current) => {
+        const alreadyExists = current.some((row) => row.id === id);
+        return alreadyExists ? current.map((row) => (row.id === id ? savedRow : row)) : [...current, savedRow];
+      });
+      setSelectedRouteContractId(id);
+      update("scenarioName", contractName);
+      setRouteContractSaveStatus(`Saved ${contractName}.`);
+    };
+    const startNewRouteContract = () => {
+      setSelectedRouteContractId("new-contract");
+      setRouteContractSaveStatus("");
+      [
+        ["scenarioName", ""],
+        ["routePay", 0],
+        ["perStopPay", 0],
+        ["installPay", 0],
+        ["accessorialPay", 0],
+        ["fuelSurcharge", 0],
+        ["reattemptPay", 0],
+        ["stops", 0],
+        ["miles", 0],
+        ["routeHours", 1],
+        ["driverPay", 0],
+        ["helperPay", 0],
+        ["tollsParking", 0],
+        ["dailyTruckPayment", 0],
+        ["dailyInsurance", 0],
+        ["maintenancePerMile", 0],
+        ["phoneSoftware", 0],
+        ["claimsChargebacks", 0],
+        ["otherCosts", 0],
+        ["routesPerWeek", 1],
+        ["routeType", ""],
+      ].forEach(([key, value]) => update(key, value));
+    };
 
     return (
       <div className={pageClass}>
@@ -1004,23 +1153,52 @@ function ProfitabilityDashboard({
 
             {profitabilityView === "Route Profit Check" && (
               <div className="flex flex-wrap items-center gap-3">
-                <label className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Contract</label>
-                <select
-                  value={selectedRouteContract?.id}
-                  onChange={(event) => {
-                    const nextContractId = event.target.value;
-                    setSelectedRouteContractId(nextContractId);
-                    applyRouteContractDefaults(nextContractId);
-                  }}
-                  className={isDark ? "min-w-72 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm font-bold text-white outline-none focus:border-blue-500" : "min-w-72 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-950 outline-none focus:border-blue-500"}
-                >
-                  {rowsWithTotals.map((row) => (
-                    <option key={row.id} value={row.id}>{row.contract}</option>
-                  ))}
-                </select>
+                <label className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Contract Name</label>
+                {!isNewRouteContract && rowsWithTotals.length > 0 ? (
+                  <select
+                    value={selectedRouteContract?.id || ""}
+                    onChange={(event) => {
+                      const nextContractId = event.target.value;
+                      setSelectedRouteContractId(nextContractId);
+                      setRouteContractSaveStatus("");
+                      if (!loadSavedRouteContract(nextContractId)) {
+                        applyRouteContractDefaults(nextContractId);
+                      }
+                    }}
+                    className={isDark ? "min-w-72 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm font-bold text-white outline-none focus:border-blue-500" : "min-w-72 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-950 outline-none focus:border-blue-500"}
+                  >
+                    {rowsWithTotals.map((row) => (
+                      <option key={row.id} value={row.id}>{row.contract}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    value={activeRouteContractName}
+                    onChange={(event) => update("scenarioName", event.target.value)}
+                    placeholder="Enter contract name"
+                    className={isDark ? "min-w-72 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-slate-600 focus:border-blue-500" : "min-w-72 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-950 outline-none placeholder:text-slate-400 focus:border-blue-500"}
+                  />
+                )}
                 <span className={isDark ? "rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-black text-emerald-200" : "rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700"}>
                   {enabledPayTypeCount} pay types on
                 </span>
+                <button
+                  onClick={saveRouteContract}
+                  className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500"
+                >
+                  Save Contract
+                </button>
+                <button
+                  onClick={startNewRouteContract}
+                  className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/10" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
+                >
+                  + Add Another
+                </button>
+                {routeContractSaveStatus && (
+                  <span className={routeContractSaveStatus.startsWith("Saved") ? "text-sm font-black text-emerald-600" : "text-sm font-black text-red-600"}>
+                    {routeContractSaveStatus}
+                  </span>
+                )}
               </div>
             )}
 
@@ -1042,6 +1220,29 @@ function ProfitabilityDashboard({
             )}
           </div>
         </div>
+
+        {isBlankDemo && !hasSavedContractData && (
+          <EmptyState
+            isDark={isDark}
+            eyebrow="Profit check"
+            title="Run your first route profit check"
+            description="Start with revenue, then enter labor, fuel, truck, insurance, maintenance, and claim reserve. This calculator will show margin, profit per stop, and route risk before you save the contract."
+            Icon={DollarSign}
+            primaryAction={{ label: "Start Blank Calculator", onClick: resetRouteCalculator }}
+            secondaryActions={[
+              { label: "Save Scenario", onClick: saveScenario },
+              { label: "Open Contracts", onClick: () => navigateToTab?.("Contracts") },
+            ]}
+          >
+            <div className="grid gap-2 sm:grid-cols-3">
+              {["1. Enter revenue", "2. Enter route costs", "3. Review profit per stop"].map((item) => (
+                <div key={item} className={isDark ? "rounded-xl bg-white/5 px-3 py-2 text-sm font-black text-slate-200" : "rounded-xl bg-white px-3 py-2 text-sm font-black text-slate-700 shadow-sm"}>
+                  {item}
+                </div>
+              ))}
+            </div>
+          </EmptyState>
+        )}
 
         <div className="grid gap-4 xl:grid-cols-4">
           {summaryCards.map(([label, value, tone, Icon, suffix]) => (
@@ -1076,7 +1277,7 @@ function ProfitabilityDashboard({
             <div className={isDark ? "mb-5 rounded-2xl border border-white/10 bg-slate-950/40 p-4" : "mb-5 rounded-2xl border border-blue-100 bg-blue-50/60 p-4"}>
               <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className={`text-sm font-black ${titleText}`}>Pay Types for {selectedRouteContract?.contract}</p>
+                  <p className={`text-sm font-black ${titleText}`}>Pay Types for {activeRouteContractName || "New Contract"}</p>
                   <p className={`mt-1 text-xs font-semibold ${mutedText}`}>Check the charges this contract allows. Off items are hidden from Revenue.</p>
                 </div>
                 <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-white px-3 py-1 text-xs font-black text-blue-700"}>
@@ -1095,7 +1296,7 @@ function ProfitabilityDashboard({
                       <input
                         type="checkbox"
                         checked={checked}
-                        onChange={(event) => updateContractChargeRule(selectedRouteContract.id, key, event.target.checked)}
+                        onChange={(event) => updateContractChargeRule(activeRouteContractId, key, event.target.checked)}
                         className="mt-1 h-4 w-4 accent-blue-600"
                       />
                       <span className="min-w-0">
@@ -1116,7 +1317,7 @@ function ProfitabilityDashboard({
                         <input
                           type="checkbox"
                           checked={charge.enabled}
-                          onChange={(event) => updateCustomContractCharge(selectedRouteContract.id, charge.id, "enabled", event.target.checked)}
+                          onChange={(event) => updateCustomContractCharge(activeRouteContractId, charge.id, "enabled", event.target.checked)}
                           className="h-4 w-4 accent-emerald-600"
                         />
                         <span className={charge.enabled ? "text-xs font-black uppercase tracking-wide text-emerald-700" : `text-xs font-black uppercase tracking-wide ${mutedText}`}>
@@ -1125,7 +1326,7 @@ function ProfitabilityDashboard({
                       </label>
                       <button
                         type="button"
-                        onClick={() => deleteCustomContractCharge(selectedRouteContract.id, charge.id)}
+                        onClick={() => deleteCustomContractCharge(activeRouteContractId, charge.id)}
                         className={isDark ? "rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-red-300" : "rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-red-600"}
                         title="Delete custom charge"
                       >
@@ -1135,7 +1336,7 @@ function ProfitabilityDashboard({
 
                     <input
                       value={charge.name}
-                      onChange={(event) => updateCustomContractCharge(selectedRouteContract.id, charge.id, "name", event.target.value)}
+                      onChange={(event) => updateCustomContractCharge(activeRouteContractId, charge.id, "name", event.target.value)}
                       className={isDark ? "w-full rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 text-sm font-black text-white outline-none focus:border-emerald-500" : "w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-black text-slate-950 outline-none focus:border-emerald-500"}
                     />
                     <div className="mt-2">
@@ -1145,7 +1346,7 @@ function ProfitabilityDashboard({
                         <input
                           type="number"
                           value={charge.amount}
-                          onChange={(event) => updateCustomContractCharge(selectedRouteContract.id, charge.id, "amount", event.target.value)}
+                          onChange={(event) => updateCustomContractCharge(activeRouteContractId, charge.id, "amount", event.target.value)}
                           className={isDark ? "w-full rounded-lg border border-white/10 bg-slate-950/60 py-2 pl-7 pr-3 text-sm font-black text-white outline-none focus:border-emerald-500" : "w-full rounded-lg border border-emerald-100 bg-white py-2 pl-7 pr-3 text-sm font-black text-slate-950 outline-none focus:border-emerald-500"}
                         />
                       </div>
@@ -1178,7 +1379,7 @@ function ProfitabilityDashboard({
                   </div>
                   <button
                     type="button"
-                    onClick={() => addCustomContractCharge(selectedRouteContract.id)}
+                    onClick={() => addCustomContractCharge(activeRouteContractId)}
                     className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500"
                   >
                     + Add Charge
@@ -1351,7 +1552,7 @@ function ProfitabilityDashboard({
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
                       <p className={`text-sm font-black ${titleText}`}>Custom Charges</p>
-                      <p className={`mt-1 text-xs font-semibold ${mutedText}`}>These are saved to {selectedRouteContract?.contract}.</p>
+                    <p className={`mt-1 text-xs font-semibold ${mutedText}`}>These are saved to {activeRouteContractName || "New Contract"}.</p>
                     </div>
                     <span className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white">
                       {currency.format(customRevenue)}
@@ -1365,7 +1566,7 @@ function ProfitabilityDashboard({
                           <input
                             type="checkbox"
                             checked={charge.enabled}
-                            onChange={(event) => updateCustomContractCharge(selectedRouteContract.id, charge.id, "enabled", event.target.checked)}
+                            onChange={(event) => updateCustomContractCharge(activeRouteContractId, charge.id, "enabled", event.target.checked)}
                             className="h-4 w-4 accent-emerald-600"
                           />
                           <span className={`truncate text-sm font-black ${charge.enabled ? titleText : mutedText}`}>{charge.name}</span>
@@ -1375,7 +1576,7 @@ function ProfitabilityDashboard({
                           <input
                             type="number"
                             value={charge.amount}
-                            onChange={(event) => updateCustomContractCharge(selectedRouteContract.id, charge.id, "amount", event.target.value)}
+                            onChange={(event) => updateCustomContractCharge(activeRouteContractId, charge.id, "amount", event.target.value)}
                             className={isDark ? "w-full rounded-lg border border-white/10 bg-slate-950/60 py-2 pl-7 pr-3 text-sm font-black text-white outline-none focus:border-emerald-500" : "w-full rounded-lg border border-emerald-100 bg-white py-2 pl-7 pr-3 text-sm font-black text-slate-950 outline-none focus:border-emerald-500"}
                           />
                         </div>
@@ -1468,6 +1669,21 @@ function ProfitabilityDashboard({
           )}
         </div>
       </div>
+
+      {isBlankDemo && !hasSavedContractData && (
+        <EmptyState
+          isDark={isDark}
+          eyebrow="Profitability setup"
+          title="No contract profit rows yet"
+          description="Add your first contract row or switch to Route Profit Check to build the math step by step. Once saved, revenue, costs, margin, and claims reserve will show here."
+          Icon={BarChart3}
+          primaryAction={{ label: "Add Contract Row", onClick: addRollupRow }}
+          secondaryActions={[
+            { label: "Open Route Profit Check", onClick: () => setProfitabilityView("Route Profit Check") },
+            { label: "Open Intake", onClick: () => navigateToTab?.("Intake") },
+          ]}
+        />
+      )}
 
       <div className="grid gap-4 xl:grid-cols-5">
         {kpiCards.map((card) => {
@@ -1627,40 +1843,61 @@ function ProfitabilityDashboard({
           <div className={`${cardClass} xl:col-span-4`}>
           <div className="mb-4 flex items-center justify-between">
             <h2 className={`text-lg font-black ${titleText}`}>Profitability Trend (8 Weeks)</h2>
-            <button
-              type="button"
-              data-chart-popup-trigger="true"
-              onClick={(event) => openChartPopup("trend", event)}
-              className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-black text-blue-600 hover:bg-blue-50"
-            >
-              View chart
-            </button>
+            {hasTrendData && (
+              <button
+                type="button"
+                data-chart-popup-trigger="true"
+                onClick={(event) => openChartPopup("trend", event)}
+                className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-black text-blue-600 hover:bg-blue-50"
+              >
+                View chart
+              </button>
+            )}
           </div>
-          <div className="mb-3 grid grid-cols-4 gap-2 text-xs">
-            {trendData.slice(-4).map((point) => (
-              <div key={point.week} className={isDark ? "rounded-lg bg-white/5 px-2 py-1 text-center" : "rounded-lg bg-emerald-50 px-2 py-1 text-center"}>
-                <p className="font-black text-emerald-700">{currency.format(point.profit).replace(",000.00", "K").replace(".00", "")}</p>
-                <p className={mutedText}>{point.week}</p>
+          {hasTrendData ? (
+            <>
+              <div className="mb-3 grid grid-cols-4 gap-2 text-xs">
+                {trendData.slice(-4).map((point) => (
+                  <div key={point.week} className={isDark ? "rounded-lg bg-white/5 px-2 py-1 text-center" : "rounded-lg bg-emerald-50 px-2 py-1 text-center"}>
+                    <p className="font-black text-emerald-700">{currency.format(point.profit).replace(",000.00", "K").replace(".00", "")}</p>
+                    <p className={mutedText}>{point.week}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="profitTrendFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#16A34A" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#16A34A" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="week" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => `$${Math.round(value / 1000)}K`} />
-                <Tooltip formatter={(value) => currency.format(value)} />
-                <Area type="monotone" dataKey="profit" stroke="#16A34A" strokeWidth={3} fill="url(#profitTrendFill)" dot={{ r: 5, fill: "#16A34A", strokeWidth: 2, stroke: "#ffffff" }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="profitTrendFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#16A34A" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#16A34A" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => `$${Math.round(value / 1000)}K`} />
+                    <Tooltip formatter={(value) => currency.format(value)} />
+                    <Area type="monotone" dataKey="profit" stroke="#16A34A" strokeWidth={3} fill="url(#profitTrendFill)" dot={{ r: 5, fill: "#16A34A", strokeWidth: 2, stroke: "#ffffff" }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          ) : (
+            <div className={isDark ? "flex min-h-56 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center" : "flex min-h-56 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center"}>
+              <BarChart3 className={isDark ? "mb-3 h-9 w-9 text-slate-500" : "mb-3 h-9 w-9 text-slate-400"} />
+              <p className={`text-lg font-black ${titleText}`}>No profit history yet</p>
+              <p className={`mt-2 max-w-sm text-sm leading-relaxed ${mutedText}`}>
+                Save your first contract or daily route result to start building an 8-week profitability trend.
+              </p>
+              <button
+                type="button"
+                onClick={() => setProfitabilityView("Route Profit Check")}
+                className="mt-4 rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500"
+              >
+                Add Contract
+              </button>
+            </div>
+          )}
           </div>
         )}
       </div>
@@ -1868,23 +2105,30 @@ function ProfitabilityDashboard({
             )}
 
             {activeChartKey === "trend" && (
-              <div className="h-72 min-w-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={trendData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="profitTrendPopupFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#16A34A" stopOpacity={0.45} />
-                        <stop offset="95%" stopColor="#16A34A" stopOpacity={0.04} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="week" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => `$${Math.round(value / 1000)}K`} />
-                    <Tooltip formatter={(value) => currency.format(value)} />
-                    <Area type="monotone" dataKey="profit" stroke="#16A34A" strokeWidth={3} fill="url(#profitTrendPopupFill)" dot={{ r: 5, fill: "#16A34A", strokeWidth: 2, stroke: "#ffffff" }} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              hasTrendData ? (
+                <div className="h-72 min-w-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={trendData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="profitTrendPopupFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#16A34A" stopOpacity={0.45} />
+                          <stop offset="95%" stopColor="#16A34A" stopOpacity={0.04} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => `$${Math.round(value / 1000)}K`} />
+                      <Tooltip formatter={(value) => currency.format(value)} />
+                      <Area type="monotone" dataKey="profit" stroke="#16A34A" strokeWidth={3} fill="url(#profitTrendPopupFill)" dot={{ r: 5, fill: "#16A34A", strokeWidth: 2, stroke: "#ffffff" }} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className={isDark ? "rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center" : "rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center"}>
+                  <p className={`text-lg font-black ${titleText}`}>No trend data yet</p>
+                  <p className={`mt-2 text-sm ${mutedText}`}>Profit history will appear after real contracts or route results are saved.</p>
+                </div>
+              )
             )}
           </div>
         </div>

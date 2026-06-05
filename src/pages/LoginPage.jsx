@@ -168,6 +168,7 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
                 <p className="font-bold">Secure Supabase login is enabled.</p>
               </div>
               <p className="mt-2">Enter the email or username connected to your account.</p>
+              <p className="mt-2 font-black">Blank demo: demo123 / demo1234</p>
             </div>
           </form>
         </section>

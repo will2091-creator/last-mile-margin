@@ -8,8 +8,10 @@ import {
   FileText,
   Truck,
 } from "../shared";
+import EmptyState from "../components/EmptyState";
 
-function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backendStatus }) {
+function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backendStatus, navigateToTab }) {
+  const unassignedDriverLabel = "Unassigned";
   const driverOptions = teams
     .map((team) => ({
       name: team.lead,
@@ -20,17 +22,20 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   const getClaimDriver = (claim) => {
     if (claim.driver) return claim.driver;
     const matchingTeam = teams.find((team) => team.name === claim.team);
-    return matchingTeam?.lead || "";
+    return matchingTeam?.lead || unassignedDriverLabel;
   };
-  const getDriverTeam = (driverName) => driverOptions.find((driver) => driver.name === driverName)?.team || "";
+  const getDriverTeam = (driverName) => {
+    if (!driverName || driverName === unassignedDriverLabel) return "Unassigned";
+    return driverOptions.find((driver) => driver.name === driverName)?.team || "Unassigned";
+  };
   const getDriverRoute = (driverName) => driverOptions.find((driver) => driver.name === driverName)?.route || "";
 
   const blankClaim = {
     id: "",
     category: "Property",
     type: claimTypeOptions.Property[0],
-    driver: driverOptions[0]?.name || "",
-    team: driverOptions[0]?.team || "",
+    driver: driverOptions[0]?.name || unassignedDriverLabel,
+    team: driverOptions[0]?.team || "Unassigned",
     route: "",
     amount: "",
     status: "Open",
@@ -251,7 +256,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     const dateMatch = text.match(/\b(?:\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}-\d{2}-\d{2})\b/);
     const preventable = normalized.includes("not preventable") || normalized.includes("non-preventable") ? "No" : "Maybe";
     const risk = amount >= riskThresholds.high ? "High" : amount >= riskThresholds.medium ? "Medium" : "Low";
-    const driver = matchedDriver?.name || matchedRoute?.name || driverOptions[0]?.name || "";
+    const driver = matchedDriver?.name || matchedRoute?.name || driverOptions[0]?.name || unassignedDriverLabel;
     const confidenceSignals = [
       Boolean(typeMatch.type),
       amount > 0,
@@ -277,15 +282,17 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   };
 
   const approveImportedClaim = () => {
-    if (!importDraft?.id || !importDraft?.type || !importDraft?.driver) {
-      alert("Claim ID, Type, and Driver are required before saving.");
+    if (!importDraft?.id || !importDraft?.type) {
+      alert("Claim ID and Type are required before saving.");
       return;
     }
 
+    const assignedDriver = importDraft.driver || unassignedDriverLabel;
     const cleanedClaim = {
       ...importDraft,
-      team: getDriverTeam(importDraft.driver),
-      route: importDraft.route || getDriverRoute(importDraft.driver),
+      driver: assignedDriver,
+      team: getDriverTeam(assignedDriver),
+      route: importDraft.route || getDriverRoute(assignedDriver),
       amount: Number(importDraft.amount || 0),
     };
 
@@ -301,11 +308,12 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   };
 
   const queueImportedClaim = () => {
-    if (!importDraft?.id || !importDraft?.type || !importDraft?.driver) {
-      alert("Claim ID, Type, and Driver are required before adding to review.");
+    if (!importDraft?.id || !importDraft?.type) {
+      alert("Claim ID and Type are required before adding to review.");
       return;
     }
 
+    const assignedDriver = importDraft.driver || unassignedDriverLabel;
     const reviewItem = {
       id: activeReviewId || `EMAIL-${importDraft.id}`,
       receivedAt: new Date().toLocaleString(),
@@ -313,8 +321,9 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       sourceText: claimEmailText,
       claim: {
         ...importDraft,
-        team: getDriverTeam(importDraft.driver),
-        route: importDraft.route || getDriverRoute(importDraft.driver),
+        driver: assignedDriver,
+        team: getDriverTeam(assignedDriver),
+        route: importDraft.route || getDriverRoute(assignedDriver),
         amount: Number(importDraft.amount || 0),
       },
     };
@@ -349,10 +358,12 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   };
 
   const approveQueuedClaim = (item) => {
+    const assignedDriver = item.claim.driver || unassignedDriverLabel;
     const cleanedClaim = {
       ...item.claim,
-      team: getDriverTeam(item.claim.driver),
-      route: item.claim.route || getDriverRoute(item.claim.driver),
+      driver: assignedDriver,
+      team: getDriverTeam(assignedDriver),
+      route: item.claim.route || getDriverRoute(assignedDriver),
       amount: Number(item.claim.amount || 0),
     };
 
@@ -361,11 +372,13 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   };
 
   const approveQueuedClaimWithStatus = (item, status) => {
+    const assignedDriver = item.claim.driver || unassignedDriverLabel;
     const cleanedClaim = {
       ...item.claim,
       status,
-      team: getDriverTeam(item.claim.driver),
-      route: item.claim.route || getDriverRoute(item.claim.driver),
+      driver: assignedDriver,
+      team: getDriverTeam(assignedDriver),
+      route: item.claim.route || getDriverRoute(assignedDriver),
       amount: Number(item.claim.amount || 0),
     };
 
@@ -394,8 +407,8 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     setClaimForm({
       ...blankClaim,
       id: getNextClaimId(),
-      driver: driverOptions[0]?.name || "",
-      team: driverOptions[0]?.team || "",
+      driver: driverOptions[0]?.name || unassignedDriverLabel,
+      team: driverOptions[0]?.team || "Unassigned",
       route: driverOptions[0]?.route || "",
       type: claimTypeOptions.Property[0],
     });
@@ -417,15 +430,17 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   };
 
   const saveClaim = () => {
-    if (!claimForm.id || !claimForm.type || !claimForm.driver) {
-      alert("Claim ID, Type, and Driver are required.");
+    if (!claimForm.id || !claimForm.type) {
+      alert("Claim ID and Type are required.");
       return;
     }
 
+    const assignedDriver = claimForm.driver || unassignedDriverLabel;
     const cleanedClaim = {
       ...claimForm,
-      team: getDriverTeam(claimForm.driver),
-      route: claimForm.route || getDriverRoute(claimForm.driver),
+      driver: assignedDriver,
+      team: getDriverTeam(assignedDriver),
+      route: claimForm.route || getDriverRoute(assignedDriver),
       amount: Number(claimForm.amount || 0),
     };
 
@@ -867,6 +882,30 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
         </div>
       </div>
 
+      {claims.length === 0 && (
+        <EmptyState
+          isDark={isDark}
+          eyebrow="Claims setup"
+          title="No claims yet"
+          description="Claim emails, damage claims, penalties, cargo issues, and property claims will appear here for review, evidence tracking, and dispute packets."
+          Icon={FileText}
+          primaryAction={{
+            label: "Import Claim Email",
+            onClick: () => {
+              setShowImport(true);
+              setShowForm(false);
+              setReviewClaim(null);
+              setActiveReviewId(null);
+              scrollToClaimActionPanel();
+            },
+          }}
+          secondaryActions={[
+            { label: "Add Manual Claim", onClick: openAddForm },
+            { label: "Open Intake", onClick: () => navigateToTab?.("Intake") },
+          ]}
+        />
+      )}
+
       <div className={isDark ? "rounded-xl border border-white/10 bg-slate-900/80 px-5 py-4 text-center" : "rounded-xl border border-slate-300 bg-slate-200 px-5 py-4 text-center"}>
         <p className="text-xs font-black uppercase tracking-wide text-blue-600">Claim Workflow Board</p>
         <h2 className={`mt-1 text-xl font-black ${titleText}`}>Drag claims between columns to update status</h2>
@@ -1265,6 +1304,9 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                         }
                         className={inputClass}
                       >
+                        {driverOptions.length === 0 && (
+                          <option value={unassignedDriverLabel}>{unassignedDriverLabel}</option>
+                        )}
                         {driverOptions.map((driver) => (
                           <option key={`${driver.team}-${driver.name}`} value={driver.name}>{driver.name}</option>
                         ))}
@@ -1464,6 +1506,9 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                 }
                 className={inputClass}
               >
+                {driverOptions.length === 0 && (
+                  <option value={unassignedDriverLabel}>{unassignedDriverLabel}</option>
+                )}
                 {driverOptions.map((driver) => (
                   <option key={`${driver.team}-${driver.name}`} value={driver.name}>{driver.name}</option>
                 ))}
@@ -1670,7 +1715,17 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                   {filteredClaims.length === 0 && (
                     <tr>
                       <td colSpan="9" className={`py-8 text-center ${mutedText}`}>
-                        No claims found for this filter.
+                        <div className="flex flex-col items-center gap-3">
+                          <p className={`font-black ${titleText}`}>No claims match these filters.</p>
+                          <p className="max-w-xl text-sm">Reset filters or add/import a claim if this workspace is still new.</p>
+                          <button
+                            type="button"
+                            onClick={resetClaimFilters}
+                            className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-white hover:bg-white/10" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
+                          >
+                            Reset Filters
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -1699,6 +1754,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                 <button
                   type="button"
                   disabled
+                  title="PDF export needs backend document generation before it can be enabled."
                   className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-500" : "rounded-xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-400"}
                 >
                   Export PDF Soon

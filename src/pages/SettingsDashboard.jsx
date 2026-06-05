@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import {
   accentThemes,
   BarChart3,
+  BriefcaseBusiness,
   CheckCircle2,
   currency,
   defaultSettings,
@@ -11,9 +12,9 @@ import {
   Settings,
   ShieldCheck,
   Truck,
-  Users,
 } from "../shared";
 import { roleOptions } from "../lib/teamAccessRepository";
+import { resetStoredSetupProgress, restoreSetupPanel } from "../lib/onboarding";
 
 const defaultMarginFactors = {
   profile: "Appliance Delivery",
@@ -168,6 +169,11 @@ function SettingsDashboard({
   teamAccessStatus = "",
   onInviteTeamMember,
   onUpdateTeamMemberRole,
+  isDemoMode = false,
+  onLaunchDemo,
+  onExitDemo,
+  onResetDemo,
+  onRestartDemo,
 }) {
   const selectedAccent = accentThemes?.[appSettings?.accentColor] || accentThemes?.blue || { from: "#2563eb", to: "#1d4ed8" };
   const isDark = appSettings?.themeMode === "dark";
@@ -280,8 +286,16 @@ function SettingsDashboard({
     setSettingsNotice(message);
     setTimeout(() => setSettingsNotice(""), 2600);
   };
+  const resetSetupChecklist = () => {
+    resetStoredSetupProgress();
+    showNotice("Setup checklist reset. Return to Dashboard to start the launch flow again.");
+  };
+  const restoreSetupGuidance = () => {
+    restoreSetupPanel();
+    showNotice("Setup guidance restored. The Dashboard will show onboarding prompts again.");
+  };
 
-  const tabs = ["Company", "Team Access", "Dashboard Layout", "Margin Factors", "Claims", "Accessorials", "Labels", "Employees", "Notifications"];
+  const tabs = ["Company", "Team Access", "Dashboard Layout", "Margin Factors", "Targets", "Claims", "Accessorials", "Labels", "Employees", "Notifications"];
 
   const categoryCards = [
     {
@@ -447,6 +461,21 @@ function SettingsDashboard({
     medium: Number(appSettings?.claimRiskThresholds?.medium ?? 200),
     high: Number(appSettings?.claimRiskThresholds?.high ?? 500),
   };
+  const profitabilityBenchmarks = {
+    ...defaultSettings.profitabilityBenchmarks,
+    ...(appSettings?.profitabilityBenchmarks || {}),
+    targetMargin: Number(appSettings?.profitabilityBenchmarks?.targetMargin ?? defaultSettings.profitabilityBenchmarks.targetMargin),
+    claimsReserveTarget: Number(appSettings?.profitabilityBenchmarks?.claimsReserveTarget ?? defaultSettings.profitabilityBenchmarks.claimsReserveTarget),
+    reviewLineMargin: Number(appSettings?.profitabilityBenchmarks?.reviewLineMargin ?? defaultSettings.profitabilityBenchmarks.reviewLineMargin),
+  };
+  const companyCompleteness = [
+    ["Company name", Boolean(appSettings?.companyName)],
+    ["Accent/theme", Boolean(appSettings?.accentColor || appSettings?.themeMode)],
+    ["Dashboard layout", Boolean(appSettings?.dashboardWidgetOrder)],
+    ["Margin targets", Boolean(appSettings?.profitabilityBenchmarks)],
+    ["Claim thresholds", Boolean(appSettings?.claimRiskThresholds)],
+  ];
+  const companyCompletenessCount = companyCompleteness.filter(([, done]) => done).length;
 
   const Toggle = ({ checked, onClick }) => (
     <button
@@ -553,6 +582,116 @@ function SettingsDashboard({
             <div className={isDark ? "rounded-xl border border-white/10 bg-slate-950/60 p-3 text-blue-200" : "rounded-xl border border-blue-100 bg-blue-50 p-3 text-blue-700"}>
               {appStateBackendStatus || "App state sync pending."}
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={isDemoMode ? (isDark ? "rounded-2xl border border-blue-400/30 bg-blue-500/15 p-5 shadow-xl shadow-black/20" : "rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm") : cardClass}>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3">
+            <div className={toneStyles.blue + " flex h-11 w-11 items-center justify-center rounded-2xl"}>
+              <BriefcaseBusiness className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-wide text-blue-600">Demo Workspace</p>
+              <h2 className={`mt-1 text-lg font-black ${titleText}`}>{isDemoMode ? "Viewing Demo Workspace" : "Demo Mode is off"}</h2>
+              <p className={`mt-1 max-w-3xl text-sm font-semibold leading-6 ${mutedText}`}>
+                Demo data is stored separately from real workspace data. Use it to show contracts, claims, teams, receipts, reports, trend history, and Ask responses without touching live information.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className={isDark ? "flex items-center gap-3 rounded-xl border border-white/10 px-4 py-2" : "flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2"}>
+              <span className={`text-sm font-black ${titleText}`}>Demo Mode</span>
+              <Toggle checked={isDemoMode} onClick={() => (isDemoMode ? onExitDemo?.() : onLaunchDemo?.({ reset: false }))} />
+            </div>
+            <button
+              type="button"
+              onClick={() => (isDemoMode ? onExitDemo?.() : onLaunchDemo?.({ reset: false }))}
+              className={isDemoMode ? "rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white hover:bg-slate-800" : "rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500"}
+            >
+              {isDemoMode ? "Exit Demo Mode" : "Launch Demo Workspace"}
+            </button>
+            <button
+              type="button"
+              onClick={onResetDemo}
+              className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/5" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
+            >
+              Reset Demo Data
+            </button>
+            <button
+              type="button"
+              onClick={onRestartDemo}
+              className={isDark ? "rounded-xl border border-emerald-400/30 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/10" : "rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-50"}
+            >
+              Restart Guided Demo
+            </button>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {[
+            ["State separation", "Demo rows use finalMileDemo* storage keys."],
+            ["Safe return", "Exit Demo Mode restores your real/blank workspace."],
+            ["Reset anytime", "Reset Demo Data reloads the original sample company."],
+          ].map(([label, detail]) => (
+            <div key={label} className={isDark ? "rounded-xl border border-white/10 bg-slate-950/50 p-3" : "rounded-xl border border-blue-100 bg-white p-3"}>
+              <p className={`text-sm font-black ${titleText}`}>{label}</p>
+              <p className={`mt-1 text-xs font-bold leading-5 ${mutedText}`}>{detail}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+        <div className={cardClass}>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wide text-blue-600">Onboarding controls</p>
+              <h2 className={`mt-1 text-xl font-black ${titleText}`}>Setup guidance stays recoverable</h2>
+              <p className={`mt-2 max-w-3xl text-sm font-semibold leading-6 ${mutedText}`}>
+                Reset the checklist, restore setup prompts, or use dashboard presets when you want the app to guide a new owner through setup again.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={restoreSetupGuidance} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500">
+                Restore Setup
+              </button>
+              <button type="button" onClick={resetSetupChecklist} className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/5" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}>
+                Reset Checklist
+              </button>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-4">
+            {["Owner daily view", "Claims-heavy operation", "Finance review", "Compliance review"].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => {
+                  const presetName = preset.includes("Claims") ? "Operations" : preset.includes("Finance") ? "Finance" : preset.includes("Compliance") ? "Compliance" : "Full";
+                  applyDashboardPreset(presetName);
+                  showNotice(`${preset} preset applied.`);
+                }}
+                className={isDark ? "rounded-xl bg-white/5 px-3 py-2 text-xs font-black text-slate-200 hover:bg-white/10" : "rounded-xl bg-slate-50 px-3 py-2 text-xs font-black text-slate-700 hover:bg-blue-50"}
+              >
+                {preset}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className={cardClass}>
+          <p className="text-xs font-black uppercase tracking-wide text-blue-600">Company profile</p>
+          <h2 className={`mt-1 text-lg font-black ${titleText}`}>{companyCompletenessCount} of {companyCompleteness.length} complete</h2>
+          <div className={isDark ? "mt-3 h-2 overflow-hidden rounded-full bg-slate-950/70" : "mt-3 h-2 overflow-hidden rounded-full bg-slate-100"}>
+            <div className="h-full rounded-full bg-emerald-600" style={{ width: `${(companyCompletenessCount / companyCompleteness.length) * 100}%` }} />
+          </div>
+          <div className="mt-4 space-y-2">
+            {companyCompleteness.map(([label, done]) => (
+              <div key={label} className="flex items-center justify-between gap-3 text-sm">
+                <span className={`font-bold ${mutedText}`}>{label}</span>
+                <span className={done ? "font-black text-emerald-700" : "font-black text-amber-700"}>{done ? "Done" : "Needed"}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -842,6 +981,87 @@ function SettingsDashboard({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {activeSettingsTab === "Targets" && (
+            <div className="mt-6 grid gap-5 xl:grid-cols-[1fr_360px]">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Target Margin</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={profitabilityBenchmarks.targetMargin}
+                      onChange={(event) => updateNestedSetting("profitabilityBenchmarks", "targetMargin", Number(event.target.value || 0))}
+                      className={`${inputClass} pr-8`}
+                    />
+                    <span className={`absolute right-3 top-2.5 text-sm font-black ${mutedText}`}>%</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Claims Reserve Target</label>
+                  <div className="relative">
+                    <span className={`absolute left-3 top-2.5 text-sm font-black ${mutedText}`}>$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      value={profitabilityBenchmarks.claimsReserveTarget}
+                      onChange={(event) => updateNestedSetting("profitabilityBenchmarks", "claimsReserveTarget", Number(event.target.value || 0))}
+                      className={`${inputClass} pl-7`}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Review Line Margin</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={profitabilityBenchmarks.reviewLineMargin}
+                      onChange={(event) => updateNestedSetting("profitabilityBenchmarks", "reviewLineMargin", Number(event.target.value || 0))}
+                      className={`${inputClass} pr-8`}
+                    />
+                    <span className={`absolute right-3 top-2.5 text-sm font-black ${mutedText}`}>%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className={softCard}>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className={`text-sm font-black ${titleText}`}>Show Benchmarks</p>
+                    <p className={`mt-1 text-xs leading-5 ${mutedText}`}>These values appear on profitability summary cards once contract data exists.</p>
+                  </div>
+                  <Toggle
+                    checked={profitabilityBenchmarks.enabled !== false}
+                    onClick={() => updateNestedSetting("profitabilityBenchmarks", "enabled", profitabilityBenchmarks.enabled === false)}
+                  />
+                </div>
+
+                <div className={`mt-4 divide-y ${isDark ? "divide-white/10" : "divide-slate-200"}`}>
+                  <div className="flex items-center justify-between py-3 text-sm">
+                    <span className={mutedText}>Target margin</span>
+                    <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-black text-blue-600">{profitabilityBenchmarks.targetMargin.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between py-3 text-sm">
+                    <span className={mutedText}>Claims reserve</span>
+                    <span className="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-black text-amber-700">{currency.format(profitabilityBenchmarks.claimsReserveTarget)}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-3 text-sm">
+                    <span className={mutedText}>Review line</span>
+                    <span className={isDark ? "rounded-full bg-slate-500/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-500/10 px-3 py-1 text-xs font-black text-slate-600"}>{profitabilityBenchmarks.reviewLineMargin.toFixed(1)}%</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}

@@ -4,24 +4,33 @@ import lastMileMarginLogo from "./assets/last-mile-margin-logo-transparent.svg";
 import lastMileMarginLogoDark from "./assets/last-mile-margin-logo-transparent-dark.svg";
 import LoginPage from "./pages/LoginPage";
 import DashboardHome from "./pages/DashboardHome";
-import ClaimsDashboard from "./pages/ClaimsDashboard";
-import TeamsDashboard from "./pages/TeamsDashboard";
-import ComplianceDashboard from "./pages/ComplianceDashboard";
 import SettingsDashboard from "./pages/SettingsDashboard";
-import ProfitabilityDashboard from "./pages/ProfitabilityDashboard";
-import ContractsDashboard from "./pages/ContractsDashboard";
+import OperationsDashboard from "./pages/OperationsDashboard";
+import FinanceDashboard from "./pages/FinanceDashboard";
 import ReportsDashboard from "./pages/ReportsDashboard";
 import AskBusinessDashboard from "./pages/AskBusinessDashboard";
 import AiQuickIntake from "./components/AiQuickIntake";
+import GuidedDemoTour from "./components/GuidedDemoTour";
+import ProductTour from "./components/ProductTour";
+import { navPreviewContent } from "./components/guidedDemoContent";
 import { loadAppStateFromSupabase, saveAppStateToSupabase } from "./lib/appStateRepository";
 import { loadClaimsFromSupabase, syncClaimsToSupabase } from "./lib/claimsRepository";
+import {
+  demoStorageKeys,
+  getDemoWorkspaceData,
+  isDemoModeActive,
+  seedDemoWorkspace,
+  setDemoModeActive,
+} from "./lib/demoWorkspace";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 import { addTeamMember, loadTeamAccess, updateTeamMemberRole } from "./lib/teamAccessRepository";
+import { emptyTourStatus, markProductTourCompleted, markProductTourSkipped, readProductTourStatus, resetProductTourStatus } from "./lib/tourStorage";
 import {
   accentThemes,
   Bot,
   BriefcaseBusiness,
   Calculator,
+  Camera,
   ClipboardCheck,
   currency,
   defaultForm,
@@ -49,7 +58,10 @@ const usernameEmailMap = {
 const tabSlugs = {
   Dashboard: "dashboard",
   Intake: "intake",
+  Operations: "operations",
+  Finance: "finance",
   Profitability: "profitability",
+  Receipts: "receipts",
   Contracts: "contracts",
   Compliance: "compliance",
   Claims: "claims",
@@ -61,8 +73,39 @@ const tabSlugs = {
 
 const tabBySlug = Object.fromEntries(Object.entries(tabSlugs).map(([tab, slug]) => [slug, tab]));
 
+const groupedTabs = {
+  Claims: ["Operations", "Claims"],
+  Teams: ["Operations", "Teams"],
+  Compliance: ["Operations", "Compliance"],
+  Profitability: ["Finance", "Profitability"],
+  Receipts: ["Finance", "Receipts"],
+  Contracts: ["Finance", "Contracts"],
+};
+
+const normalizeTopTab = (tab) => groupedTabs[tab]?.[0] || tab;
+
+const roleAccess = {
+  owner: ["Dashboard", "Ask", "Intake", "Operations", "Finance", "Reports", "Settings"],
+  admin: ["Dashboard", "Ask", "Intake", "Operations", "Finance", "Reports", "Settings"],
+  dispatcher: ["Dashboard", "Ask", "Intake", "Operations", "Reports"],
+  driver: ["Dashboard", "Intake"],
+};
+
+const roleLabels = {
+  owner: "Owner",
+  admin: "Admin",
+  dispatcher: "Dispatcher",
+  driver: "Driver",
+};
+
+const getAllowedTabsForRole = (role) => roleAccess[role] || roleAccess.driver;
+
+const canAccessTab = (role, tabName) => getAllowedTabsForRole(role).includes(normalizeTopTab(tabName));
+
+const getHashSlug = () => window.location.hash.replace(/^#\/?/, "").toLowerCase();
+
 const getTabFromUrl = () => {
-  const slug = window.location.hash.replace(/^#\/?/, "").toLowerCase();
+  const slug = getHashSlug();
   return tabBySlug[slug] || "Dashboard";
 };
 
@@ -73,7 +116,73 @@ const getLocalDateKey = (date = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
+const blankDemoForm = {
+  ...defaultForm,
+  scenarioName: "",
+  routePay: 0,
+  perStopPay: 0,
+  stops: 0,
+  installPay: 0,
+  accessorialPay: 0,
+  fuelSurcharge: 0,
+  reattemptPay: 0,
+  miles: 0,
+  mpg: 0,
+  fuelPrice: 0,
+  routeHours: 0,
+  driverPay: 0,
+  helperPay: 0,
+  tollsParking: 0,
+  dailyTruckPayment: 0,
+  dailyInsurance: 0,
+  maintenancePerMile: 0,
+  phoneSoftware: 0,
+  claimsChargebacks: 0,
+  otherCosts: 0,
+  targetProfit: 0,
+  claimsPerWeek: 0,
+  averageClaimAmount: 0,
+  routesPerWeek: 0,
+  escrowPerWeek: 0,
+  routeType: "",
+  vehicleType: "",
+};
+
+const blankDemoSettings = {
+  ...defaultSettings,
+  companyName: "New Demo Company",
+  profitabilityBenchmarks: {
+    ...defaultSettings.profitabilityBenchmarks,
+    enabled: false,
+  },
+};
+
+const blankDemoStorageKeys = [
+  "finalMileBlankDemoRollupRows",
+  "finalMileBlankDemoContracts",
+  "finalMileBlankDemoOnboardingImports",
+  "finalMileBlankDemoSetupWizard",
+  "finalMileBlankDemoUploadedReceipts",
+  "finalMileBlankDemoRouteProfitContractId",
+];
+
+const resetBlankDemoStorage = () => {
+  if (typeof window === "undefined") return;
+  blankDemoStorageKeys.forEach((key) => localStorage.removeItem(key));
+};
+
+let hasResetBlankDemoStorageOnStartup = false;
+
 export default function App() {
+  if (
+    typeof window !== "undefined" &&
+    !hasResetBlankDemoStorageOnStartup &&
+    sessionStorage.getItem("finalMileBlankDemo") === "true"
+  ) {
+    hasResetBlankDemoStorageOnStartup = true;
+    resetBlankDemoStorage();
+  }
+
   const loadFromLocalStorage = (key, fallback) => {
     try {
       const saved = localStorage.getItem(key);
@@ -84,17 +193,39 @@ export default function App() {
     }
   };
 
-  const [form, setForm] = useState(defaultForm);
-  const [savedScenarios, setSavedScenarios] = useState(() =>
-    loadFromLocalStorage("finalMileSavedScenarios", [])
+  const [isDemoMode, setIsDemoMode] = useState(() => isDemoModeActive());
+  const [isDemoWorkspace, setIsDemoWorkspace] = useState(() =>
+    sessionStorage.getItem("finalMileBlankDemo") === "true" || isDemoModeActive()
   );
-  const [activeTab, setActiveTab] = useState(() => getTabFromUrl());
+  const isBlankDemoWorkspace = isDemoWorkspace && !isDemoMode;
+  const [form, setForm] = useState(() => {
+    if (isDemoMode) {
+      const demo = seedDemoWorkspace();
+      return loadFromLocalStorage(demoStorageKeys.form, demo.form);
+    }
+    return isDemoWorkspace ? blankDemoForm : defaultForm;
+  });
+  const [savedScenarios, setSavedScenarios] = useState(() =>
+    isDemoMode
+      ? loadFromLocalStorage(demoStorageKeys.savedScenarios, seedDemoWorkspace().savedScenarios)
+      : loadFromLocalStorage("finalMileSavedScenarios", [])
+  );
+  const initialUrlTab = getTabFromUrl();
+  const [activeTab, setActiveTab] = useState(() => normalizeTopTab(initialUrlTab));
+  const [activeOperationsTab, setActiveOperationsTab] = useState(() => groupedTabs[initialUrlTab]?.[0] === "Operations" ? groupedTabs[initialUrlTab][1] : "Dispatch");
+  const [activeFinanceTab, setActiveFinanceTab] = useState(() => groupedTabs[initialUrlTab]?.[0] === "Finance" ? groupedTabs[initialUrlTab][1] : "Profitability");
   const [reportsHomeSignal, setReportsHomeSignal] = useState(0);
+  const [isProductTourOpen, setIsProductTourOpen] = useState(false);
+  const [isGuidedDemoOpen, setIsGuidedDemoOpen] = useState(false);
+  const [hasAutoStartedBlankDemoTour, setHasAutoStartedBlankDemoTour] = useState(false);
+  const [productTourStatus, setProductTourStatus] = useState(readProductTourStatus);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showSavedDays, setShowSavedDays] = useState(false);
   const [savedDayFlash, setSavedDayFlash] = useState(false);
   const [savedDays, setSavedDays] = useState(() =>
-    loadFromLocalStorage("finalMileSavedDays", [])
+    isDemoMode
+      ? loadFromLocalStorage(demoStorageKeys.savedDays, seedDemoWorkspace().savedDays)
+      : isDemoWorkspace ? [] : loadFromLocalStorage("finalMileSavedDays", [])
   );
   const [loadedSavedDay, setLoadedSavedDay] = useState(null);
   const [currentWorkDate, setCurrentWorkDate] = useState(() =>
@@ -113,16 +244,46 @@ export default function App() {
     return new Date(date.getFullYear(), date.getMonth(), 1);
   });
   const [claims, setClaims] = useState(() =>
-    loadFromLocalStorage("finalMileClaims", initialClaims)
+    isDemoMode
+      ? loadFromLocalStorage(demoStorageKeys.claims, seedDemoWorkspace().claims)
+      : isDemoWorkspace ? [] : loadFromLocalStorage("finalMileClaims", initialClaims)
   );
   const [claimsBackendStatus, setClaimsBackendStatus] = useState("Local claims ready.");
   const [hasLoadedRemoteClaims, setHasLoadedRemoteClaims] = useState(false);
   const [appStateBackendStatus, setAppStateBackendStatus] = useState("Local app state ready.");
   const [hasLoadedRemoteAppState, setHasLoadedRemoteAppState] = useState(false);
   const [teams, setTeams] = useState(() =>
-    loadFromLocalStorage("finalMileTeams", initialTeams)
+    isDemoMode
+      ? loadFromLocalStorage(demoStorageKeys.teams, seedDemoWorkspace().teams)
+      : isDemoWorkspace ? [] : loadFromLocalStorage("finalMileTeams", initialTeams)
   );
   const [appSettings, setAppSettings] = useState(() => {
+    if (isDemoMode) {
+      const demoSettings = loadFromLocalStorage(demoStorageKeys.settings, seedDemoWorkspace().settings);
+      return {
+        ...defaultSettings,
+        ...demoSettings,
+        dashboardWidgets: {
+          ...defaultSettings.dashboardWidgets,
+          ...(demoSettings.dashboardWidgets || {}),
+        },
+        dashboardWidgetOrder: [
+          ...new Set([
+            ...(demoSettings.dashboardWidgetOrder || []),
+            ...(defaultSettings.dashboardWidgetOrder || Object.keys(defaultSettings.dashboardWidgets)),
+          ]),
+        ].filter((key) => Object.prototype.hasOwnProperty.call(defaultSettings.dashboardWidgets, key)),
+        claimRiskThresholds: {
+          ...defaultSettings.claimRiskThresholds,
+          ...(demoSettings.claimRiskThresholds || {}),
+        },
+        profitabilityBenchmarks: {
+          ...defaultSettings.profitabilityBenchmarks,
+          ...(demoSettings.profitabilityBenchmarks || {}),
+        },
+      };
+    }
+    if (isDemoWorkspace) return blankDemoSettings;
     const savedSettings = loadFromLocalStorage("finalMileSettings", defaultSettings);
 
     return {
@@ -142,24 +303,59 @@ export default function App() {
         ...defaultSettings.claimRiskThresholds,
         ...(savedSettings.claimRiskThresholds || {}),
       },
+      profitabilityBenchmarks: {
+        ...defaultSettings.profitabilityBenchmarks,
+        ...(savedSettings.profitabilityBenchmarks || {}),
+      },
     };
   });
   const [isLoggedIn, setIsLoggedIn] = useState(() =>
-    localStorage.getItem("finalMileLoggedIn") === "true"
+    isDemoWorkspace || localStorage.getItem("finalMileLoggedIn") === "true"
   );
   const [authUser, setAuthUser] = useState(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(isSupabaseConfigured);
+  const [isAuthLoading, setIsAuthLoading] = useState(isSupabaseConfigured && !isDemoWorkspace);
   const [teamMembers, setTeamMembers] = useState([]);
   const [currentUserRole, setCurrentUserRole] = useState("owner");
   const [teamAccessStatus, setTeamAccessStatus] = useState("Team access will load after sign in.");
 
   useEffect(() => {
+    if (isDemoMode) {
+      localStorage.setItem(demoStorageKeys.settings, JSON.stringify(appSettings));
+      return;
+    }
+    if (isDemoWorkspace) return;
     localStorage.setItem("finalMileSettings", JSON.stringify(appSettings));
-  }, [appSettings]);
+  }, [appSettings, isDemoMode, isDemoWorkspace]);
 
   useEffect(() => {
+    if (!isDemoMode) return;
+    localStorage.setItem(demoStorageKeys.form, JSON.stringify(form));
+  }, [form, isDemoMode]);
+
+  useEffect(() => {
+    if (isDemoWorkspace) return;
     localStorage.setItem("finalMileLoggedIn", String(isLoggedIn));
-  }, [isLoggedIn]);
+  }, [isDemoWorkspace, isLoggedIn]);
+
+  useEffect(() => {
+    if (!isLoggedIn || isDemoMode || activeTab !== "Dashboard") return;
+    if (isProductTourOpen || hasAutoStartedBlankDemoTour) return;
+    const contractKey = isBlankDemoWorkspace ? "finalMileBlankDemoRollupRows" : "finalMileRollupRows";
+    const importKey = isBlankDemoWorkspace ? "finalMileBlankDemoOnboardingImports" : "finalMileOnboardingImports";
+    const hasStoredContracts = loadFromLocalStorage(contractKey, []).length > 0;
+    const hasStoredImports = loadFromLocalStorage(importKey, []).length > 0;
+    const isEmptyWorkspace =
+      teams.length === 0 &&
+      claims.length === 0 &&
+      savedDays.length === 0 &&
+      savedScenarios.length === 0 &&
+      !hasStoredContracts &&
+      !hasStoredImports;
+    if (!isEmptyWorkspace) return;
+    setHasAutoStartedBlankDemoTour(true);
+    const tourTimer = window.setTimeout(() => setIsProductTourOpen(true), 450);
+    return () => window.clearTimeout(tourTimer);
+  }, [activeTab, claims.length, hasAutoStartedBlankDemoTour, isBlankDemoWorkspace, isDemoMode, isLoggedIn, isProductTourOpen, savedDays.length, savedScenarios.length, teams.length]);
 
   const refreshTeamAccess = async () => {
     const result = await loadTeamAccess();
@@ -175,6 +371,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (isDemoWorkspace) return;
     if (!isSupabaseConfigured || !supabase) {
       setIsAuthLoading(false);
       return undefined;
@@ -201,9 +398,15 @@ export default function App() {
       isMounted = false;
       listener.subscription.unsubscribe();
     };
-  }, []);
+  }, [isDemoWorkspace]);
 
   useEffect(() => {
+    if (isDemoWorkspace) {
+      setTeamMembers([]);
+      setCurrentUserRole("owner");
+      setTeamAccessStatus(isDemoMode ? "Viewing Demo Workspace. Team access is demo-only." : "Blank demo workspace. No team users have been added.");
+      return;
+    }
     if (!authUser) {
       setTeamMembers([]);
       setCurrentUserRole("owner");
@@ -229,17 +432,32 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, [authUser]);
+  }, [authUser, isDemoMode, isDemoWorkspace]);
 
   useEffect(() => {
+    if (isDemoMode) {
+      localStorage.setItem(demoStorageKeys.teams, JSON.stringify(teams));
+      return;
+    }
+    if (isDemoWorkspace) return;
     localStorage.setItem("finalMileTeams", JSON.stringify(teams));
-  }, [teams]);
+  }, [isDemoMode, isDemoWorkspace, teams]);
 
   useEffect(() => {
+    if (isDemoMode) {
+      localStorage.setItem(demoStorageKeys.claims, JSON.stringify(claims));
+      return;
+    }
+    if (isDemoWorkspace) return;
     localStorage.setItem("finalMileClaims", JSON.stringify(claims));
-  }, [claims]);
+  }, [claims, isDemoMode, isDemoWorkspace]);
 
   useEffect(() => {
+    if (isDemoWorkspace) {
+      setAppStateBackendStatus(isDemoMode ? "Viewing Demo Workspace. Supabase sync is off." : "Blank demo workspace. Supabase sync is off.");
+      setHasLoadedRemoteAppState(true);
+      return;
+    }
     let isMounted = true;
 
     const loadRemoteAppState = async () => {
@@ -276,6 +494,10 @@ export default function App() {
               ...defaultSettings.claimRiskThresholds,
               ...(remoteState.appSettings.claimRiskThresholds || {}),
             },
+            profitabilityBenchmarks: {
+              ...defaultSettings.profitabilityBenchmarks,
+              ...(remoteState.appSettings.profitabilityBenchmarks || {}),
+            },
           }));
         }
 
@@ -293,9 +515,14 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isDemoMode, isDemoWorkspace]);
 
   useEffect(() => {
+    if (isDemoWorkspace) {
+      setClaimsBackendStatus(isDemoMode ? "Viewing Demo Workspace. Claims are demo-only." : "Blank demo workspace. No claims entered yet.");
+      setHasLoadedRemoteClaims(true);
+      return;
+    }
     let isMounted = true;
 
     const loadRemoteClaims = async () => {
@@ -318,9 +545,10 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isDemoMode, isDemoWorkspace]);
 
   useEffect(() => {
+    if (isDemoWorkspace) return;
     if (!hasLoadedRemoteClaims) return;
 
     let isMounted = true;
@@ -342,9 +570,10 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, [claims, hasLoadedRemoteClaims]);
+  }, [claims, hasLoadedRemoteClaims, isDemoWorkspace]);
 
   useEffect(() => {
+    if (isDemoWorkspace) return;
     if (!hasLoadedRemoteAppState) return;
 
     let isMounted = true;
@@ -372,25 +601,50 @@ export default function App() {
       isMounted = false;
       window.clearTimeout(syncTimer);
     };
-  }, [appSettings, currentWorkDate, form, globalDateRange, hasLoadedRemoteAppState, savedDays, savedScenarios, teams]);
+  }, [appSettings, currentWorkDate, form, globalDateRange, hasLoadedRemoteAppState, isDemoWorkspace, savedDays, savedScenarios, teams]);
 
   useEffect(() => {
+    if (isDemoMode) {
+      localStorage.setItem(demoStorageKeys.savedScenarios, JSON.stringify(savedScenarios));
+      return;
+    }
+    if (isDemoWorkspace) return;
     localStorage.setItem("finalMileSavedScenarios", JSON.stringify(savedScenarios));
-  }, [savedScenarios]);
+  }, [isDemoMode, isDemoWorkspace, savedScenarios]);
 
   useEffect(() => {
+    if (isDemoMode) {
+      localStorage.setItem(demoStorageKeys.savedDays, JSON.stringify(savedDays));
+      return;
+    }
+    if (isDemoWorkspace) return;
     localStorage.setItem("finalMileSavedDays", JSON.stringify(savedDays));
-  }, [savedDays]);
+  }, [isDemoMode, isDemoWorkspace, savedDays]);
 
   useEffect(() => {
+    if (isDemoWorkspace) return;
     localStorage.setItem("finalMileCurrentWorkDate", currentWorkDate);
-  }, [currentWorkDate]);
+  }, [currentWorkDate, isDemoWorkspace]);
 
   useEffect(() => {
     const handleHistoryChange = () => {
+      const slug = getHashSlug();
+      if (slug && !tabBySlug[slug]) {
+        window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
+      }
+
       const nextTab = getTabFromUrl();
-      setActiveTab(nextTab);
-      if (nextTab === "Reports") {
+      if (!canAccessTab(currentUserRole, nextTab)) {
+        const fallbackTab = getAllowedTabsForRole(currentUserRole)[0] || "Dashboard";
+        window.history.replaceState({ tab: fallbackTab }, "", `#/${tabSlugs[fallbackTab]}`);
+        setActiveTab(fallbackTab);
+        return;
+      }
+      if (groupedTabs[nextTab]?.[0] === "Operations") setActiveOperationsTab(groupedTabs[nextTab][1]);
+      if (groupedTabs[nextTab]?.[0] === "Finance") setActiveFinanceTab(groupedTabs[nextTab][1]);
+      const nextTopTab = normalizeTopTab(nextTab);
+      setActiveTab(nextTopTab);
+      if (nextTopTab === "Reports") {
         setReportsHomeSignal((current) => current + 1);
       }
     };
@@ -407,7 +661,7 @@ export default function App() {
       window.removeEventListener("popstate", handleHistoryChange);
       window.removeEventListener("hashchange", handleHistoryChange);
     };
-  }, []);
+  }, [currentUserRole]);
 
   const isDark = appSettings.themeMode === "dark";
   const activeAccent = accentThemes[appSettings.accentColor] || accentThemes.blue;
@@ -591,17 +845,31 @@ export default function App() {
     { name: "Dashboard", icon: LayoutDashboard },
     { name: "Ask", icon: Bot },
     { name: "Intake", icon: Upload },
-    { name: "Profitability", icon: Calculator },
-    { name: "Contracts", icon: BriefcaseBusiness },
-    { name: "Compliance", icon: ShieldCheck },
-    { name: "Claims", icon: FileText },
-    { name: "Teams", icon: Users },
+    { name: "Operations", icon: BriefcaseBusiness },
+    { name: "Finance", icon: Calculator },
     { name: "Reports", icon: ClipboardCheck },
     { name: "Settings", icon: Settings },
   ];
+  const allowedTabs = getAllowedTabsForRole(currentUserRole);
+  const visibleNavItems = navItems.filter((item) => allowedTabs.includes(item.name));
+  const defaultAllowedTab = allowedTabs[0] || "Dashboard";
+  const canManageBusiness = currentUserRole === "owner" || currentUserRole === "admin";
 
   const navigateToTab = (tabName, options = {}) => {
+    if (groupedTabs[tabName]?.[0] === "Operations") {
+      setActiveOperationsTab(groupedTabs[tabName][1]);
+      tabName = "Operations";
+    }
+
+    if (groupedTabs[tabName]?.[0] === "Finance") {
+      setActiveFinanceTab(groupedTabs[tabName][1]);
+      tabName = "Finance";
+    }
+
     if (!tabSlugs[tabName]) return;
+    if (!canAccessTab(currentUserRole, tabName)) {
+      tabName = defaultAllowedTab;
+    }
 
     setShowSavedDays(false);
     setShowDatePicker(false);
@@ -621,6 +889,126 @@ export default function App() {
     }
     setActiveTab(tabName);
   };
+
+  const startProductTour = () => {
+    navigateToTab("Dashboard");
+    window.setTimeout(() => setIsProductTourOpen(true), 120);
+  };
+
+  const finishProductTour = () => {
+    setProductTourStatus(markProductTourCompleted());
+    setIsProductTourOpen(false);
+  };
+
+  const skipProductTour = () => {
+    setProductTourStatus(markProductTourSkipped());
+    setIsProductTourOpen(false);
+  };
+
+  const loadDemoWorkspace = ({ reset = false, startTour = false, startGuidedDemo = false } = {}) => {
+    const demo = seedDemoWorkspace({ reset });
+    sessionStorage.removeItem("finalMileBlankDemo");
+    setDemoModeActive(true);
+    setIsDemoWorkspace(true);
+    setIsDemoMode(true);
+    setAuthUser(null);
+    setIsLoggedIn(true);
+    setIsAuthLoading(false);
+    setCurrentUserRole("owner");
+    setTeamMembers([]);
+    setTeamAccessStatus("Viewing Demo Workspace. Team access is demo-only.");
+    setForm(demo.form);
+    setSavedScenarios(demo.savedScenarios);
+    setSavedDays(demo.savedDays);
+    setLoadedSavedDay(null);
+    setClaims(demo.claims);
+    setTeams(demo.teams);
+    setAppSettings(demo.settings);
+    setClaimsBackendStatus("Viewing Demo Workspace. Claims are demo-only.");
+    setAppStateBackendStatus("Viewing Demo Workspace. Supabase sync is off.");
+    setHasLoadedRemoteClaims(true);
+    setHasLoadedRemoteAppState(true);
+    setActiveTab("Dashboard");
+    setActiveOperationsTab("Dispatch");
+    setActiveFinanceTab("Profitability");
+    setShowSavedDays(false);
+    setShowDatePicker(false);
+    setIsProductTourOpen(false);
+    window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
+    if (startTour) {
+      window.setTimeout(() => setIsProductTourOpen(true), 180);
+    }
+    if (startGuidedDemo) {
+      window.setTimeout(() => setIsGuidedDemoOpen(true), 220);
+    }
+  };
+
+  const exitDemoWorkspace = () => {
+    setDemoModeActive(false);
+    setIsDemoMode(false);
+    setIsDemoWorkspace(false);
+    setIsProductTourOpen(false);
+    setIsGuidedDemoOpen(false);
+    setForm(defaultForm);
+    setSavedScenarios(loadFromLocalStorage("finalMileSavedScenarios", []));
+    setSavedDays(loadFromLocalStorage("finalMileSavedDays", []));
+    setLoadedSavedDay(null);
+    setClaims(loadFromLocalStorage("finalMileClaims", initialClaims));
+    setTeams(loadFromLocalStorage("finalMileTeams", initialTeams));
+    const savedSettings = loadFromLocalStorage("finalMileSettings", defaultSettings);
+    setAppSettings({
+      ...defaultSettings,
+      ...savedSettings,
+      dashboardWidgets: {
+        ...defaultSettings.dashboardWidgets,
+        ...(savedSettings.dashboardWidgets || {}),
+      },
+      dashboardWidgetOrder: [
+        ...new Set([
+          ...(savedSettings.dashboardWidgetOrder || []),
+          ...(defaultSettings.dashboardWidgetOrder || Object.keys(defaultSettings.dashboardWidgets)),
+        ]),
+      ].filter((key) => Object.prototype.hasOwnProperty.call(defaultSettings.dashboardWidgets, key)),
+      claimRiskThresholds: {
+        ...defaultSettings.claimRiskThresholds,
+        ...(savedSettings.claimRiskThresholds || {}),
+      },
+      profitabilityBenchmarks: {
+        ...defaultSettings.profitabilityBenchmarks,
+        ...(savedSettings.profitabilityBenchmarks || {}),
+      },
+    });
+    setClaimsBackendStatus("Local claims ready.");
+    setAppStateBackendStatus("Local app state ready.");
+    setActiveTab("Dashboard");
+    window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
+  };
+
+  const resetDemoWorkspace = () => {
+    loadDemoWorkspace({ reset: true });
+  };
+
+  const restartGuidedDemo = () => {
+    loadDemoWorkspace({ reset: true, startGuidedDemo: true });
+  };
+
+  const startInteractiveDemo = () => {
+    loadDemoWorkspace({ reset: true, startGuidedDemo: true });
+  };
+
+  const closeGuidedDemo = () => {
+    setIsGuidedDemoOpen(false);
+  };
+
+  const completeGuidedDemo = () => {
+    setIsGuidedDemoOpen(false);
+    navigateToTab("Dashboard");
+  };
+
+  useEffect(() => {
+    if (!isLoggedIn || canAccessTab(currentUserRole, activeTab)) return;
+    navigateToTab(defaultAllowedTab, { replace: true });
+  }, [activeTab, currentUserRole, defaultAllowedTab, isLoggedIn]);
 
   const getDaySnapshot = (dateRange = globalDateRange, options = {}) => {
     const claimsExposure = claims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
@@ -794,10 +1182,50 @@ export default function App() {
   };
 
   const signInWithSupabase = async ({ identifier, password }) => {
+    const cleanIdentifier = String(identifier || "").trim().toLowerCase();
+    if (cleanIdentifier === "demo123" && password === "demo1234") {
+      if (supabase) await supabase.auth.signOut();
+      resetBlankDemoStorage();
+      resetProductTourStatus();
+      sessionStorage.setItem("finalMileBlankDemo", "true");
+      setDemoModeActive(false);
+      setIsDemoMode(false);
+      setIsDemoWorkspace(true);
+      setAuthUser(null);
+      setIsLoggedIn(true);
+      setIsAuthLoading(false);
+      setCurrentUserRole("owner");
+      setTeamMembers([]);
+      setTeamAccessStatus("Blank demo workspace. No team users have been added.");
+      setForm(blankDemoForm);
+      setSavedScenarios([]);
+      setSavedDays([]);
+      setLoadedSavedDay(null);
+      setClaims([]);
+      setTeams([]);
+      setAppSettings(blankDemoSettings);
+      setClaimsBackendStatus("Blank demo workspace. No claims entered yet.");
+      setAppStateBackendStatus("Blank demo workspace. Supabase sync is off.");
+      setHasLoadedRemoteClaims(true);
+      setHasLoadedRemoteAppState(true);
+      setActiveTab("Dashboard");
+      setActiveOperationsTab("Dispatch");
+      setActiveFinanceTab("Profitability");
+      setProductTourStatus(emptyTourStatus);
+      setIsProductTourOpen(false);
+      setHasAutoStartedBlankDemoTour(false);
+      window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
+      return { ok: true };
+    }
+
     if (!isSupabaseConfigured || !supabase) {
       return { ok: false, error: "Supabase Auth is not configured." };
     }
 
+    sessionStorage.removeItem("finalMileBlankDemo");
+    setDemoModeActive(false);
+    setIsDemoMode(false);
+    setIsDemoWorkspace(false);
     const email = normalizeLoginIdentifier(identifier);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { ok: false, error: error.message };
@@ -808,6 +1236,12 @@ export default function App() {
   };
 
   const signOut = async () => {
+    sessionStorage.removeItem("finalMileBlankDemo");
+    setDemoModeActive(false);
+    setIsDemoMode(false);
+    setIsDemoWorkspace(false);
+    setIsProductTourOpen(false);
+    setHasAutoStartedBlankDemoTour(false);
     if (supabase) {
       await supabase.auth.signOut();
     }
@@ -1017,15 +1451,18 @@ export default function App() {
           </button>
 
           <nav className="space-y-2">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon;
+              const preview = navPreviewContent[item.name];
               return (
                 <button
                   key={item.name}
+                  data-tour={item.name === "Ask" ? "ask-assistant" : item.name === "Reports" ? "reports" : item.name === "Dashboard" ? "dashboard-nav" : undefined}
+                  data-tour-nav={item.name.toLowerCase()}
                   onClick={() => {
                     navigateToTab(item.name);
                   }}
-                  className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold ${
+                  className={`group relative flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold ${
                     activeTab === item.name
                       ? `${activeAccent.button} text-white`
                       : isDark
@@ -1035,6 +1472,34 @@ export default function App() {
                 >
                   <Icon className="h-4 w-4" />
                   {item.name}
+                  {preview && (
+                    <span
+                      role="tooltip"
+                      className={
+                        isDark
+                          ? "pointer-events-none absolute left-[calc(100%+14px)] top-1/2 z-[120] hidden w-80 -translate-y-1/2 rounded-2xl border border-white/10 bg-slate-950 p-4 text-left text-white opacity-0 shadow-2xl shadow-black/40 group-hover:block group-hover:opacity-100"
+                          : "pointer-events-none absolute left-[calc(100%+14px)] top-1/2 z-[120] hidden w-80 -translate-y-1/2 rounded-2xl border border-slate-200 bg-white p-4 text-left text-slate-950 opacity-0 shadow-2xl shadow-slate-950/20 group-hover:block group-hover:opacity-100"
+                      }
+                    >
+                      <span className="block text-sm font-black">{preview.title}</span>
+                      <span className={isDark ? "mt-2 block text-xs font-semibold leading-5 text-slate-300" : "mt-2 block text-xs font-semibold leading-5 text-slate-600"}>
+                        {preview.description}
+                      </span>
+                      <span className={isDark ? "mt-3 block rounded-xl bg-white/5 px-3 py-2 text-xs font-bold leading-5 text-slate-300" : "mt-3 block rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold leading-5 text-slate-600"}>
+                        Why it matters: {preview.matters}
+                      </span>
+                      <span className="mt-3 flex flex-wrap gap-1.5">
+                        {preview.metrics.map((metric) => (
+                          <span key={metric} className={isDark ? "rounded-full bg-blue-500/15 px-2 py-1 text-[10px] font-black text-blue-100" : "rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700"}>
+                            {metric}
+                          </span>
+                        ))}
+                      </span>
+                      <span className={isDark ? "mt-3 block text-xs font-black text-emerald-200" : "mt-3 block text-xs font-black text-emerald-700"}>
+                        Outcome: {preview.outcome}
+                      </span>
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -1042,29 +1507,64 @@ export default function App() {
 
           <div className="mt-10 text-sm text-slate-500">
             <p>{appSettings.companyName}</p>
-            <p>{authUser?.email || "Owner Account"}</p>
-            <p className="mt-1 text-xs font-black uppercase tracking-wide">{currentUserRole}</p>
+            <p>{isDemoMode ? "Demo Workspace" : isDemoWorkspace ? "demo123" : authUser?.email || "Owner Account"}</p>
+            <p className="mt-1 text-xs font-black uppercase tracking-wide">{roleLabels[currentUserRole] || currentUserRole}</p>
               <button onClick={signOut} className="mt-3 rounded-lg px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-500/10">Sign Out</button>
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
+        <main className="min-w-0 flex-1 p-4 pb-28 sm:p-6 sm:pb-28 lg:p-8">
+          {isDemoMode && (
+            <div className="mx-auto mb-5 max-w-[1600px]">
+              <div className={isDark ? "rounded-2xl border border-blue-400/30 bg-blue-500/15 p-4 shadow-xl shadow-black/20" : "rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm"}>
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">
+                      <LayoutDashboard className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">Viewing Demo Workspace</p>
+                      <p className={isDark ? "mt-1 text-sm font-bold text-blue-100" : "mt-1 text-sm font-bold text-blue-900"}>
+                        Sample contracts, teams, claims, receipts, reports, and history are isolated from your real workspace.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => navigateToTab("Dashboard")} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500">
+                      View Demo
+                    </button>
+                    <button type="button" onClick={resetDemoWorkspace} className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-blue-100 hover:bg-white/5" : "rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 hover:bg-blue-50"}>
+                      Reset Demo Data
+                    </button>
+                    <button type="button" onClick={restartGuidedDemo} className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-emerald-100 hover:bg-white/5" : "rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-50"}>
+                      Restart Guided Demo
+                    </button>
+                    <button type="button" onClick={exitDemoWorkspace} className={isDark ? "rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white hover:bg-slate-900" : "rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white hover:bg-slate-800"}>
+                      Exit Demo Mode
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="mx-auto mb-5 flex max-w-[1600px] flex-wrap items-center justify-end gap-3">
-            <button
-              onClick={saveCurrentDay}
-              className={
-                savedDayFlash
-                  ? "flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-sm"
-                  : isDark
-                    ? "flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/15"
-                    : "flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 shadow-sm hover:bg-emerald-100"
-              }
-            >
-              <Save className="h-4 w-4" />
-              {savedDayFlash ? "Snapshot Saved" : "Save Snapshot"}
-            </button>
+            {canManageBusiness && (
+              <button
+                onClick={saveCurrentDay}
+                className={
+                  savedDayFlash
+                    ? "flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-sm"
+                    : isDark
+                      ? "flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/15"
+                      : "flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 shadow-sm hover:bg-emerald-100"
+                }
+              >
+                <Save className="h-4 w-4" />
+                {savedDayFlash ? "Snapshot Saved" : "Save Snapshot"}
+              </button>
+            )}
 
-            <div className="relative">
+            {canManageBusiness && <div className="relative">
               <button
                 onClick={() => {
                   setShowSavedDays((current) => !current);
@@ -1122,7 +1622,7 @@ export default function App() {
                   )}
                 </div>
               )}
-            </div>
+            </div>}
 
             <div className="relative">
               <button
@@ -1265,7 +1765,7 @@ export default function App() {
           </div>
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1600px]">
             {activeTab === "Dashboard" ? (
-              <DashboardHome teams={teams} claims={claims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} />
+              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onStartTour={startProductTour} onStartGuidedDemo={startInteractiveDemo} onLaunchDemo={loadDemoWorkspace} productTourStatus={productTourStatus} />
             ) : activeTab === "Intake" ? (
               <AiQuickIntake
                 teams={teams}
@@ -1276,18 +1776,27 @@ export default function App() {
                 onApplyRoute={applyAiRouteDraft}
                 onSaveToDay={saveIntakeToDay}
                 navigateToTab={navigateToTab}
+                isDemoMode={isDemoMode}
+                isBlankDemo={isBlankDemoWorkspace}
                 standalone
               />
-            ) : activeTab === "Contracts" ? (
-              <ContractsDashboard teams={teams} claims={claims} isDark={isDark} navigateToTab={navigateToTab} />
-            ) : activeTab === "Compliance" ? (
-              <ComplianceDashboard teams={teams} claims={claims} isDark={isDark} />
-            ) : activeTab === "Claims" ? (
-              <ClaimsDashboard claims={claims} setClaims={setClaims} teams={teams} isDark={isDark} appSettings={appSettings} backendStatus={claimsBackendStatus} />
-            ) : activeTab === "Teams" ? (
-              <TeamsDashboard teams={teams} setTeams={setTeams} claims={claims} />
+            ) : activeTab === "Operations" ? (
+              <OperationsDashboard
+                activeSection={activeOperationsTab}
+                setActiveSection={setActiveOperationsTab}
+                navigateToTab={navigateToTab}
+                claims={claims}
+                setClaims={setClaims}
+                teams={teams}
+                setTeams={setTeams}
+                isDark={isDark}
+                appSettings={appSettings}
+                claimsBackendStatus={claimsBackendStatus}
+                isBlankDemo={isBlankDemoWorkspace}
+                isDemoMode={isDemoMode}
+              />
             ) : activeTab === "Reports" ? (
-              <ReportsDashboard claims={claims} teams={teams} results={results} form={form} isDark={isDark} exportSummary={exportSummary} reportsHomeSignal={reportsHomeSignal} />
+              <ReportsDashboard claims={claims} teams={teams} results={results} form={form} savedDays={savedDays} savedScenarios={savedScenarios} appSettings={appSettings} isDark={isDark} exportSummary={exportSummary} reportsHomeSignal={reportsHomeSignal} navigateToTab={navigateToTab} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} />
             ) : activeTab === "Ask" ? (
               <AskBusinessDashboard
                 claims={claims}
@@ -1298,6 +1807,8 @@ export default function App() {
                 appSettings={appSettings}
                 isDark={isDark}
                 navigateToTab={navigateToTab}
+                isBlankDemo={isBlankDemoWorkspace}
+                isDemoMode={isDemoMode}
               />
             ) : activeTab === "Settings" ? (
               <SettingsDashboard
@@ -1310,9 +1821,16 @@ export default function App() {
                 teamAccessStatus={teamAccessStatus}
                 onInviteTeamMember={inviteTeamMember}
                 onUpdateTeamMemberRole={changeTeamMemberRole}
+                isDemoMode={isDemoMode}
+                onLaunchDemo={loadDemoWorkspace}
+                onExitDemo={exitDemoWorkspace}
+                onResetDemo={resetDemoWorkspace}
+                onRestartDemo={restartGuidedDemo}
               />
-            ) : activeTab === "Profitability" ? (
-              <ProfitabilityDashboard
+            ) : activeTab === "Finance" ? (
+              <FinanceDashboard
+                activeSection={activeFinanceTab}
+                setActiveSection={setActiveFinanceTab}
                 form={form}
                 update={update}
                 results={results}
@@ -1323,15 +1841,89 @@ export default function App() {
                 loadScenario={loadScenario}
                 deleteScenario={deleteScenario}
                 exportSummary={exportSummary}
-                resetForm={() => setForm(defaultForm)}
+                resetForm={() => setForm(isDemoMode ? getDemoWorkspaceData().form : defaultForm)}
                 isDark={isDark}
                 appSettings={appSettings}
+                teams={teams}
+                claims={claims}
+                navigateToTab={navigateToTab}
+                isBlankDemo={isBlankDemoWorkspace}
+                isDemoMode={isDemoMode}
               />
             ) : (
-              <DashboardHome teams={teams} claims={claims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} />
+              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onStartTour={startProductTour} onStartGuidedDemo={startInteractiveDemo} onLaunchDemo={loadDemoWorkspace} productTourStatus={productTourStatus} />
             )}
           </motion.div>
         </main>
+
+        <nav className={isDark ? "fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-white/10 bg-slate-950/95 p-2 shadow-2xl shadow-black/40 backdrop-blur lg:hidden" : "fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-2xl shadow-slate-950/15 backdrop-blur lg:hidden"}>
+          <div className="grid grid-cols-4 gap-1">
+            {visibleNavItems.slice(0, 4).map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.name;
+              return (
+                <button
+                  key={item.name}
+                  type="button"
+                  data-tour={item.name === "Ask" ? "ask-assistant" : item.name === "Reports" ? "reports" : item.name === "Dashboard" ? "dashboard-nav" : undefined}
+                  data-tour-nav={item.name.toLowerCase()}
+                  onClick={() => navigateToTab(item.name)}
+                  className={
+                    isActive
+                      ? `${activeAccent.button} flex min-h-14 flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-black text-white`
+                      : isDark
+                        ? "flex min-h-14 flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-black text-slate-400 hover:bg-white/5 hover:text-white"
+                        : "flex min-h-14 flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-black text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                  }
+                >
+                  <Icon className="mb-1 h-4 w-4" />
+                  <span className="max-w-full truncate">{item.name}</span>
+                </button>
+              );
+            })}
+          </div>
+          {visibleNavItems.length > 4 && (
+            <div className="mt-1 grid grid-cols-3 gap-1">
+              {visibleNavItems.slice(4).map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.name;
+                return (
+                  <button
+                    key={item.name}
+                    type="button"
+                    data-tour={item.name === "Ask" ? "ask-assistant" : item.name === "Reports" ? "reports" : item.name === "Dashboard" ? "dashboard-nav" : undefined}
+                    data-tour-nav={item.name.toLowerCase()}
+                    onClick={() => navigateToTab(item.name)}
+                    className={
+                      isActive
+                        ? `${activeAccent.button} flex min-h-11 items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-black text-white`
+                        : isDark
+                          ? "flex min-h-11 items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-black text-slate-400 hover:bg-white/5 hover:text-white"
+                          : "flex min-h-11 items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-black text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                    }
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{item.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </nav>
+
+        <ProductTour
+          isOpen={isProductTourOpen}
+          isDark={isDark}
+          onFinish={finishProductTour}
+          onSkip={skipProductTour}
+        />
+        <GuidedDemoTour
+          isOpen={isGuidedDemoOpen}
+          isDark={isDark}
+          onClose={closeGuidedDemo}
+          onComplete={completeGuidedDemo}
+          onNavigate={navigateToTab}
+        />
       </div>
     </div>
   );

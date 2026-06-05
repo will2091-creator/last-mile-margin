@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   BarChart3,
   Bot,
+  Brain,
   BriefcaseBusiness,
   Calculator,
   Camera,
@@ -19,6 +20,9 @@ import {
   Save,
   Settings,
   ShieldCheck,
+  ReceiptText,
+  Sparkles,
+  Target,
   Trash2,
   Truck,
   Upload,
@@ -42,6 +46,7 @@ export {
   AlertTriangle,
   BarChart3,
   Bot,
+  Brain,
   BriefcaseBusiness,
   Calculator,
   Camera,
@@ -58,6 +63,9 @@ export {
   Save,
   Settings,
   ShieldCheck,
+  ReceiptText,
+  Sparkles,
+  Target,
   Trash2,
   Truck,
   Upload,
@@ -335,6 +343,12 @@ export const defaultSettings = {
   claimRiskThresholds: {
     medium: 200,
     high: 500,
+  },
+  profitabilityBenchmarks: {
+    enabled: true,
+    targetMargin: 25,
+    claimsReserveTarget: 2500,
+    reviewLineMargin: 20,
   },
 };
 

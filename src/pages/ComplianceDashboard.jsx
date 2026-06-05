@@ -52,6 +52,7 @@ import {
   XAxis,
   YAxis,
 } from "../shared";
+import EmptyState from "../components/EmptyState";
 import {
   ComplianceRiskPanel,
   DocumentVaultTable,
@@ -61,10 +62,11 @@ import {
   documentVaultData,
 } from "../data/platformMockData";
 
-function ComplianceDashboard({ teams, claims, isDark }) {
+function ComplianceDashboard({ teams, claims, isDark, navigateToTab }) {
   const photosUploaded = teams.filter((team) => team.photoStatus === "Uploaded").length;
   const atRiskTeams = teams.filter((team) => team.status === "At Risk").length;
   const totalClaimsExposure = claims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
+  const hasComplianceInputs = teams.length > 0 || claims.length > 0;
 
   const complianceStats = [
     { label: "Overall Compliance", value: "92%", note: "+5% from last month", color: "text-emerald-400" },
@@ -111,6 +113,29 @@ function ComplianceDashboard({ teams, claims, isDark }) {
         </div>
       </div>
 
+      {!hasComplianceInputs ? (
+        <EmptyState
+          isDark={isDark}
+          eyebrow="Compliance setup"
+          title="Start your readiness checklist"
+          description="Compliance should track insurance, driver documents, truck documents, route photo proof, and claim evidence. Add a team or upload documents before this becomes a live tracker."
+          Icon={ClipboardCheck}
+          primaryAction={{ label: "Upload Documents", onClick: () => navigateToTab?.("Intake") }}
+          secondaryActions={[
+            { label: "Add Team", onClick: () => navigateToTab?.("Teams") },
+            { label: "Review Claims", onClick: () => navigateToTab?.("Claims") },
+          ]}
+        >
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            {["Insurance", "Driver documents", "Truck documents", "Route photo proof", "Claim evidence process"].map((item) => (
+              <div key={item} className={isDark ? "rounded-xl bg-white/5 px-3 py-2 text-sm font-black text-slate-200" : "rounded-xl bg-white px-3 py-2 text-sm font-black text-slate-700 shadow-sm"}>
+                {item}
+              </div>
+            ))}
+          </div>
+        </EmptyState>
+      ) : (
+        <>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {complianceStats.map((stat) => (
           <Card key={stat.label} className="p-5">
@@ -221,6 +246,8 @@ function ComplianceDashboard({ teams, claims, isDark }) {
           </table>
         </div>
       </Card>
+        </>
+      )}
     </div>
   );
 }

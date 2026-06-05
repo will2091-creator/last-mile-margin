@@ -52,16 +52,27 @@ import {
   XAxis,
   YAxis,
 } from "../shared";
+import EmptyState from "../components/EmptyState";
+import DataHealthChecklist from "../components/DataHealthChecklist";
+import { getPageEmptyStateConfig, getSetupStatus } from "../lib/onboarding";
 
-function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary, reportsHomeSignal }) {
+function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedScenarios = [], appSettings, isDark, exportSummary, reportsHomeSignal, navigateToTab, isBlankDemo = false, isDemoMode = false }) {
   const totalExposure = claims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
   const openClaims = claims.filter((claim) => claim.status !== "Closed").length;
   const activeTeams = teams.length;
   const photoCompliance =
     activeTeams > 0 ? Math.round((teams.filter((team) => team.photoStatus === "Uploaded").length / activeTeams) * 100) : 0;
+  const setupStatus = useMemo(
+    () => getSetupStatus({ teams, claims, savedDays, savedScenarios, appSettings, isBlankDemo, isDemoMode }),
+    [teams, claims, savedDays, savedScenarios, appSettings, isBlankDemo, isDemoMode]
+  );
+  const reportsEmptyConfig = getPageEmptyStateConfig("reports", setupStatus);
+  const dateRangeLabel = savedDays.length
+    ? `${savedDays[0]?.label || "First snapshot"} – ${savedDays[savedDays.length - 1]?.label || "Latest snapshot"}`
+    : "Current setup period";
 
   const [reportFilters, setReportFilters] = useState({
-    dateRange: "May 1 – May 7, 2026",
+    dateRange: dateRangeLabel,
     team: "All Teams",
     route: "All Routes",
     reportType: "All Reports",
@@ -82,7 +93,7 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
 
   const clearFilters = () => {
     setReportFilters({
-      dateRange: "May 1 – May 7, 2026",
+      dateRange: dateRangeLabel,
       team: "All Teams",
       route: "All Routes",
       reportType: "All Reports",
@@ -192,13 +203,15 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
     },
   ];
 
-  const exports = [
-    ["May 7, 2026", "Daily Route Profit Report", "May 7, 2026", "TXT"],
-    ["May 6, 2026", "Weekly Profit Summary", "Apr 30 – May 6", "TXT"],
-    ["May 6, 2026", "Claims Impact Report", "Apr 30 – May 6", "TXT"],
-    ["May 5, 2026", "Team Performance Report", "Apr 28 – May 4", "TXT"],
-    ["May 4, 2026", "Compliance Report", "Apr 28 – May 4", "TXT"],
-  ];
+  const exports = savedDays
+    .slice(-5)
+    .reverse()
+    .map((day) => [
+      day.label || day.date || "Saved snapshot",
+      "Daily Route Profit Report",
+      day.label || day.date || "Saved snapshot",
+      "PDF",
+    ]);
 
   const visibleReports = reportCards.filter((report) => {
     if (reportFilters.reportType === "All Reports") return true;
@@ -209,6 +222,23 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
     if (reportFilters.reportType === "All Reports") return true;
     return item[1].toLowerCase().includes(reportFilters.reportType.toLowerCase());
   });
+  const getReportRequirements = (report) => {
+    const requirements = [
+      { label: "Contract needed", complete: setupStatus.checks.contract },
+      { label: "Team needed", complete: report.type !== "Teams" && report.type !== "Compliance" ? true : setupStatus.checks.team },
+      { label: "Claims optional", complete: setupStatus.checks.claims, optional: true },
+      { label: "Snapshots recommended", complete: setupStatus.checks.reports, optional: true },
+    ];
+
+    if (report.type === "Claims") {
+      return requirements.map((item) => item.label === "Claims optional" ? { ...item, label: "Claims needed", optional: false } : item);
+    }
+    if (report.type === "Owner Summary") {
+      return requirements.map((item) => item.label === "Snapshots recommended" ? { ...item, label: "Snapshots needed", optional: false } : item);
+    }
+    return requirements;
+  };
+  const reportIsReady = (report) => getReportRequirements(report).every((item) => item.optional || item.complete);
 
   const insights = [
     {
@@ -260,27 +290,136 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
     },
   };
 
+  const escapePdfText = (value) =>
+    String(value ?? "")
+      .replace(/[–—]/g, "-")
+      .replace(/[‘’]/g, "'")
+      .replace(/[“”]/g, '"')
+      .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, "")
+      .replace(/\\/g, "\\\\")
+      .replace(/\(/g, "\\(")
+      .replace(/\)/g, "\\)")
+      .replace(/\r?\n/g, " ");
+
+  const wrapPdfText = (value, maxLength = 74) => {
+    const words = String(value ?? "").split(/\s+/).filter(Boolean);
+    const lines = [];
+    let current = "";
+
+    words.forEach((word) => {
+      const next = current ? `${current} ${word}` : word;
+      if (next.length > maxLength && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = next;
+      }
+    });
+
+    if (current) lines.push(current);
+    return lines.length ? lines : [""];
+  };
+
+  const buildPdf = ({ title, description, rows }) => {
+    const generatedAt = new Date().toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    const commands = [
+      "0.02 0.05 0.15 rg",
+      "BT /F2 24 Tf 54 742 Td (Final Mile Margin) Tj ET",
+      "0.10 0.38 0.95 rg",
+      "BT /F2 13 Tf 54 716 Td (Performance Report) Tj ET",
+      "0.02 0.05 0.15 rg",
+      `BT /F2 20 Tf 54 684 Td (${escapePdfText(title)}) Tj ET`,
+    ];
+
+    let y = 658;
+    wrapPdfText(description, 78).forEach((line) => {
+      commands.push("0.36 0.43 0.54 rg");
+      commands.push(`BT /F1 11 Tf 54 ${y} Td (${escapePdfText(line)}) Tj ET`);
+      y -= 16;
+    });
+
+    y -= 10;
+    [
+      ["Period", reportFilters.dateRange],
+      ["Team", reportFilters.team],
+      ["Route", reportFilters.route],
+      ["Generated", generatedAt],
+    ].forEach(([label, value]) => {
+      commands.push("0.36 0.43 0.54 rg");
+      commands.push(`BT /F2 10 Tf 54 ${y} Td (${escapePdfText(label.toUpperCase())}) Tj ET`);
+      commands.push("0.02 0.05 0.15 rg");
+      commands.push(`BT /F1 11 Tf 140 ${y} Td (${escapePdfText(value)}) Tj ET`);
+      y -= 18;
+    });
+
+    y -= 18;
+    commands.push("0.10 0.38 0.95 rg");
+    commands.push(`BT /F2 13 Tf 54 ${y} Td (Report Metrics) Tj ET`);
+    y -= 22;
+
+    rows.forEach(([label, value]) => {
+      commands.push("0.88 0.91 0.95 RG 0.5 w");
+      commands.push(`54 ${y - 9} m 558 ${y - 9} l S`);
+      commands.push("0.36 0.43 0.54 rg");
+      commands.push(`BT /F2 10 Tf 54 ${y} Td (${escapePdfText(String(label).toUpperCase())}) Tj ET`);
+      commands.push("0.02 0.05 0.15 rg");
+      commands.push(`BT /F2 12 Tf 300 ${y} Td (${escapePdfText(value)}) Tj ET`);
+      y -= 28;
+    });
+
+    commands.push("0.36 0.43 0.54 rg");
+    commands.push("BT /F1 9 Tf 54 54 Td (Generated from Final Mile Margin.) Tj ET");
+
+    const stream = commands.join("\n");
+    const encoder = new TextEncoder();
+    let pdf = "%PDF-1.4\n";
+    const offsets = [0];
+    const addObject = (body) => {
+      offsets.push(encoder.encode(pdf).length);
+      const objectNumber = offsets.length - 1;
+      pdf += `${objectNumber} 0 obj\n${body}\nendobj\n`;
+    };
+
+    addObject("<< /Type /Catalog /Pages 2 0 R >>");
+    addObject("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+    addObject("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>");
+    addObject(`<< /Length ${encoder.encode(stream).length} >>\nstream\n${stream}\nendstream`);
+    addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+    addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
+
+    const xrefOffset = encoder.encode(pdf).length;
+    pdf += `xref\n0 ${offsets.length}\n`;
+    pdf += "0000000000 65535 f \n";
+    offsets.slice(1).forEach((offset) => {
+      pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
+    });
+    pdf += `trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+    return pdf;
+  };
+
   const exportReport = (reportName) => {
     const report = reportCards.find((item) => item.title === reportName);
-    const summary = [
-      "Final Mile Margin Report",
-      `Report: ${reportName}`,
-      `Period: ${reportFilters.dateRange}`,
-      `Team: ${reportFilters.team}`,
-      `Route: ${reportFilters.route}`,
-      "",
-      ...(report?.previewRows || []).map(([label, value]) => `${label}: ${value}`),
-      "",
-      "Generated from Final Mile Margin.",
-    ].join("\n");
-
-    const blob = new Blob([summary], { type: "text/plain" });
+    const pdf = buildPdf({
+      title: reportName,
+      description: report?.description || "Final mile performance report.",
+      rows: report?.previewRows || [],
+    });
+    const blob = new Blob([pdf], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${reportName.toLowerCase().replaceAll(" ", "-")}.txt`;
+    link.download = `${reportName.toLowerCase().replaceAll(" ", "-")}.pdf`;
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
   return (
@@ -296,12 +435,31 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => setSelectedReport(reportCards[0])}
-            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
+            disabled={!reportIsReady(reportCards[0])}
+            title={reportIsReady(reportCards[0]) ? "Preview profit report" : "Add a contract before previewing a profit report."}
+            className={reportIsReady(reportCards[0]) ? "rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-blue-500" : "cursor-not-allowed rounded-xl bg-slate-300 px-4 py-2 text-sm font-bold text-white shadow-sm"}
           >
             Preview Profit Report
           </button>
         </div>
       </div>
+
+      {!setupStatus.hasAnyBusinessData && (
+        <EmptyState
+          isDark={isDark}
+          eyebrow={reportsEmptyConfig.eyebrow}
+          title={reportsEmptyConfig.title}
+          description={reportsEmptyConfig.description}
+          Icon={FileDown}
+          primaryAction={{ label: "Finish Setup", onClick: () => navigateToTab?.("Dashboard") }}
+          secondaryActions={[
+            { label: "Open Dashboard", onClick: () => navigateToTab?.("Dashboard") },
+            { label: "Open Intake", onClick: () => navigateToTab?.("Intake") },
+          ]}
+        />
+      )}
+
+      <DataHealthChecklist isDark={isDark} status={setupStatus} compact onAction={(item) => item?.tab && navigateToTab?.(item.tab)} />
 
       {selectedReport && (
         <div className={cardClass}>
@@ -317,7 +475,7 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
                 onClick={() => exportReport(selectedReport.title)}
                 className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500"
               >
-                Download TXT
+                Download PDF
               </button>
               <button
                 onClick={() => setSelectedReport(null)}
@@ -352,6 +510,8 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
           {visibleReports.map((report) => {
             const Icon = report.icon;
             const tone = toneClasses[report.tone];
+            const ready = reportIsReady(report);
+            const requirements = getReportRequirements(report);
             return (
               <div
                 key={report.title}
@@ -365,14 +525,25 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
                     <h3 className={`font-black ${titleText}`}>{report.title}</h3>
                     <p className={`mt-2 text-sm leading-relaxed ${mutedText}`}>{report.description}</p>
                     <p className={`mt-3 text-sm font-bold ${tone.text}`}>Best for: {report.bestFor}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {requirements.map((requirement) => (
+                        <span key={requirement.label} className={requirement.complete ? "rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-black text-emerald-700" : requirement.optional ? "rounded-full bg-slate-500/10 px-2.5 py-1 text-[10px] font-black text-slate-500" : "rounded-full bg-amber-500/10 px-2.5 py-1 text-[10px] font-black text-amber-700"}>
+                          {requirement.complete ? "Ready" : requirement.optional ? "Optional" : "Needed"} · {requirement.label}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
                 <div className="mt-5 grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setSelectedReport(report)}
+                    disabled={!ready}
+                    title={ready ? "Preview report" : "Finish the needed setup items before previewing this report."}
                     className={
-                      isDark
+                      !ready
+                        ? "cursor-not-allowed rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-400"
+                        : isDark
                         ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-bold text-white hover:bg-white/10"
                         : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-blue-600 hover:bg-slate-50"
                     }
@@ -381,9 +552,11 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
                   </button>
                   <button
                     onClick={() => exportReport(report.title)}
-                    className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500"
+                    disabled={!ready}
+                    title={ready ? "Download PDF" : "Finish the needed setup items before downloading this report."}
+                    className={ready ? "rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500" : "cursor-not-allowed rounded-xl bg-slate-300 px-4 py-2 text-sm font-bold text-white"}
                   >
-                    Download TXT
+                    Download PDF
                   </button>
                 </div>
               </div>
@@ -400,7 +573,7 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
             <div>
               <label className={`mb-1 block text-xs font-semibold ${mutedText}`}>Date Range</label>
               <select value={reportFilters.dateRange} onChange={(e) => updateFilter("dateRange", e.target.value)} className={inputClass}>
-                <option>May 1 – May 7, 2026</option>
+                <option>{dateRangeLabel}</option>
                 <option>This Month</option>
                 <option>Last 30 Days</option>
                 <option>Custom Range</option>
@@ -487,6 +660,13 @@ function ReportsDashboard({ claims, teams, results, form, isDark, exportSummary,
                     </td>
                   </tr>
                 ))}
+                {visibleExports.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className={`py-8 text-center text-sm font-bold ${mutedText}`}>
+                      No exports yet. Save daily snapshots from the Dashboard, then Reports will build history here.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

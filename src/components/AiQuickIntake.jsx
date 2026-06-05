@@ -72,6 +72,7 @@ const getSourceLabel = (draft) => {
   if (draft.type === "claim") return "Claim";
   if (draft.type === "route") return "Route Sheet";
   if (draft.type === "contract") return "Contract Terms";
+  if (draft.type === "receipt") return "Receipt";
   return "File";
 };
 
@@ -116,6 +117,18 @@ Renewal: Jan 31, 2026
 Terms: photos required before departure, POD required after delivery, claims packet due within 24 hours.`,
   },
   {
+    id: "receipt-upload",
+    label: "Receipt",
+    type: "Receipt",
+    text: `Receipt REF-QA-515
+Vendor: Shell
+Amount: $46.20
+Type: Gas
+Route: Lowe's Appliance Delivery
+Truck: Demo Truck 214
+Notes: Fuel purchased before north market appliance route.`,
+  },
+  {
     id: "mixed-intake",
     label: "Mixed Notes",
     type: "Notes",
@@ -130,7 +143,7 @@ Possible contract follow-up: Best Buy per stop rate should be reviewed.`,
   },
 ];
 
-function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApplyRoute, onSaveToDay, navigateToTab, standalone = false }) {
+function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApplyRoute, onSaveToDay, navigateToTab, standalone = false, isDemoMode = false }) {
   const [isOpen, setIsOpen] = useState(true);
   const [inputText, setInputText] = useState("");
   const [drafts, setDrafts] = useState([]);
@@ -187,6 +200,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
     if (draft.type === "claim") return "Email";
     if (draft.type === "route") return "Route Sheet";
     if (draft.type === "contract") return "Contract Terms";
+    if (draft.type === "receipt") return "Receipt";
     return "File";
   };
 
@@ -298,6 +312,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
       [routePay, stops, miles, fuelPrice, helperPay, driverPay].filter(Boolean).length >= 2;
     const hasContractSignals = /contract|renewal|rate card|per stop|flat rate|schedule|terms|service area|install/i.test(text);
     const hasClaimSignals = hasHardClaimSignals || (!hasContractSignals && hasClaimWord) || (!hasRouteSignals && !hasContractSignals && /late|window|missing|refused|returned|reason/i.test(text));
+    const hasReceiptSignals = /receipt|vendor|gas|fuel|maintenance|toll|parking|tools|amount/i.test(text) && !hasClaimSignals && !hasContractSignals;
 
     if (hasClaimSignals) {
       const type = findClaimType(text);
@@ -379,6 +394,30 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
           from: sourceEmail || "",
           reference: text.match(/\b(?:PO|REF|REFERENCE)[-\s#:]*([A-Z0-9-]+)/i)?.[1] || "",
           route: "",
+          driver: matchedDriver?.name || "",
+        },
+      });
+    }
+
+    if (hasReceiptSignals) {
+      const vendor = text.match(/vendor:\s*([^\n|]+)/i)?.[1]?.trim() || text.match(/\b(Shell|Home Depot|Lowe'?s|E-ZPass|Fleet Repair|AutoZone)\b/i)?.[0] || "Receipt vendor";
+      const receiptType = text.match(/type:\s*([^\n|]+)/i)?.[1]?.trim() || (normalized.includes("toll") ? "Parking/Tolls" : normalized.includes("maintenance") ? "Maintenance" : normalized.includes("tool") ? "Tools" : "Gas");
+      nextDrafts.push({
+        id: `ai-receipt-${Date.now()}`,
+        type: "receipt",
+        title: "Receipt Draft",
+        confidence: Math.min(90, 42 + [amount, vendor, receiptType].filter(Boolean).length * 14),
+        summary: `${vendor}${amount ? ` · ${currency.format(amount)}` : ""} · ${receiptType}`,
+        source: sourceLabel,
+        data: {
+          customer: vendor,
+          route: matchedRoute?.route || text.match(/route:\s*([^\n|]+)/i)?.[1]?.trim() || "",
+          amount,
+          type: receiptType,
+          notes: text.slice(0, 500),
+          sourceType: "Receipt",
+          from: sourceEmail || "",
+          reference: text.match(/\b(?:PO|REF|REFERENCE)[-\s#:]*([A-Z0-9-]+)/i)?.[1] || "",
           driver: matchedDriver?.name || "",
         },
       });
@@ -640,13 +679,41 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
         <div>
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-black uppercase tracking-wide text-white">Intake</span>
+            {isDemoMode && (
+              <span className={isDark ? "rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-200" : "rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700"}>
+                Demo examples available
+              </span>
+            )}
             <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
               Email, screenshot, PDF, route sheet, or contract terms
             </span>
           </div>
           <h1 className={`text-4xl font-black tracking-tight sm:text-5xl ${titleText}`}>Intake</h1>
-          <p className={`mt-2 max-w-3xl text-base font-semibold ${mutedText}`}>Capture it once. We'll pull out what matters.</p>
+          <p className={`mt-2 max-w-3xl text-base font-semibold ${mutedText}`}>
+            {isDemoMode ? "Process the demo claim email, receipt, contract, or route sheet examples to see how Intake turns messy input into clean drafts." : "Capture it once. We'll pull out what matters."}
+          </p>
         </div>
+      )}
+
+      {standalone && (
+        <section className={isDark ? "rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4" : "rounded-2xl border border-blue-100 bg-blue-50 p-4"}>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            {[
+              ["Claim emails", AlertTriangle, "damage, penalties, cargo, property"],
+              ["Route sheets", BarChart3, "stops, route pay, miles, hours"],
+              ["Contract terms", ClipboardCheck, "rates, claim rules, renewal notes"],
+              ["Receipts", DollarSign, "gas, tools, maintenance, tolls"],
+              ["Notes", FileText, "anything you need sorted later"],
+            ].map(([title, Icon, detail]) => (
+              <div key={title} className={isDark ? "rounded-xl bg-white/5 p-3" : "rounded-xl bg-white p-3 shadow-sm"}>
+                <Icon className="h-5 w-5 text-blue-600" />
+                <p className={`mt-2 text-sm font-black ${titleText}`}>{title}</p>
+                <p className={`mt-1 text-xs font-semibold leading-5 ${mutedText}`}>{detail}</p>
+              </div>
+            ))}
+          </div>
+          <p className={`mt-3 text-xs font-bold ${mutedText}`}>Sample prompts only load into the reviewer. Nothing saves until you choose where the draft should go.</p>
+        </section>
       )}
 
       {!standalone && (

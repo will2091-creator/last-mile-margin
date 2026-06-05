@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Camera,
@@ -14,6 +14,8 @@ import {
   UserPlus,
   Users,
 } from "../shared";
+import EmptyState from "../components/EmptyState";
+import { loadActiveTeamPhotos, uploadTeamPhoto } from "../lib/teamPhotoRepository";
 
 const splitPersonName = (name) => {
   if (!name) return { firstName: "", lastInitial: "" };
@@ -68,7 +70,7 @@ const getPeopleFromTeams = (teams) =>
     ].filter((person) => person.name);
   });
 
-function TeamsDashboard({ teams, setTeams, claims }) {
+function TeamsDashboard({ teams, setTeams, claims, isDark = true }) {
   const blankPerson = {
     name: "",
     role: "Lead Driver",
@@ -89,12 +91,63 @@ function TeamsDashboard({ teams, setTeams, claims }) {
   const [personForm, setPersonForm] = useState(blankPerson);
   const [draggedPersonId, setDraggedPersonId] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
+  const [photoBackendStatus, setPhotoBackendStatus] = useState("Team photos ready.");
 
   const people = useMemo(() => getPeopleFromTeams(teams), [teams]);
   const activePeople = people.length;
   const photosUploaded = people.filter((person) => person.photoStatus === "Uploaded").length;
   const atRiskPeople = people.filter((person) => person.status === "At Risk").length;
   const totalClaimsExposure = claims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPhotos() {
+      const result = await loadActiveTeamPhotos();
+      if (!isMounted) return;
+
+      if (!result.ok) {
+        setPhotoBackendStatus(`Team photo storage unavailable: ${result.error}`);
+        return;
+      }
+
+      if (!result.photos.length) {
+        setPhotoBackendStatus("No active team photos in Supabase yet.");
+        return;
+      }
+
+      setTeams((current) =>
+        current.map((team) => {
+          const leadPhoto = result.photos.find((photo) => photo.team_id === team.id && photo.person_key === "lead");
+          const helperPhoto = result.photos.find((photo) => photo.team_id === team.id && photo.person_key === "helper");
+
+          return {
+            ...team,
+            ...(leadPhoto
+              ? {
+                  photoUrl: leadPhoto.signedUrl,
+                  photoStatus: "Uploaded",
+                  photoUploadedAt: new Date(leadPhoto.uploaded_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+                }
+              : {}),
+            ...(helperPhoto
+              ? {
+                  helperPhotoUrl: helperPhoto.signedUrl,
+                  helperPhotoStatus: "Uploaded",
+                  helperPhotoUploadedAt: new Date(helperPhoto.uploaded_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+                }
+              : {}),
+          };
+        })
+      );
+      setPhotoBackendStatus(`Loaded ${result.photos.length} active team photo${result.photos.length === 1 ? "" : "s"} from Supabase.`);
+    }
+
+    loadPhotos();
+    return () => {
+      isMounted = false;
+    };
+  }, [setTeams]);
 
   const getClaimDriver = (claim) => {
     if (claim.driver) return claim.driver;
@@ -320,9 +373,16 @@ function TeamsDashboard({ teams, setTeams, claims }) {
     );
   };
 
-  const handlePhotoUpload = (person, file) => {
+  const handlePhotoUpload = async (person, file) => {
     if (!file) return;
-    const photoUrl = URL.createObjectURL(file);
+    setPhotoBackendStatus(`Uploading ${person.name}'s photo...`);
+    const result = await uploadTeamPhoto({ person, file });
+    if (!result.ok) {
+      setPhotoBackendStatus(`Team photo upload failed: ${result.error}`);
+      return;
+    }
+
+    const photoUrl = result.photo.signedUrl || URL.createObjectURL(file);
     const uploadedAt = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
     setTeams((current) =>
@@ -346,6 +406,7 @@ function TeamsDashboard({ teams, setTeams, claims }) {
         };
       })
     );
+    setPhotoBackendStatus(`${person.name}'s photo uploaded. It will auto-delete after 7 days.`);
   };
 
   const handleFormPhotoUpload = (file) => {
@@ -426,6 +487,24 @@ function TeamsDashboard({ teams, setTeams, claims }) {
           Add Person
         </button>
       </div>
+
+      <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm font-bold text-blue-100">
+        {photoBackendStatus} Active team photos are kept for 7 days.
+      </div>
+
+      {activePeople === 0 && (
+        <EmptyState
+          isDark={isDark}
+          eyebrow="Team setup"
+          title="Build your first route team"
+          description="Add the driver, helper, truck, and route. Daily photo proof gives you evidence when a claim or customer dispute shows up later."
+          Icon={Users}
+          primaryAction={{ label: "Add Person", onClick: openAddPerson }}
+          secondaryActions={[
+            { label: "Add Route Team", onClick: openAddPerson },
+          ]}
+        />
+      )}
 
       {showForm && (
         <Card className="p-5">
