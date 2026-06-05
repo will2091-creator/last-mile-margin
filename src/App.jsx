@@ -1550,6 +1550,7 @@ export default function App() {
           <div className="mx-auto mb-5 flex max-w-[1600px] flex-wrap items-center justify-end gap-3">
             {canManageBusiness && (
               <button
+                data-tour="dashboard-save-snapshot"
                 onClick={saveCurrentDay}
                 className={
                   savedDayFlash
@@ -1566,6 +1567,7 @@ export default function App() {
 
             {canManageBusiness && <div className="relative">
               <button
+                data-tour="dashboard-daily-history"
                 onClick={() => {
                   setShowSavedDays((current) => !current);
                   setShowDatePicker(false);
@@ -1626,6 +1628,7 @@ export default function App() {
 
             <div className="relative">
               <button
+                data-tour="dashboard-date-range"
                 onClick={() => {
                   setShowDatePicker((current) => !current);
                   setShowSavedDays(false);

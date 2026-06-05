@@ -329,7 +329,11 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     return [row.contract, currency.format(profit), `${number.format(rowMargin)}%`, rowMargin >= 25 ? "Good" : "Watch"];
   });
 
-  const upcomingRenewals = [];
+  const upcomingRenewals = quickContracts.slice(0, 3).map((row, index) => [
+    row.contract || `Contract ${index + 1}`,
+    index === 0 ? "Jul 15, 2026" : index === 1 ? "Aug 1, 2026" : "Sep 12, 2026",
+    index === 0 ? "40 days" : index === 1 ? "57 days" : "99 days",
+  ]);
 
   const pageClass = isDark ? "space-y-6 text-white" : "space-y-6 text-slate-950";
   const cardClass = isDark
@@ -354,7 +358,8 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
   const selectedWidgetCount = dashboardWidgetOrder.filter((key) => widgets[key] !== false).length;
   const dashboardFocusOrder = ["periodMetrics", "needsAttention", "teamReadiness", "recentClaims", "recentActivity"];
-  const focusedWidgetOrder = isCleanBlankWorkspace ? [] : dashboardFocusOrder.filter((key) => widgets[key] !== false);
+  const visibleDashboardOrder = isDemoMode ? dashboardWidgetOrder : dashboardFocusOrder;
+  const focusedWidgetOrder = isCleanBlankWorkspace ? [] : visibleDashboardOrder.filter((key) => widgets[key] !== false);
   const focusedWidgetCount = focusedWidgetOrder.length;
 
   const goToSource = (tabName) => setActiveTab(tabName);
@@ -809,14 +814,23 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     recentActivity: "xl:col-span-12",
   };
   const widgetTourTargets = {
-    financialSummary: "expenses",
-    recentClaims: "claims",
-    needsAttention: "claims",
-    teamReadiness: "teams",
-    activeContracts: "contracts",
-    contractPerformance: "contracts",
-    savedRoutes: "contracts",
-    recentActivity: "reports",
+    periodMetrics: "dashboard-period-metrics",
+    todaysProfit: "dashboard-todays-profit",
+    financialSummary: "dashboard-financial-summary",
+    recentClaims: "dashboard-recent-claims",
+    savedRoutes: "dashboard-saved-routes",
+    activeContracts: "dashboard-active-contracts",
+    contractPerformance: "dashboard-contract-performance",
+    upcomingRenewals: "dashboard-upcoming-renewals",
+    needsAttention: "dashboard-needs-attention",
+    routeHealth: "dashboard-route-health",
+    routeEfficiency: "dashboard-route-efficiency",
+    teamReadiness: "dashboard-team-readiness",
+    complianceStatus: "dashboard-compliance-status",
+    fuelCostTracker: "dashboard-fuel-cost-tracker",
+    documentExpirations: "dashboard-document-expirations",
+    insuranceSummary: "dashboard-insurance-summary",
+    recentActivity: "dashboard-recent-activity",
   };
 
   const wrapWidget = (key, content) => (
@@ -1221,6 +1235,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
           {onStartGuidedDemo && (
             <button
+              data-tour="dashboard-interactive-demo"
               type="button"
               onClick={onStartGuidedDemo}
               className={isDark ? "rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500" : "rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500"}
@@ -1231,6 +1246,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
           {!isDemoMode && onLaunchDemo && (
             <button
+              data-tour="dashboard-launch-demo"
               type="button"
               onClick={() => onLaunchDemo({ reset: false })}
               className={isDark ? "rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/15" : "rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-100"}
@@ -1239,7 +1255,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
             </button>
           )}
 
-          <div className={isDark ? "rounded-2xl bg-white/5 p-1" : "rounded-2xl bg-slate-100 p-1"}>
+          <div data-tour="dashboard-period-tabs" className={isDark ? "rounded-2xl bg-white/5 p-1" : "rounded-2xl bg-slate-100 p-1"}>
             {["Day", "Week", "Month", "Qtr", "Year"].map((period) => (
               <button
                 key={period}
@@ -1257,6 +1273,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           </div>
 
           <button
+            data-tour="dashboard-open-operations"
             onClick={() => setActiveTab("Operations")}
             className="rounded-xl border border-blue-500/40 px-4 py-2 text-sm font-bold text-blue-600 hover:bg-blue-500/10"
           >
@@ -1441,7 +1458,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
       )}
 
       {hasQuickContracts && (
-        <section data-tour="contracts" className={cardClass}>
+        <section data-tour="dashboard-saved-contracts" className={cardClass}>
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-wide text-blue-600">Saved contracts</p>
