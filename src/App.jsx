@@ -10,6 +10,7 @@ import FinanceDashboard from "./pages/FinanceDashboard";
 import ReportsDashboard from "./pages/ReportsDashboard";
 import AskBusinessDashboard from "./pages/AskBusinessDashboard";
 import AiQuickIntake from "./components/AiQuickIntake";
+import DemoCompletionModal from "./components/DemoCompletionModal";
 import GuidedDemoTour from "./components/GuidedDemoTour";
 import ProductTour from "./components/ProductTour";
 import { navPreviewContent } from "./components/guidedDemoContent";
@@ -217,6 +218,7 @@ export default function App() {
   const [reportsHomeSignal, setReportsHomeSignal] = useState(0);
   const [isProductTourOpen, setIsProductTourOpen] = useState(false);
   const [isGuidedDemoOpen, setIsGuidedDemoOpen] = useState(false);
+  const [isDemoCompletionOpen, setIsDemoCompletionOpen] = useState(false);
   const [hasAutoStartedBlankDemoTour, setHasAutoStartedBlankDemoTour] = useState(false);
   const [productTourStatus, setProductTourStatus] = useState(readProductTourStatus);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -905,6 +907,7 @@ export default function App() {
   const finishProductTour = () => {
     setProductTourStatus(markProductTourCompleted());
     setIsProductTourOpen(false);
+    setIsDemoCompletionOpen(true);
   };
 
   const skipProductTour = () => {
@@ -948,6 +951,7 @@ export default function App() {
     setShowSavedDays(false);
     setShowDatePicker(false);
     setIsProductTourOpen(false);
+    setIsDemoCompletionOpen(false);
     window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
     if (startTour) {
       window.setTimeout(() => setIsProductTourOpen(true), 180);
@@ -963,6 +967,7 @@ export default function App() {
     setIsDemoWorkspace(false);
     setIsProductTourOpen(false);
     setIsGuidedDemoOpen(false);
+    setIsDemoCompletionOpen(false);
     setForm(defaultForm);
     setSavedScenarios(loadFromLocalStorage("finalMileSavedScenarios", []));
     setSavedDays(loadFromLocalStorage("finalMileSavedDays", []));
@@ -1021,7 +1026,18 @@ export default function App() {
   const completeGuidedDemo = () => {
     setProductTourStatus(markProductTourCompleted());
     setIsGuidedDemoOpen(false);
+    setIsDemoCompletionOpen(true);
     navigateToTab("Dashboard");
+  };
+
+  const closeDemoCompletion = () => {
+    setIsDemoCompletionOpen(false);
+    navigateToTab("Dashboard");
+  };
+
+  const restartDemoFromCompletion = () => {
+    setIsDemoCompletionOpen(false);
+    restartGuidedDemo();
   };
 
   useEffect(() => {
@@ -1232,6 +1248,7 @@ export default function App() {
       setActiveFinanceTab("Profitability");
       setProductTourStatus(emptyTourStatus);
       setIsProductTourOpen(false);
+      setIsDemoCompletionOpen(false);
       setHasAutoStartedBlankDemoTour(false);
       window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
       return { ok: true };
@@ -1950,6 +1967,12 @@ export default function App() {
           onComplete={completeGuidedDemo}
           onNavigate={navigateToTab}
           onStepChange={handleProductTourStepChange}
+        />
+        <DemoCompletionModal
+          isOpen={isDemoCompletionOpen}
+          isDark={isDark}
+          onClose={closeDemoCompletion}
+          onRestart={restartDemoFromCompletion}
         />
       </div>
     </div>
