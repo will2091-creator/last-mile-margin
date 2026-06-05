@@ -1066,6 +1066,57 @@ export default function App() {
     window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
   };
 
+  const turnOffDemoAndTour = () => {
+    clearDemoWorkspaceData();
+    resetBlankDemoStorage();
+    sessionStorage.removeItem("finalMileBlankDemo");
+    setDemoModeActive(false);
+    setIsDemoMode(false);
+    setIsDemoWorkspace(false);
+    setIsProductTourOpen(false);
+    setIsGuidedDemoOpen(false);
+    setIsDemoCompletionOpen(false);
+    setProductTourStatus(markProductTourCompleted());
+    setForm(defaultForm);
+    setSavedScenarios(loadFromLocalStorage("finalMileSavedScenarios", []));
+    setSavedDays(loadFromLocalStorage("finalMileSavedDays", []));
+    setLoadedSavedDay(null);
+    setClaims(loadFromLocalStorage("finalMileClaims", initialClaims));
+    setTeams(loadFromLocalStorage("finalMileTeams", initialTeams));
+    const savedSettings = loadFromLocalStorage("finalMileSettings", defaultSettings);
+    setAppSettings({
+      ...defaultSettings,
+      ...savedSettings,
+      dashboardWidgets: {
+        ...defaultSettings.dashboardWidgets,
+        ...(savedSettings.dashboardWidgets || {}),
+      },
+      dashboardWidgetOrder: [
+        ...new Set([
+          ...(savedSettings.dashboardWidgetOrder || []),
+          ...(defaultSettings.dashboardWidgetOrder || Object.keys(defaultSettings.dashboardWidgets)),
+        ]),
+      ].filter((key) => Object.prototype.hasOwnProperty.call(defaultSettings.dashboardWidgets, key)),
+      claimRiskThresholds: {
+        ...defaultSettings.claimRiskThresholds,
+        ...(savedSettings.claimRiskThresholds || {}),
+      },
+      profitabilityBenchmarks: {
+        ...defaultSettings.profitabilityBenchmarks,
+        ...(savedSettings.profitabilityBenchmarks || {}),
+      },
+    });
+    setClaimsBackendStatus("Demo and tour are turned off.");
+    setAppStateBackendStatus("Demo and tour are turned off.");
+    setHasAutoStartedBlankDemoTour(true);
+    setActiveTab("Dashboard");
+    setActiveOperationsTab("Dispatch");
+    setActiveFinanceTab("Profitability");
+    setShowSavedDays(false);
+    setShowDatePicker(false);
+    window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
+  };
+
   const resetDemoWorkspace = () => {
     loadDemoWorkspace({ reset: true, resetTour: true });
   };
@@ -1398,6 +1449,14 @@ export default function App() {
     );
   }
 
+  const showDemoTourOffControl =
+    isDemoMode ||
+    isDemoWorkspace ||
+    isProductTourOpen ||
+    isGuidedDemoOpen ||
+    isDemoCompletionOpen ||
+    !productTourStatus?.hasCompletedTour;
+
   return (
     <div className={isDark ? "theme-dark min-h-screen bg-slate-950 text-white" : "theme-light min-h-screen bg-slate-100 text-slate-950"}>
       <style>{`
@@ -1652,6 +1711,20 @@ export default function App() {
             </div>
           )}
           <div className="mx-auto mb-5 flex max-w-[1600px] flex-wrap items-center justify-end gap-3">
+            {showDemoTourOffControl && (
+              <button
+                type="button"
+                onClick={turnOffDemoAndTour}
+                className={
+                  isDark
+                    ? "flex items-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-black text-red-100 hover:bg-red-500/15"
+                    : "flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-black text-red-700 shadow-sm hover:bg-red-100"
+                }
+              >
+                Turn Off Demo / Tour
+              </button>
+            )}
+
             {canManageBusiness && (
               <button
                 data-tour="dashboard-save-snapshot"
