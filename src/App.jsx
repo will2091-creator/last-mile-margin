@@ -1005,6 +1005,7 @@ export default function App() {
   };
 
   const completeGuidedDemo = () => {
+    setProductTourStatus(markProductTourCompleted());
     setIsGuidedDemoOpen(false);
     navigateToTab("Dashboard");
   };

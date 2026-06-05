@@ -54,6 +54,7 @@ import {
 } from "../shared";
 import TakeTourButton from "../components/TakeTourButton";
 import NextActionCard from "../components/NextActionCard";
+import { guidedDemoSteps } from "../components/guidedDemoContent";
 import { getNextBestSetupAction, getSetupStatus } from "../lib/onboarding";
 
 function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDark, appSettings, savedDaySnapshot, savedDays = [], isBlankDemo = false, isDemoMode = false, onStartTour, onStartGuidedDemo, onLaunchDemo, productTourStatus }) {
@@ -754,7 +755,14 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   const setupIsComplete = setupCompleteCount === setupSteps.length;
   const setupNextStep = setupSteps.find((step) => !step.complete && !step.skipped) || setupSteps.find((step) => !step.complete) || setupSteps[setupSteps.length - 1];
   const showGuidedSetup = !setupIsComplete && (isBlankDemo || !hasStartedWorkspace || setupCompleteCount > 0 || setupSkippedCount > 0);
-  const showTourPrompt = Boolean(onStartTour) && !productTourStatus?.hasCompletedTour && !productTourStatus?.tourSkippedAt;
+  const showDemoProgressLauncher = Boolean(onStartTour || onStartGuidedDemo);
+  const demoTotalSteps = guidedDemoSteps.length;
+  const demoCompletedSteps = productTourStatus?.hasCompletedTour ? demoTotalSteps : 0;
+  const demoPercent = Math.round((demoCompletedSteps / Math.max(demoTotalSteps, 1)) * 100);
+  const demoStatusLabel = productTourStatus?.hasCompletedTour ? "Completed" : productTourStatus?.tourSkippedAt ? "Paused" : "Ready";
+  const demoCurrentLesson = productTourStatus?.hasCompletedTour ? "Completed walkthrough" : guidedDemoSteps[0]?.title || "Dashboard command center";
+  const demoPrimaryAction = productTourStatus?.hasCompletedTour ? "Restart Full Walkthrough" : productTourStatus?.tourSkippedAt ? "Restart Walkthrough" : "Start Full Walkthrough";
+  const demoLearningPath = ["Dashboard data", "Ask", "Intake", "Operations", "Finance", "Reports", "Settings"];
   const setupTourTargets = {
     contract: "contracts",
     team: "teams",
@@ -1322,15 +1330,87 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
         </div>
       </div>
 
-      {showTourPrompt && (
-        <section className={isDark ? "rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4 shadow-xl shadow-black/20" : "rounded-2xl border border-blue-100 bg-white p-4 shadow-sm"}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className={isDark ? "text-xs font-black uppercase tracking-wide text-blue-200" : "text-xs font-black uppercase tracking-wide text-blue-700"}>New here?</p>
-              <p className={`mt-1 text-lg font-black ${titleText}`}>Take a 60-second tour before you start adding data.</p>
-              <p className={`mt-1 text-sm font-semibold ${mutedText}`}>It shows where contracts, teams, expenses, claims, reports, and Ask live.</p>
+      {showDemoProgressLauncher && (
+        <section className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 p-5 shadow-xl shadow-black/20" : "rounded-2xl border border-blue-100 bg-gradient-to-br from-white via-blue-50 to-emerald-50 p-5 shadow-sm"}>
+          <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={isDark ? "rounded-full bg-blue-500/15 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-100" : "rounded-full bg-blue-100 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700"}>
+                  Demo Walkthrough
+                </span>
+                <span className={isDark ? "rounded-full bg-white/5 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-white px-3 py-1 text-xs font-black text-slate-600"}>
+                  {demoStatusLabel}
+                </span>
+              </div>
+              <h2 className={`mt-3 text-2xl font-black leading-tight ${titleText}`}>Learn Final Mile Margin in the order the business actually runs.</h2>
+              <p className={`mt-2 max-w-3xl text-sm font-semibold leading-6 ${mutedText}`}>
+                The walkthrough starts with every Dashboard data section, then moves through Ask, Intake, Operations, Finance, Reports, and Settings from top to bottom.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {demoLearningPath.map((item) => (
+                  <span key={item} className={isDark ? "rounded-full bg-white/5 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-white px-3 py-1 text-xs font-black text-slate-600 shadow-sm"}>
+                    {item}
+                  </span>
+                ))}
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={onStartGuidedDemo || onStartTour}
+                  className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500"
+                >
+                  {demoPrimaryAction}
+                </button>
+                {onStartTour && (
+                  <button
+                    type="button"
+                    onClick={onStartTour}
+                    className={isDark ? "rounded-xl border border-white/10 px-4 py-2.5 text-sm font-black text-slate-200 hover:bg-white/5" : "rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 hover:bg-slate-50"}
+                  >
+                    Take a Tour
+                  </button>
+                )}
+                {!isDemoMode && onLaunchDemo && (
+                  <button
+                    type="button"
+                    onClick={() => onLaunchDemo({ reset: true, startGuidedDemo: true })}
+                    className={isDark ? "rounded-xl bg-emerald-500/15 px-4 py-2.5 text-sm font-black text-emerald-200 hover:bg-emerald-500/20" : "rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500"}
+                  >
+                    Start Fresh Demo
+                  </button>
+                )}
+              </div>
             </div>
-            <TakeTourButton onClick={onStartTour} isDark={isDark} variant="primary" />
+
+            <div className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-4" : "rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm"}>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-300" : "text-xs font-black uppercase tracking-wide text-slate-500"}>Progress</p>
+                  <p className={`mt-1 text-3xl font-black ${titleText}`}>{demoCompletedSteps} of {demoTotalSteps}</p>
+                  <p className={`mt-1 text-sm font-semibold ${mutedText}`}>{demoPercent}% complete</p>
+                </div>
+                <span className={productTourStatus?.hasCompletedTour ? "flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white" : "flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white"}>
+                  {productTourStatus?.hasCompletedTour ? <CheckCircle2 className="h-6 w-6" /> : <LayoutDashboard className="h-6 w-6" />}
+                </span>
+              </div>
+
+              <div className={isDark ? "mt-4 h-3 overflow-hidden rounded-full bg-slate-950/70" : "mt-4 h-3 overflow-hidden rounded-full bg-slate-100"}>
+                <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${demoPercent}%` }} />
+              </div>
+
+              <div className="mt-4 grid gap-3">
+                <div>
+                  <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>Current lesson</p>
+                  <p className={`mt-1 text-sm font-black leading-5 ${titleText}`}>{demoCurrentLesson}</p>
+                </div>
+                <div>
+                  <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>What you will learn</p>
+                  <p className={`mt-1 text-xs font-bold leading-5 ${mutedText}`}>What every page does, why it matters, what data belongs there, and what owner decision it supports.</p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       )}
