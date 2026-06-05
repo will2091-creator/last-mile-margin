@@ -391,10 +391,11 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   };
 
   const selectedWidgetCount = dashboardWidgetOrder.filter((key) => widgets[key] !== false).length;
-  const dashboardFocusOrder = ["periodMetrics", "needsAttention", "teamReadiness", "recentClaims", "recentActivity"];
+  const dashboardFocusOrder = ["teamReadiness", "routeHealth", "recentClaims", "savedRoutes", "recentActivity"];
   const visibleDashboardOrder = isDemoMode ? dashboardWidgetOrder : dashboardFocusOrder;
   const focusedWidgetOrder = isCleanBlankWorkspace ? [] : visibleDashboardOrder.filter((key) => widgets[key] !== false);
   const focusedWidgetCount = focusedWidgetOrder.length;
+  const primaryIssue = needsAttention[0];
 
   const goToSource = (tabName) => setActiveTab(tabName);
   const setupStepOrder = ["contract", "team", "expenses", "data", "preview"];
@@ -1577,6 +1578,92 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
             </div>
           </section>
         </div>
+      )}
+
+      {!isCleanBlankWorkspace && (
+        <section data-tour="dashboard-owner-decision-center" className={isDark ? "rounded-2xl border border-white/10 bg-slate-950/60 p-4 shadow-xl shadow-black/20" : "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"}>
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wide text-blue-600">Owner Decision Center</p>
+              <h2 className={`mt-1 text-2xl font-black ${titleText}`}>Start with the three numbers that change today’s plan</h2>
+            </div>
+            <p className={`max-w-xl text-sm font-semibold leading-6 ${mutedText}`}>
+              Profit tells if the work is worth it, claims show money at risk, and attention items tell what to fix first.
+            </p>
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[1.15fr_0.95fr_0.9fr]">
+            <button
+              type="button"
+              onClick={() => goToSource("Profitability")}
+              className={isDark ? "min-w-0 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-5 text-left transition hover:border-emerald-300/50" : "min-w-0 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-left transition hover:border-emerald-300 hover:bg-emerald-100/60"}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-black uppercase tracking-wide text-emerald-700">Profit</p>
+                  <p className={`safe-number mt-3 text-5xl font-black tracking-tight ${todayProfit >= 0 ? "text-emerald-700" : "text-red-600"}`} title={currency.format(todayProfit)}>
+                    {currency.format(todayProfit)}
+                  </p>
+                  <p className={isDark ? "mt-2 text-sm font-bold text-emerald-100" : "mt-2 text-sm font-bold text-emerald-900"}>
+                    {number.format(margin)}% margin · {trendComparisonLabel}
+                  </p>
+                </div>
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+                  <DollarSign className="h-6 w-6" />
+                </span>
+              </div>
+              <p className={isDark ? "mt-5 text-sm font-semibold leading-6 text-emerald-100" : "mt-5 text-sm font-semibold leading-6 text-emerald-900"}>
+                Decision: keep running this work as-is, or review pricing and costs.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => goToSource("Claims")}
+              className={isDark ? "min-w-0 rounded-2xl border border-red-400/20 bg-red-500/10 p-5 text-left transition hover:border-red-300/50" : "min-w-0 rounded-2xl border border-red-200 bg-red-50 p-5 text-left transition hover:border-red-300 hover:bg-red-100/60"}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-black uppercase tracking-wide text-red-600">Claims Exposure</p>
+                  <p className="safe-number mt-3 text-5xl font-black tracking-tight text-red-600" title={currency.format(periodClaimsExposure)}>
+                    {currency.format(periodClaimsExposure)}
+                  </p>
+                  <p className={isDark ? "mt-2 text-sm font-bold text-red-100" : "mt-2 text-sm font-bold text-red-900"}>
+                    {openClaims} open claim{openClaims === 1 ? "" : "s"} need review
+                  </p>
+                </div>
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-600 text-white">
+                  <ShieldCheck className="h-6 w-6" />
+                </span>
+              </div>
+              <p className={isDark ? "mt-5 text-sm font-semibold leading-6 text-red-100" : "mt-5 text-sm font-semibold leading-6 text-red-900"}>
+                Decision: collect evidence, dispute, reserve cash, or close the issue.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => goToSource(primaryIssue?.tab || "Operations")}
+              className={isDark ? "min-w-0 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-5 text-left transition hover:border-amber-300/50" : "min-w-0 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-left transition hover:border-amber-300 hover:bg-amber-100/60"}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-black uppercase tracking-wide text-amber-700">Needs Attention</p>
+                  <p className={`mt-3 text-5xl font-black tracking-tight ${titleText}`}>{needsAttention.length}</p>
+                  <p className={isDark ? "mt-2 text-sm font-bold text-amber-100" : "mt-2 text-sm font-bold text-amber-900"}>
+                    {primaryIssue?.title || "No active issues"}
+                  </p>
+                </div>
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white">
+                  <AlertTriangle className="h-6 w-6" />
+                </span>
+              </div>
+              <p className={isDark ? "mt-5 text-sm font-semibold leading-6 text-amber-100" : "mt-5 text-sm font-semibold leading-6 text-amber-900"}>
+                Decision: handle the highest-risk item before it becomes a bigger loss.
+              </p>
+            </button>
+          </div>
+        </section>
       )}
 
       {hasQuickContracts && (

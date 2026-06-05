@@ -94,10 +94,23 @@ const tabDetailStep = ({
 
 export const guidedDemoSteps = [
   dashboardDataStep({
-    id: "dashboard-saved-contracts",
-    title: "Saved Contracts: start the Dashboard data here",
+    id: "dashboard-owner-decision-center",
+    title: "Owner Decision Center: start with the three decisions",
     lesson:
-      "This is the first data section on the Dashboard. It shows which contracts are already saved and which customer agreements are feeding the money numbers below.",
+      "This is the first Dashboard data section. It puts Profit, Claims Exposure, and Needs Attention at the top so the owner knows what changed today before reading the supporting detail below.",
+    why:
+      "A dashboard should not make every card feel equally important. These three numbers decide whether the owner should protect margin, control claim risk, or fix an urgent blocker first.",
+    selector: '[data-tour="dashboard-owner-decision-center"]',
+    nextLabel: "Next: Saved Contracts",
+    metrics: ["Profit", "Claims exposure", "Needs attention", "Margin", "Open claims"],
+    dataToEnter: "Contracts, route costs, claims, team readiness, receipts, and compliance items from the rest of the app.",
+    ownerDecision: "Decide the first action of the day: review profitability, control a claim, or fix an operational issue.",
+  }),
+  dashboardDataStep({
+    id: "dashboard-saved-contracts",
+    title: "Saved Contracts: contract data feeds the Dashboard",
+    lesson:
+      "This section shows which contracts are already saved and which customer agreements are feeding the money numbers below.",
     why:
       "Contracts come before profit because rate terms create the revenue that every margin calculation depends on.",
     selector: '[data-tour="dashboard-saved-contracts"]',
