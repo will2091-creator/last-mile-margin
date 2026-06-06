@@ -15,6 +15,14 @@ const STORAGE_KEYS = {
 
 export const setupSteps = [
   {
+    id: "profile",
+    label: "Profile",
+    title: "Confirm company profile",
+    outcome: "Names the workspace and sets owner targets.",
+    tab: "Settings",
+    actionLabel: "Open Settings",
+  },
+  {
     id: "contract",
     label: "Contract",
     title: "Add your first contract",
@@ -47,12 +55,12 @@ export const setupSteps = [
     actionLabel: "Open Intake",
   },
   {
-    id: "preview",
-    label: "Preview",
-    title: "Preview the command center",
-    outcome: "Confirms profit, claims, teams, and next action are useful.",
+    id: "snapshot",
+    label: "Snapshot",
+    title: "Save first snapshot",
+    outcome: "Creates report history for weekly and monthly review.",
     tab: "Dashboard",
-    actionLabel: "Preview Dashboard",
+    actionLabel: "Save Snapshot",
   },
 ];
 
@@ -158,6 +166,7 @@ export function getSetupStatus({
   const hasAnyBusinessData = hasContracts || hasTeams || hasClaims || hasReceipts || hasImports || hasSavedSnapshots || hasSavedScenarios;
 
   const checks = {
+    profile: hasCompanyProfile,
     contract: hasContracts,
     team: hasTeams,
     expenses: hasExpenses,
@@ -165,6 +174,7 @@ export function getSetupStatus({
     claims: hasClaims,
     receipts: hasReceipts,
     reports: hasSavedSnapshots,
+    snapshot: hasSavedSnapshots,
     ask: hasContracts || hasTeams || hasClaims || hasReceipts || hasSavedSnapshots,
     preview: wizard.previewed,
   };
@@ -221,6 +231,12 @@ export function getNextBestSetupAction(status) {
     current.items[current.items.length - 1];
 
   const actionDetails = {
+    profile: {
+      title: "Confirm company profile",
+      detail: "Set the company name, owner targets, dashboard layout, and business controls.",
+      tab: "Settings",
+      actionLabel: "Open Settings",
+    },
     contract: {
       title: "Create your first contract",
       detail: "Start with the customer name, route pay, routes per week, stops, and baseline costs.",
@@ -269,11 +285,11 @@ export function getNextBestSetupAction(status) {
       tab: "Ask",
       actionLabel: "Open Ask",
     },
-    preview: {
-      title: "Preview your dashboard",
-      detail: "Confirm your command center is showing profit, risk, readiness, and next action.",
+    snapshot: {
+      title: "Save your first snapshot",
+      detail: "Save today once contract, team, and cost basics are in place so Reports can build history.",
       tab: "Dashboard",
-      actionLabel: "Preview Dashboard",
+      actionLabel: "Save Snapshot",
     },
   };
 

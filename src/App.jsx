@@ -1968,7 +1968,7 @@ export default function App() {
           />
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1600px]">
             {activeTab === "Dashboard" ? (
-              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onStartTour={startProductTour} onStartGuidedDemo={startInteractiveDemo} onLaunchDemo={loadDemoWorkspace} productTourStatus={productTourStatus} />
+              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onStartTour={startProductTour} onStartGuidedDemo={startInteractiveDemo} onLaunchDemo={loadDemoWorkspace} onSaveSnapshot={saveCurrentDay} productTourStatus={productTourStatus} />
             ) : activeTab === "Intake" ? (
               <AiQuickIntake
                 teams={teams}
@@ -2054,7 +2054,7 @@ export default function App() {
                 isDemoMode={isDemoMode}
               />
             ) : (
-              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onStartTour={startProductTour} onStartGuidedDemo={startInteractiveDemo} onLaunchDemo={loadDemoWorkspace} productTourStatus={productTourStatus} />
+              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onStartTour={startProductTour} onStartGuidedDemo={startInteractiveDemo} onLaunchDemo={loadDemoWorkspace} onSaveSnapshot={saveCurrentDay} productTourStatus={productTourStatus} />
             )}
           </motion.div>
         </main>

@@ -58,7 +58,7 @@ import SaaSReadinessCommand from "../components/SaaSReadinessCommand";
 import { guidedDemoSteps } from "../components/guidedDemoContent";
 import { getNextBestSetupAction, getSetupStatus } from "../lib/onboarding";
 
-function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDark, appSettings, savedDaySnapshot, savedDays = [], isBlankDemo = false, isDemoMode = false, onStartTour, onStartGuidedDemo, onLaunchDemo, productTourStatus }) {
+function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDark, appSettings, savedDaySnapshot, savedDays = [], isBlankDemo = false, isDemoMode = false, onStartTour, onStartGuidedDemo, onLaunchDemo, onSaveSnapshot, productTourStatus }) {
   const widgets = {
     ...defaultSettings.dashboardWidgets,
     ...(appSettings?.dashboardWidgets || {}),
@@ -678,7 +678,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     setImportDraft({ ...emptyImportDraft, type: importDraft.type });
     setImportSaveStatus(
       activeSetupStep === "data"
-        ? `${title} saved. Next: preview your dashboard.`
+        ? `${title} saved. Next: save your first snapshot.`
         : `${title} saved.`
     );
     setSetupWizard((current) => ({
@@ -691,6 +691,18 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   };
 
   const setupSteps = [
+    {
+      id: "profile",
+      shortLabel: "Profile",
+      title: "Confirm company profile",
+      detail: "Set the company name, owner targets, and dashboard preferences so the workspace feels like your business.",
+      cta: "Open Settings",
+      Icon: Settings,
+      onClick: () => setActiveTab("Settings"),
+      complete: Boolean(appSettings?.companyName),
+      skipped: false,
+      tone: "blue",
+    },
     {
       id: "contract",
       shortLabel: "Contract",
@@ -740,16 +752,16 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
       tone: "amber",
     },
     {
-      id: "preview",
-      shortLabel: "Preview",
-      title: "Preview the dashboard",
-      detail: "Review profit, revenue, costs, claims, readiness, and the next recommended action before you move on.",
-      cta: "Preview Dashboard",
-      Icon: LayoutDashboard,
-      onClick: () => openSetupStep("preview"),
-      complete: Boolean(setupWizard.previewed),
+      id: "snapshot",
+      shortLabel: "Snapshot",
+      title: "Save first snapshot",
+      detail: "Save today’s baseline so Reports can show history, trends, and owner-ready exports.",
+      cta: "Save Snapshot",
+      Icon: Save,
+      onClick: () => onSaveSnapshot?.(),
+      complete: savedDays.length > 0,
       skipped: false,
-      tone: "blue",
+      tone: "green",
     },
   ];
   const setupCompleteCount = setupSteps.filter((step) => step.complete).length;
@@ -770,11 +782,12 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   const demoPrimaryAction = productTourStatus?.hasCompletedTour ? "Restart Full Walkthrough" : hasDemoProgress ? "Resume Walkthrough" : "Start Full Walkthrough";
   const demoLearningPath = ["Dashboard data", "Ask", "Intake", "Operations", "Finance", "Reports", "Settings"];
   const setupTourTargets = {
+    profile: "settings",
     contract: "contracts",
     team: "teams",
     expenses: "expenses",
     data: "setup-progress",
-    preview: "dashboard-overview",
+    snapshot: "dashboard-save-snapshot",
   };
   const setupStatus = useMemo(
     () =>
@@ -792,6 +805,14 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   );
   const sharedNextAction = getNextBestSetupAction(setupStatus);
   const handleSetupStatusAction = (action = sharedNextAction) => {
+    if (action.id === "profile") {
+      setActiveTab("Settings");
+      return;
+    }
+    if (action.id === "snapshot") {
+      onSaveSnapshot?.();
+      return;
+    }
     if (["contract", "team", "expenses", "data", "preview"].includes(action.id)) {
       openSetupStep(action.id);
       return;
@@ -1480,7 +1501,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                     Start with the business facts that make the app useful: contracts, teams, costs, claims, receipts, and history. Every saved step feeds the Dashboard, Operations, Finance, Reports, and Ask.
                   </p>
                   <div className="mt-5 flex flex-wrap items-center gap-2">
-                    <button onClick={() => openSetupStep(setupNextStep.id)} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500">
+                    <button onClick={setupNextStep.onClick} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500">
                       Continue Setup
                     </button>
                     {showDemoActions && !isDemoMode && onLaunchDemo && (
@@ -1582,7 +1603,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                   >
                     {complete ? "Review" : skipped ? "Finish" : cta}
                   </button>
-                  {!complete && id !== "preview" && (
+                  {!complete && ["contract", "team", "expenses", "data"].includes(id) && (
                     <button
                       type="button"
                       onClick={() => skipSetupStep(id)}
