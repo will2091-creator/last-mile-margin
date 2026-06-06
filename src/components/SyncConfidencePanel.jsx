@@ -40,7 +40,7 @@ export default function SyncConfidencePanel({
     <section data-tour="sync-confidence" className={shellClass}>
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex items-start gap-3">
-          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconClass}`}>
+          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10 ${iconClass}`}>
             <Icon className="h-5 w-5" />
           </span>
           <div>

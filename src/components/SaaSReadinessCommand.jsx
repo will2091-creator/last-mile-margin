@@ -135,7 +135,7 @@ export default function SaaSReadinessCommand({
   ];
 
   return (
-    <section className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 p-5 shadow-xl shadow-black/20" : "rounded-2xl border border-blue-100 bg-gradient-to-br from-white via-blue-50 to-emerald-50 p-5 shadow-sm"}>
+    <section className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 p-4 shadow-xl shadow-black/20 sm:p-5" : "rounded-2xl border border-blue-100 bg-gradient-to-br from-white via-blue-50 to-emerald-50 p-4 shadow-sm sm:p-5"}>
       <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -146,37 +146,37 @@ export default function SaaSReadinessCommand({
               {readinessScore}% ready
             </span>
           </div>
-          <h2 className={`mt-3 max-w-2xl text-3xl font-black leading-tight ${titleText}`}>Your operating system is being assembled.</h2>
+          <h2 className={`mt-3 max-w-2xl text-2xl font-black leading-tight sm:text-3xl ${titleText}`}>Your operating system is being assembled.</h2>
           <p className={`mt-2 max-w-2xl text-sm font-semibold leading-6 ${mutedText}`}>
             Final Mile Margin is strongest when the owner can capture work fast, see what matters today, prove expenses, control claims, export history, and ask questions against real business data.
           </p>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:gap-3">
             {metricCards.map(([label, value, note]) => (
-              <div key={label} className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-4" : "rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm"}>
+              <div key={label} className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4" : "rounded-2xl border border-white/70 bg-white/85 p-3 shadow-sm sm:p-4"}>
                 <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>{label}</p>
-                <p className={`mt-1 text-2xl font-black ${titleText}`}>{value}</p>
+                <p className={`safe-number mt-1 text-xl font-black sm:text-2xl ${titleText}`} title={String(value)}>{value}</p>
                 <p className={`mt-1 text-xs font-bold ${mutedText}`}>{note}</p>
               </div>
             ))}
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            <button type="button" onClick={() => onAction?.(nextAction)} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500">
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <button type="button" onClick={() => onAction?.(nextAction)} className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500 sm:w-auto">
               {nextAction.actionLabel}
             </button>
-            <button type="button" onClick={() => onAction?.({ id: "data", tab: "Intake" })} className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/5" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}>
+            <button type="button" onClick={() => onAction?.({ id: "data", tab: "Intake" })} className={isDark ? "w-full rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/5 sm:w-auto" : "w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50 sm:w-auto"}>
               Quick Intake
             </button>
             {onLaunchDemo && (
-              <button type="button" onClick={() => onLaunchDemo({ reset: true, startGuidedDemo: true, resetTour: true })} className={isDark ? "rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/15" : "rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-100"}>
+              <button type="button" onClick={() => onLaunchDemo({ reset: true, startGuidedDemo: true, resetTour: true })} className={isDark ? "w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/15 sm:w-auto" : "w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-100 sm:w-auto"}>
                 Fresh Demo
               </button>
             )}
           </div>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0">
           {tracks.map((track) => {
             const Icon = track.Icon;
             return (
@@ -186,11 +186,11 @@ export default function SaaSReadinessCommand({
                 onClick={track.onClick}
                 className={track.ready
                   ? isDark
-                    ? "rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-left hover:bg-emerald-500/15"
-                    : "rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left hover:bg-emerald-100"
+                    ? "w-56 shrink-0 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-left hover:bg-emerald-500/15 sm:w-auto sm:p-4"
+                    : "w-56 shrink-0 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-left hover:bg-emerald-100 sm:w-auto sm:p-4"
                   : isDark
-                    ? "rounded-2xl border border-white/10 bg-white/5 p-4 text-left hover:border-blue-400/40 hover:bg-white/10"
-                    : "rounded-2xl border border-slate-200 bg-white/85 p-4 text-left shadow-sm hover:border-blue-200 hover:bg-blue-50"}
+                    ? "w-56 shrink-0 rounded-2xl border border-white/10 bg-white/5 p-3 text-left hover:border-blue-400/40 hover:bg-white/10 sm:w-auto sm:p-4"
+                    : "w-56 shrink-0 rounded-2xl border border-slate-200 bg-white/85 p-3 text-left shadow-sm hover:border-blue-200 hover:bg-blue-50 sm:w-auto sm:p-4"}
               >
                 <div className="flex items-start justify-between gap-3">
                   <span className={track.ready ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white" : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white"}>
@@ -201,7 +201,7 @@ export default function SaaSReadinessCommand({
                   </span>
                 </div>
                 <h3 className={`mt-3 text-sm font-black ${titleText}`}>{track.title}</h3>
-                <p className={`mt-1 min-h-14 text-xs font-semibold leading-5 ${mutedText}`}>{track.detail}</p>
+                <p className={`mt-1 hidden min-h-14 text-xs font-semibold leading-5 sm:block ${mutedText}`}>{track.detail}</p>
                 <p className={track.ready ? "mt-3 text-xs font-black text-emerald-700" : "mt-3 text-xs font-black text-blue-600"}>
                   {track.ready ? "Operational" : track.actionLabel}
                 </p>

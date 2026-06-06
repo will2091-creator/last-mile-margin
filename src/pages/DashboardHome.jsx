@@ -1336,9 +1336,9 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
           {showDemoActions && onStartTour && (
-            <TakeTourButton onClick={onStartTour} isDark={isDark} />
+            <TakeTourButton onClick={onStartTour} isDark={isDark} className="w-full sm:w-auto" />
           )}
 
           {showDemoActions && onStartGuidedDemo && (
@@ -1346,7 +1346,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
               data-tour="dashboard-interactive-demo"
               type="button"
               onClick={onStartGuidedDemo}
-              className={isDark ? "rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500" : "rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500"}
+              className={isDark ? "w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500 sm:w-auto" : "w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500 sm:w-auto"}
             >
               Interactive Demo
             </button>
@@ -1357,18 +1357,18 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
               data-tour="dashboard-launch-demo"
               type="button"
               onClick={() => onLaunchDemo({ reset: false })}
-              className={isDark ? "rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/15" : "rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-100"}
+              className={isDark ? "w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/15 sm:w-auto" : "w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-100 sm:w-auto"}
             >
               Launch Demo Workspace
             </button>
           )}
 
-          <div data-tour="dashboard-period-tabs" className={isDark ? "rounded-2xl bg-white/5 p-1" : "rounded-2xl bg-slate-100 p-1"}>
+          <div data-tour="dashboard-period-tabs" className={isDark ? "flex w-full overflow-x-auto rounded-2xl bg-white/5 p-1 sm:w-auto" : "flex w-full overflow-x-auto rounded-2xl bg-slate-100 p-1 sm:w-auto"}>
             {["Day", "Week", "Month", "Qtr", "Year"].map((period) => (
               <button
                 key={period}
                 onClick={() => setDashboardPeriod(period)}
-                className={`rounded-xl px-4 py-2 text-sm font-black transition ${dashboardPeriod === period
+                className={`min-w-14 flex-1 rounded-xl px-3 py-2 text-sm font-black transition sm:flex-none sm:px-4 ${dashboardPeriod === period
                     ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
                     : isDark
                       ? "text-slate-300 hover:bg-white/10"
@@ -1383,7 +1383,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           <button
             data-tour="dashboard-open-operations"
             onClick={() => setActiveTab("Operations")}
-            className="rounded-xl border border-blue-500/40 px-4 py-2 text-sm font-bold text-blue-600 hover:bg-blue-500/10"
+            className="w-full rounded-xl border border-blue-500/40 px-4 py-2 text-sm font-bold text-blue-600 hover:bg-blue-500/10 sm:w-auto"
           >
             Open Operations
           </button>
@@ -1391,7 +1391,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
       </div>
 
       {showDemoProgressLauncher && (
-        <section className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 p-5 shadow-xl shadow-black/20" : "rounded-2xl border border-blue-100 bg-gradient-to-br from-white via-blue-50 to-emerald-50 p-5 shadow-sm"}>
+        <section className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 p-4 shadow-xl shadow-black/20 sm:p-5" : "rounded-2xl border border-blue-100 bg-gradient-to-br from-white via-blue-50 to-emerald-50 p-4 shadow-sm sm:p-5"}>
           <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -1402,12 +1402,12 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                   {demoStatusLabel}
                 </span>
               </div>
-              <h2 className={`mt-3 text-2xl font-black leading-tight ${titleText}`}>Learn Final Mile Margin in the order the business actually runs.</h2>
+              <h2 className={`mt-3 text-xl font-black leading-tight sm:text-2xl ${titleText}`}>Learn Final Mile Margin in the order the business actually runs.</h2>
               <p className={`mt-2 max-w-3xl text-sm font-semibold leading-6 ${mutedText}`}>
                 The walkthrough starts with every Dashboard data section, then moves through Ask, Intake, Operations, Finance, Reports, and Settings from top to bottom.
               </p>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 hidden flex-wrap gap-2 sm:flex">
                 {demoLearningPath.map((item) => (
                   <span key={item} className={isDark ? "rounded-full bg-white/5 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-white px-3 py-1 text-xs font-black text-slate-600 shadow-sm"}>
                     {item}
@@ -1415,11 +1415,11 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                 ))}
               </div>
 
-              <div className="mt-5 flex flex-wrap items-center gap-3">
+              <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                 <button
                   type="button"
                   onClick={onStartGuidedDemo || onStartTour}
-                  className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500"
+                  className="w-full rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 sm:w-auto"
                 >
                   {demoPrimaryAction}
                 </button>
@@ -1427,7 +1427,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                   <button
                     type="button"
                     onClick={onStartTour}
-                    className={isDark ? "rounded-xl border border-white/10 px-4 py-2.5 text-sm font-black text-slate-200 hover:bg-white/5" : "rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 hover:bg-slate-50"}
+                    className={isDark ? "w-full rounded-xl border border-white/10 px-4 py-2.5 text-sm font-black text-slate-200 hover:bg-white/5 sm:w-auto" : "w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 hover:bg-slate-50 sm:w-auto"}
                   >
                     Take a Tour
                   </button>
@@ -1436,7 +1436,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                   <button
                     type="button"
                     onClick={() => onLaunchDemo({ reset: true, startGuidedDemo: true, resetTour: true })}
-                    className={isDark ? "rounded-xl bg-emerald-500/15 px-4 py-2.5 text-sm font-black text-emerald-200 hover:bg-emerald-500/20" : "rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500"}
+                    className={isDark ? "w-full rounded-xl bg-emerald-500/15 px-4 py-2.5 text-sm font-black text-emerald-200 hover:bg-emerald-500/20 sm:w-auto" : "w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 sm:w-auto"}
                   >
                     Start Fresh Demo
                   </button>
@@ -1488,33 +1488,33 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
       {showGuidedSetup && (
         <div className="space-y-5">
-          <section data-tour="setup-progress" className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 p-6 shadow-xl shadow-black/20" : "rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-emerald-50 p-6 shadow-sm"}>
+          <section data-tour="setup-progress" className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 p-4 shadow-xl shadow-black/20 sm:p-6" : "rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-emerald-50 p-4 shadow-sm sm:p-6"}>
             <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
               <div className="flex min-w-0 items-start gap-4">
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
+                <span className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 sm:flex">
                   <BriefcaseBusiness className="h-7 w-7" />
                 </span>
                 <div className="min-w-0">
                   <p className={isDark ? "text-xs font-black uppercase tracking-wide text-blue-200" : "text-xs font-black uppercase tracking-wide text-blue-700"}>Business Launch Center</p>
-                  <h2 className={`mt-1 max-w-3xl text-3xl font-black leading-tight ${titleText}`}>Build your first margin command center</h2>
+                  <h2 className={`mt-1 max-w-3xl text-2xl font-black leading-tight sm:text-3xl ${titleText}`}>Build your first margin command center</h2>
                   <p className={`mt-3 max-w-3xl text-sm font-semibold leading-6 ${mutedText}`}>
                     Start with the business facts that make the app useful: contracts, teams, costs, claims, receipts, and history. Every saved step feeds the Dashboard, Operations, Finance, Reports, and Ask.
                   </p>
-                  <div className="mt-5 flex flex-wrap items-center gap-2">
-                    <button onClick={setupNextStep.onClick} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500">
+                  <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                    <button onClick={setupNextStep.onClick} className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500 sm:w-auto">
                       Continue Setup
                     </button>
                     {showDemoActions && !isDemoMode && onLaunchDemo && (
-                      <button onClick={() => onLaunchDemo({ reset: false })} className={isDark ? "rounded-xl bg-emerald-500/15 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/20" : "rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500"}>
+                      <button onClick={() => onLaunchDemo({ reset: false })} className={isDark ? "w-full rounded-xl bg-emerald-500/15 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/20 sm:w-auto" : "w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 sm:w-auto"}>
                         Launch Demo Workspace
                       </button>
                     )}
                     {showDemoActions && onStartGuidedDemo && (
-                      <button onClick={onStartGuidedDemo} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500">
+                      <button onClick={onStartGuidedDemo} className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500 sm:w-auto">
                         Interactive Demo
                       </button>
                     )}
-                    <button onClick={() => openPreviewModal("preview")} className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/5" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}>
+                    <button onClick={() => openPreviewModal("preview")} className={isDark ? "w-full rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/5 sm:w-auto" : "w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50 sm:w-auto"}>
                       Preview Dashboard
                     </button>
                     <span className={isDark ? "rounded-full bg-white/5 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500"}>
@@ -1594,7 +1594,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                   </span>
                 </div>
                 <h3 className={`mt-5 text-lg font-black ${titleText}`}>{title}</h3>
-                <p className={`mt-2 min-h-[96px] text-sm font-semibold leading-6 ${mutedText}`}>{detail}</p>
+                <p className={`mt-2 text-sm font-semibold leading-6 sm:min-h-[96px] ${mutedText}`}>{detail}</p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -1669,7 +1669,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-black uppercase tracking-wide text-emerald-700">Profit</p>
-                  <p className={`safe-number mt-3 text-5xl font-black tracking-tight ${todayProfit >= 0 ? "text-emerald-700" : "text-red-600"}`} title={currency.format(todayProfit)}>
+                  <p className={`safe-number mt-3 text-4xl font-black tracking-tight sm:text-5xl ${todayProfit >= 0 ? "text-emerald-700" : "text-red-600"}`} title={currency.format(todayProfit)}>
                     {currency.format(todayProfit)}
                   </p>
                   <p className={isDark ? "mt-2 text-sm font-bold text-emerald-100" : "mt-2 text-sm font-bold text-emerald-900"}>
@@ -1693,7 +1693,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-black uppercase tracking-wide text-red-600">Claims Exposure</p>
-                  <p className="safe-number mt-3 text-5xl font-black tracking-tight text-red-600" title={currency.format(periodClaimsExposure)}>
+                  <p className="safe-number mt-3 text-4xl font-black tracking-tight text-red-600 sm:text-5xl" title={currency.format(periodClaimsExposure)}>
                     {currency.format(periodClaimsExposure)}
                   </p>
                   <p className={isDark ? "mt-2 text-sm font-bold text-red-100" : "mt-2 text-sm font-bold text-red-900"}>
@@ -1717,7 +1717,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-black uppercase tracking-wide text-amber-700">Needs Attention</p>
-                  <p className={`mt-3 text-5xl font-black tracking-tight ${titleText}`}>{needsAttention.length}</p>
+                  <p className={`mt-3 text-4xl font-black tracking-tight sm:text-5xl ${titleText}`}>{needsAttention.length}</p>
                   <p className={isDark ? "mt-2 text-sm font-bold text-amber-100" : "mt-2 text-sm font-bold text-amber-900"}>
                     {primaryIssue?.title || "No active issues"}
                   </p>

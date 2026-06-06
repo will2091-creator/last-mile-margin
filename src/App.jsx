@@ -1730,15 +1730,15 @@ export default function App() {
               </div>
             </div>
           )}
-          <div className="mx-auto mb-5 flex max-w-[1600px] flex-wrap items-center justify-end gap-3">
+          <div className="mx-auto mb-3 grid max-w-[1600px] grid-cols-1 gap-2 sm:mb-5 sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
             {showDemoTourOffControl && (
               <button
                 type="button"
                 onClick={turnOffDemoAndTour}
                 className={
                   isDark
-                    ? "flex items-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-black text-red-100 hover:bg-red-500/15"
-                    : "flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-black text-red-700 shadow-sm hover:bg-red-100"
+                    ? "flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-black text-red-100 hover:bg-red-500/15 sm:w-auto"
+                    : "flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-black text-red-700 shadow-sm hover:bg-red-100 sm:w-auto"
                 }
               >
                 Turn Off Demo / Tour
@@ -1751,10 +1751,10 @@ export default function App() {
                 onClick={saveCurrentDay}
                 className={
                   savedDayFlash
-                    ? "flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-sm"
+                    ? "flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-sm sm:w-auto"
                     : isDark
-                      ? "flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/15"
-                      : "flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 shadow-sm hover:bg-emerald-100"
+                      ? "flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/15 sm:w-auto"
+                      : "flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 shadow-sm hover:bg-emerald-100 sm:w-auto"
                 }
               >
                 <Save className="h-4 w-4" />
@@ -1762,7 +1762,7 @@ export default function App() {
               </button>
             )}
 
-            {canManageBusiness && <div className="relative">
+            {canManageBusiness && <div className="relative w-full sm:w-auto">
               <button
                 data-tour="dashboard-daily-history"
                 onClick={() => {
@@ -1771,8 +1771,8 @@ export default function App() {
                 }}
                 className={
                   isDark
-                    ? "flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-black text-white hover:bg-white/10"
-                    : "flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50"
+                    ? "flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-black text-white hover:bg-white/10 sm:w-auto"
+                    : "flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
                 }
               >
                 <FileText className="h-4 w-4" />
@@ -1784,7 +1784,7 @@ export default function App() {
               </button>
 
               {showSavedDays && (
-                <div className={isDark ? "absolute right-0 top-12 z-50 w-96 rounded-2xl border border-white/10 bg-slate-900 p-4 shadow-2xl" : "absolute right-0 top-12 z-50 w-96 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl"}>
+                <div className={isDark ? "absolute right-0 top-12 z-50 w-[calc(100vw-2rem)] rounded-2xl border border-white/10 bg-slate-900 p-4 shadow-2xl sm:w-96" : "absolute right-0 top-12 z-50 w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:w-96"}>
                   <div className="mb-3 flex items-center justify-between">
                     <p className={isDark ? "text-sm font-black text-white" : "text-sm font-black text-slate-950"}>Daily History</p>
                     <p className={isDark ? "text-xs font-bold text-slate-400" : "text-xs font-bold text-slate-500"}>Open a previous workday</p>
@@ -1823,7 +1823,7 @@ export default function App() {
               )}
             </div>}
 
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <button
                 data-tour="dashboard-date-range"
                 onClick={() => {
@@ -1834,8 +1834,8 @@ export default function App() {
                 }}
                 className={
                   isDark
-                    ? "flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-black text-white hover:bg-white/10"
-                    : "flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50"
+                    ? "flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-black text-white hover:bg-white/10 sm:w-auto"
+                    : "flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
                 }
               >
                 <FileText className="h-4 w-4" />
@@ -1963,7 +1963,7 @@ export default function App() {
               )}
             </div>
           </div>
-          <div className="mx-auto mb-5 max-w-[1600px]">
+          <div className="mx-auto mb-3 max-w-[1600px] sm:mb-5">
             <SyncConfidencePanel
               isDark={isDark}
               appStateStatus={appStateBackendStatus}
