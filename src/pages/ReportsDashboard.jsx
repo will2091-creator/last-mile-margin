@@ -239,6 +239,22 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
     return requirements;
   };
   const reportIsReady = (report) => getReportRequirements(report).every((item) => item.optional || item.complete);
+  const getReportOwnerDecision = (report) => {
+    if (report.type === "Claims") return "Decide which claims need evidence, dispute packets, reserve, or escalation.";
+    if (report.type === "Teams") return "Decide which crews are ready, which need coaching, and who owns recurring issues.";
+    if (report.type === "Compliance") return "Decide which documents or readiness blockers must be fixed before more work is assigned.";
+    if (report.type === "Owner Summary") return "Decide whether the business is trending toward the owner margin target.";
+    return "Decide whether route pricing, costs, or claim exposure need action before the next dispatch cycle.";
+  };
+  const getReportNextActions = (report) => {
+    const actions = [];
+    if (!setupStatus.checks.contract) actions.push("Add contract terms so revenue and rate logic are reliable.");
+    if ((report.type === "Teams" || report.type === "Compliance") && !setupStatus.checks.team) actions.push("Add teams so readiness and accountability can be measured.");
+    if (report.type === "Claims" && !setupStatus.checks.claims) actions.push("Import or add claims so exposure can be reviewed.");
+    if (!setupStatus.checks.reports) actions.push("Save daily snapshots so trend and history sections become meaningful.");
+    if (!actions.length) actions.push("Review the highlighted metrics and decide the next owner action.");
+    return actions;
+  };
 
   const insights = [
     {
@@ -320,7 +336,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
     return lines.length ? lines : [""];
   };
 
-  const buildPdf = ({ title, description, rows }) => {
+  const buildPdf = ({ title, description, rows, ownerDecision, nextActions, dataQuality }) => {
     const generatedAt = new Date().toLocaleString("en-US", {
       month: "short",
       day: "numeric",
@@ -332,7 +348,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
       "0.02 0.05 0.15 rg",
       "BT /F2 24 Tf 54 742 Td (Final Mile Margin) Tj ET",
       "0.10 0.38 0.95 rg",
-      "BT /F2 13 Tf 54 716 Td (Performance Report) Tj ET",
+      "BT /F2 13 Tf 54 716 Td (Owner-Ready Performance Report) Tj ET",
       "0.02 0.05 0.15 rg",
       `BT /F2 20 Tf 54 684 Td (${escapePdfText(title)}) Tj ET`,
     ];
@@ -358,7 +374,23 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
       y -= 18;
     });
 
+    y -= 14;
+    commands.push("0.10 0.38 0.95 rg");
+    commands.push(`BT /F2 13 Tf 54 ${y} Td (Owner Decision) Tj ET`);
     y -= 18;
+    wrapPdfText(ownerDecision || "Review the report and decide the next owner action.", 78).forEach((line) => {
+      commands.push("0.02 0.05 0.15 rg");
+      commands.push(`BT /F1 11 Tf 54 ${y} Td (${escapePdfText(line)}) Tj ET`);
+      y -= 15;
+    });
+
+    y -= 6;
+    commands.push("0.36 0.43 0.54 rg");
+    commands.push(`BT /F2 10 Tf 54 ${y} Td (DATA QUALITY) Tj ET`);
+    commands.push("0.02 0.05 0.15 rg");
+    commands.push(`BT /F1 11 Tf 140 ${y} Td (${escapePdfText(dataQuality || "Current workspace data")}) Tj ET`);
+    y -= 28;
+
     commands.push("0.10 0.38 0.95 rg");
     commands.push(`BT /F2 13 Tf 54 ${y} Td (Report Metrics) Tj ET`);
     y -= 22;
@@ -373,8 +405,20 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
       y -= 28;
     });
 
+    y -= 6;
+    commands.push("0.10 0.38 0.95 rg");
+    commands.push(`BT /F2 13 Tf 54 ${y} Td (Recommended Next Actions) Tj ET`);
+    y -= 20;
+    (nextActions || []).slice(0, 4).forEach((action, index) => {
+      commands.push("0.02 0.05 0.15 rg");
+      wrapPdfText(`${index + 1}. ${action}`, 76).forEach((line) => {
+        commands.push(`BT /F1 10 Tf 54 ${y} Td (${escapePdfText(line)}) Tj ET`);
+        y -= 14;
+      });
+    });
+
     commands.push("0.36 0.43 0.54 rg");
-    commands.push("BT /F1 9 Tf 54 54 Td (Generated from Final Mile Margin.) Tj ET");
+    commands.push("BT /F1 9 Tf 54 54 Td (Generated from Final Mile Margin. Verify source records before sharing outside the business.) Tj ET");
 
     const stream = commands.join("\n");
     const encoder = new TextEncoder();
@@ -406,16 +450,22 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
 
   const exportReport = (reportName) => {
     const report = reportCards.find((item) => item.title === reportName);
+    const qualityLabel = report
+      ? `${getReportRequirements(report).filter((item) => item.complete).length} of ${getReportRequirements(report).length} report inputs ready`
+      : "Current workspace data";
     const pdf = buildPdf({
       title: reportName,
       description: report?.description || "Final mile performance report.",
       rows: report?.previewRows || [],
+      ownerDecision: report ? getReportOwnerDecision(report) : "Review the report and decide the next owner action.",
+      nextActions: report ? getReportNextActions(report) : ["Review the highlighted metrics."],
+      dataQuality: qualityLabel,
     });
     const blob = new Blob([pdf], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${reportName.toLowerCase().replaceAll(" ", "-")}.pdf`;
+    link.download = `${reportName.toLowerCase().replaceAll(" ", "-")}-${new Date().toISOString().slice(0, 10)}.pdf`;
     document.body.appendChild(link);
     link.click();
     link.remove();

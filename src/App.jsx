@@ -14,6 +14,7 @@ import BusinessWorkflowRail from "./components/BusinessWorkflowRail";
 import DemoCompletionModal from "./components/DemoCompletionModal";
 import GuidedDemoTour from "./components/GuidedDemoTour";
 import ProductTour from "./components/ProductTour";
+import SyncConfidencePanel from "./components/SyncConfidencePanel";
 import { navPreviewContent } from "./components/guidedDemoContent";
 import { loadAppStateFromSupabase, saveAppStateToSupabase } from "./lib/appStateRepository";
 import { loadClaimsFromSupabase, syncClaimsToSupabase } from "./lib/claimsRepository";
@@ -564,6 +565,7 @@ export default function App() {
     const previousClaims = JSON.parse(localStorage.getItem("finalMileLastSyncedClaims") || "[]");
 
     const syncRemoteClaims = async () => {
+      setClaimsBackendStatus("Saving claims to Supabase...");
       const result = await syncClaimsToSupabase({ previousClaims, nextClaims: claims });
       if (!isMounted) return;
 
@@ -587,6 +589,7 @@ export default function App() {
 
     let isMounted = true;
     const syncTimer = window.setTimeout(async () => {
+      setAppStateBackendStatus("Saving workspace to Supabase...");
       const result = await saveAppStateToSupabase({
         version: 1,
         form,
@@ -861,6 +864,7 @@ export default function App() {
       createdAt: new Date().toLocaleString(),
     };
     setSavedScenarios((current) => [scenario, ...current]);
+    setAppStateBackendStatus(isDemoMode ? "Demo scenario saved locally." : "Scenario saved locally. Supabase sync queued.");
   };
 
   const navItems = [
@@ -1215,6 +1219,7 @@ export default function App() {
     const snapshot = getDaySnapshot(globalDateRange, { savedBy: "manual" });
     setSavedDays((current) => [snapshot, ...current.filter((day) => day.id !== snapshot.id)].slice(0, 12));
     setLoadedSavedDay(snapshot);
+    setAppStateBackendStatus(isDemoMode ? "Demo snapshot saved locally." : "Snapshot saved locally. Supabase sync queued.");
     setSavedDayFlash(true);
     window.setTimeout(() => setSavedDayFlash(false), 1600);
   };
@@ -1957,6 +1962,16 @@ export default function App() {
                 </div>
               )}
             </div>
+          </div>
+          <div className="mx-auto mb-5 max-w-[1600px]">
+            <SyncConfidencePanel
+              isDark={isDark}
+              appStateStatus={appStateBackendStatus}
+              claimsStatus={claimsBackendStatus}
+              teamStatus={teamAccessStatus}
+              isDemoMode={isDemoMode}
+              isDemoWorkspace={isDemoWorkspace}
+            />
           </div>
           <BusinessWorkflowRail
             isDark={isDark}

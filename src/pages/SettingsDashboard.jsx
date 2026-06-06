@@ -15,6 +15,7 @@ import {
 } from "../shared";
 import { roleOptions } from "../lib/teamAccessRepository";
 import { resetStoredSetupProgress, restoreSetupPanel } from "../lib/onboarding";
+import LaunchQAChecklist from "../components/LaunchQAChecklist";
 
 const defaultMarginFactors = {
   profile: "Appliance Delivery",
@@ -476,6 +477,64 @@ function SettingsDashboard({
     ["Claim thresholds", Boolean(appSettings?.claimRiskThresholds)],
   ];
   const companyCompletenessCount = companyCompleteness.filter(([, done]) => done).length;
+  const statusLooksSynced = (value = "") => /synced|loaded|connected|ready/i.test(String(value));
+  const statusLooksLocal = (value = "") => /local|unavailable|failed/i.test(String(value));
+  const launchQaChecks = [
+    {
+      label: "Workspace save state",
+      done: isDemoMode || statusLooksSynced(appStateBackendStatus),
+      detail: appStateBackendStatus || "App state sync has not reported yet.",
+      next: statusLooksLocal(appStateBackendStatus) ? "Review Supabase app state setup" : "Waiting on sync status",
+    },
+    {
+      label: "Claims save state",
+      done: isDemoMode || statusLooksSynced(claimsBackendStatus),
+      detail: claimsBackendStatus || "Claims sync has not reported yet.",
+      next: statusLooksLocal(claimsBackendStatus) ? "Review Supabase claims setup" : "Waiting on claims status",
+    },
+    {
+      label: "Team access",
+      done: isDemoMode || statusLooksSynced(teamAccessStatus) || teamMembers.length > 0,
+      detail: teamAccessStatus || "Team access has not loaded yet.",
+      next: "Invite a team member or confirm Supabase access",
+    },
+    {
+      label: "Company profile",
+      done: companyCompletenessCount >= 4,
+      detail: `${companyCompletenessCount} of ${companyCompleteness.length} profile controls are filled.`,
+      next: "Finish company profile",
+    },
+    {
+      label: "Demo isolation",
+      done: true,
+      detail: "Demo data uses isolated storage and can be reset or exited from Settings.",
+      next: "No action needed",
+    },
+    {
+      label: "Onboarding recovery",
+      done: true,
+      detail: "Setup guidance can be restored and checklist progress can be reset.",
+      next: "No action needed",
+    },
+    {
+      label: "Export readiness",
+      done: true,
+      detail: "Reports generate owner-ready PDF files from available route, claims, team, and snapshot data.",
+      next: "Save snapshots for richer reports",
+    },
+    {
+      label: "Mobile review",
+      done: false,
+      detail: "Dashboard, Intake, Claims, Teams, and Receipts still need a dedicated phone-width QA pass.",
+      next: "Run mobile QA pass",
+    },
+    {
+      label: "Refresh survival",
+      done: isDemoMode || statusLooksSynced(appStateBackendStatus),
+      detail: "Hard refresh every major tab before launch to confirm data survives route reloads.",
+      next: "Run refresh QA",
+    },
+  ];
 
   const Toggle = ({ checked, onClick }) => (
     <button
@@ -695,6 +754,8 @@ function SettingsDashboard({
           </div>
         </div>
       </div>
+
+      <LaunchQAChecklist isDark={isDark} checks={launchQaChecks} />
 
       <div data-tour="settings-tab-selector" className={`flex gap-7 overflow-x-auto border-b ${rowBorder}`}>
         {tabs.map((tab) => (
