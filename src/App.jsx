@@ -10,6 +10,7 @@ import FinanceDashboard from "./pages/FinanceDashboard";
 import ReportsDashboard from "./pages/ReportsDashboard";
 import AskBusinessDashboard from "./pages/AskBusinessDashboard";
 import AiQuickIntake from "./components/AiQuickIntake";
+import BusinessWorkflowRail from "./components/BusinessWorkflowRail";
 import DemoCompletionModal from "./components/DemoCompletionModal";
 import GuidedDemoTour from "./components/GuidedDemoTour";
 import ProductTour from "./components/ProductTour";
@@ -27,6 +28,7 @@ import {
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 import { addTeamMember, loadTeamAccess, updateTeamMemberRole } from "./lib/teamAccessRepository";
 import { emptyTourStatus, markProductTourCompleted, markProductTourProgress, markProductTourSkipped, readProductTourStatus, resetProductTourStatus } from "./lib/tourStorage";
+import { getSetupStatus } from "./lib/onboarding";
 import {
   accentThemes,
   Bot,
@@ -836,6 +838,19 @@ export default function App() {
     return list;
   }, [form, results]);
 
+  const workflowSetupStatus = useMemo(
+    () => getSetupStatus({
+      teams,
+      claims,
+      savedScenarios,
+      savedDays,
+      appSettings,
+      isBlankDemo: isBlankDemoWorkspace,
+      isDemoMode,
+    }),
+    [teams, claims, savedScenarios, savedDays, appSettings, isBlankDemoWorkspace, isDemoMode]
+  );
+
   const saveScenario = () => {
     const scenario = {
       id: crypto.randomUUID(),
@@ -850,11 +865,11 @@ export default function App() {
 
   const navItems = [
     { name: "Dashboard", icon: LayoutDashboard },
-    { name: "Ask", icon: Bot },
     { name: "Intake", icon: Upload },
     { name: "Operations", icon: BriefcaseBusiness },
     { name: "Finance", icon: Calculator },
     { name: "Reports", icon: ClipboardCheck },
+    { name: "Ask", icon: Bot },
     { name: "Settings", icon: Settings },
   ];
   const allowedTabs = getAllowedTabsForRole(currentUserRole);
@@ -1943,6 +1958,14 @@ export default function App() {
               )}
             </div>
           </div>
+          <BusinessWorkflowRail
+            isDark={isDark}
+            setupStatus={workflowSetupStatus}
+            activeTab={activeTab}
+            activeOperationsTab={activeOperationsTab}
+            activeFinanceTab={activeFinanceTab}
+            onNavigate={navigateToTab}
+          />
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1600px]">
             {activeTab === "Dashboard" ? (
               <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onStartTour={startProductTour} onStartGuidedDemo={startInteractiveDemo} onLaunchDemo={loadDemoWorkspace} productTourStatus={productTourStatus} />
