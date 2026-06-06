@@ -54,6 +54,7 @@ import {
 } from "../shared";
 import TakeTourButton from "../components/TakeTourButton";
 import NextActionCard from "../components/NextActionCard";
+import SaaSReadinessCommand from "../components/SaaSReadinessCommand";
 import { guidedDemoSteps } from "../components/guidedDemoContent";
 import { getNextBestSetupAction, getSetupStatus } from "../lib/onboarding";
 
@@ -797,6 +798,12 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     }
     if (action.tab) setActiveTab(action.tab);
   };
+  const saasCommandMetrics = {
+    profitLabel: currency.format(todayProfit),
+    marginLabel: `${number.format(dashboardRevenue > 0 ? margin : 0)}%`,
+    claimsLabel: `${openClaims} open`,
+    readinessLabel: `${readinessScore}%`,
+  };
 
   const setupPreviewCards = [
     {
@@ -1446,6 +1453,17 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           </div>
         </section>
       )}
+
+      <SaaSReadinessCommand
+        isDark={isDark}
+        setupStatus={setupStatus}
+        productTourStatus={productTourStatus}
+        metrics={saasCommandMetrics}
+        onAction={handleSetupStatusAction}
+        onNavigate={setActiveTab}
+        onStartDemo={onStartGuidedDemo || onStartTour}
+        onLaunchDemo={showDemoActions ? onLaunchDemo : null}
+      />
 
       {showGuidedSetup && (
         <div className="space-y-5">
