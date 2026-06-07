@@ -42,6 +42,16 @@ export const demoSavedDays = [
   { ...demoSnapshot, id: "demo-day-5", label: "Fri, Jun 5", savedAt: "2026-06-05T13:00:00.000Z", profit: 425, revenue: 1200, costs: 775, margin: 0.354, status: "Good" },
 ];
 
+// Demo contracts (rollup-row shape) written to localStorage `finalMileRollupRows`
+// during the tour so the dashboard's Contract Performance table shows real
+// revenue/profit/margin. Snapshotted and restored byte-for-byte on exit.
+// One deliberately thin-margin contract makes the "watch your contracts" point.
+export const demoContracts = [
+  { id: "demo-c1", contract: "Lowe's Appliance Route", revenue: 6240, labor: 2200, fuel: 480, truckInsurance: 360, maintenance: 400, claims: 520, other: 300, routes: 5 },
+  { id: "demo-c2", contract: "Home Depot Furniture", revenue: 4800, labor: 1900, fuel: 420, truckInsurance: 300, maintenance: 360, claims: 680, other: 240, routes: 4 },
+  { id: "demo-c3", contract: "Mattress Firm Express", revenue: 3600, labor: 1300, fuel: 300, truckInsurance: 240, maintenance: 260, claims: 180, other: 180, routes: 3 },
+];
+
 // A saved profit scenario so the "Saved routes" surfaces aren't empty.
 export const demoScenarios = [
   {

@@ -44,6 +44,7 @@ export default function TourOverlay({
   const { rect, resolved } = useTourAnchor({
     anchor: step?.anchor,
     fallbackAnchor: step?.fallbackAnchor,
+    selector: step?.selector,
     active,
     stepIndex,
     prefersReducedMotion,

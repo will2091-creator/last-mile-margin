@@ -19,7 +19,7 @@ export default function AppSidebar({
 }) {
   return (
     <aside className={isDark ? "sticky top-0 hidden h-screen w-72 shrink-0 overflow-y-auto border-r border-white/10 bg-slate-950 p-5 lg:block" : "sticky top-0 hidden h-screen w-72 shrink-0 overflow-y-auto border-r border-slate-200 bg-white p-5 lg:block"}>
-      <div className="mb-6 flex justify-center">
+      <div data-tour="nav-brand" className="mb-6 flex justify-center">
         <img
           src={isDark ? lastMileMarginLogoDark : lastMileMarginLogo}
           alt="Last Mile Margin"
@@ -28,6 +28,7 @@ export default function AppSidebar({
       </div>
 
       <button
+        data-tour="nav-theme"
         onClick={toggleThemeMode}
         className={
           isDark
@@ -72,6 +73,7 @@ export default function AppSidebar({
 
       {onStartTour && (
         <button
+          data-tour="nav-take-tour"
           onClick={onStartTour}
           className={
             isDark

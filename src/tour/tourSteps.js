@@ -1,92 +1,155 @@
-// The narrative spine of the guided tour. Each step navigates to `tab` (if not
-// already there) and spotlights the element marked `[data-tour="anchor"]`.
-// The arc deliberately mirrors the business workflow and the 6 setup steps so
-// the tour and the real setup wizard tell the same story:
-//   command center -> capture work -> run operations -> prove margin ->
-//   ask your business -> now set up yours.
+// The tour is a single coherent spatial sweep: it walks the Dashboard from the
+// top of the main content area straight down, then walks the left sidebar top to
+// bottom. Every step stays on the Dashboard (the sidebar is always visible), so
+// the flow is one continuous "let me show you around" motion — no tab jumping.
 //
-// `anchor` values are verified to exist in the app. `fallbackAnchor` is used if
-// the primary anchor never mounts (e.g. a panel that only shows in some states).
+// Each step targets an element by `anchor` (its [data-tour="..."] value) or by a
+// raw CSS `selector` (used for the sidebar nav, which is keyed by data-tour-nav).
+// `fallbackAnchor` covers elements that only render in some states.
 
 export const tourSteps = [
+  // ---- MAIN CONTENT, top to bottom -------------------------------------------
   {
-    id: "welcome",
+    id: "toolbar",
+    tab: "Dashboard",
+    anchor: "dashboard-save-snapshot",
+    title: "Your daily controls",
+    body: "Save a snapshot of today's numbers, reopen any saved day, or change the date range — all from up here.",
+  },
+  {
+    id: "workflow",
+    tab: "Dashboard",
+    anchor: "business-workflow",
+    title: "The core workflow",
+    body: "Your whole operation in eight steps, from contracts to insights. It tracks what's connected and what's next.",
+  },
+  {
+    id: "overview",
     tab: "Dashboard",
     anchor: "dashboard-overview",
-    title: "Welcome to your command center",
-    body: "This is where your whole operation comes together. Every number is driven by data you enter once.",
+    title: "Your command center",
+    body: "This is home base. Everything below is driven by data you enter once.",
+  },
+  {
+    id: "period",
+    tab: "Dashboard",
+    anchor: "dashboard-period-tabs",
+    title: "Any timeframe, instantly",
+    body: "Flip every figure on the page between day, week, month, quarter, and year.",
+  },
+  {
+    id: "open-ops",
+    tab: "Dashboard",
+    anchor: "dashboard-open-operations",
+    title: "Jump into the field",
+    body: "One click into Operations — dispatch, claims, teams, and compliance.",
   },
   {
     id: "net-profit",
     tab: "Dashboard",
     anchor: "dashboard-net-profit",
-    title: "Profit, the moment it happens",
-    body: "Today's net profit — revenue minus every route cost — front and center, updated live.",
+    title: "Profit, front and center",
+    body: "Today's net profit and your trend over time — revenue minus every route cost, live.",
+  },
+  {
+    id: "needs-attention",
+    tab: "Dashboard",
+    anchor: "dashboard-needs-attention",
+    title: "What needs you now",
+    body: "The day's risks and blockers surface here so nothing hides until payday.",
   },
   {
     id: "kpis",
     tab: "Dashboard",
     anchor: "dashboard-kpis",
-    title: "The numbers that decide routes",
-    body: "Profit per stop, per mile, and per hour tell you whether a route is actually worth running.",
+    title: "The numbers that matter",
+    body: "Revenue, costs, margin, and team readiness at a glance — tap any card to dig in.",
+  },
+  {
+    id: "contract-performance",
+    tab: "Dashboard",
+    anchor: "dashboard-contract-performance",
+    title: "Which contracts actually pay",
+    body: "Revenue, profit, and margin per contract — so a thin-margin route can't hide in the average.",
   },
   {
     id: "recent-claims",
     tab: "Dashboard",
     anchor: "dashboard-recent-claims",
-    title: "See risk before it costs you",
-    body: "Recent claims surface here so a leak never hides until payday.",
+    title: "Your latest claims",
+    body: "Recent claims and their risk level, ready to review before they cost you.",
+  },
+
+  // ---- LEFT SIDEBAR, top to bottom -------------------------------------------
+  {
+    id: "nav-brand",
+    tab: "Dashboard",
+    anchor: "nav-brand",
+    title: "Last Mile Margin",
+    body: "Now the left rail — your map of the whole app, top to bottom.",
   },
   {
-    id: "intake",
-    tab: "Intake",
-    anchor: "intake-header",
-    title: "Capture work in seconds",
-    body: "Paste a claim email, route sheet, or receipt — AI turns it into clean data. Nothing saves until you review.",
+    id: "nav-theme",
+    tab: "Dashboard",
+    anchor: "nav-theme",
+    title: "Light or dark",
+    body: "Switch the whole app's theme to whatever's easier on your eyes.",
   },
   {
-    id: "intake-examples",
-    tab: "Intake",
-    anchor: "intake-examples",
-    title: "Try it on a sample",
-    body: "Start from an example to watch a messy email become a structured draft.",
+    id: "nav-dashboard",
+    tab: "Dashboard",
+    selector: '[data-tour-nav="dashboard"]',
+    title: "Dashboard",
+    body: "This command center — your profit, risks, and readiness in one view.",
   },
   {
-    id: "operations",
-    tab: "Operations",
-    anchor: "operations-metrics",
-    title: "Run the day from one board",
-    body: "Teams, claims, compliance, and dispatch — your daily operational truth in one place.",
+    id: "nav-intake",
+    tab: "Dashboard",
+    selector: '[data-tour-nav="intake"]',
+    title: "Intake",
+    body: "Paste a claim email, route sheet, or receipt — AI turns it into clean data.",
   },
   {
-    id: "next-move",
-    tab: "Operations",
-    anchor: "operations-next-move",
-    title: "Always know the next move",
-    body: "The app surfaces the single highest-leverage action to take right now.",
+    id: "nav-operations",
+    tab: "Dashboard",
+    selector: '[data-tour-nav="operations"]',
+    title: "Operations",
+    body: "Run the day: dispatch, claims, teams, and compliance in one board.",
   },
   {
-    id: "finance",
-    tab: "Finance",
-    anchor: "finance-active-workflow",
-    fallbackAnchor: "finance-header",
-    title: "Prove the margin",
-    body: "Contract terms plus real route costs become honest profit-per-route math.",
+    id: "nav-finance",
+    tab: "Dashboard",
+    selector: '[data-tour-nav="finance"]',
+    title: "Finance",
+    body: "Contracts, route profitability, and receipts — prove the margin.",
   },
   {
-    id: "ask",
-    tab: "Ask",
-    anchor: "ask-suggested-prompts",
-    title: "Just ask your business",
-    body: "Ask plain-English questions about profit, risk, and routes — answers sharpen as your data fills in.",
+    id: "nav-reports",
+    tab: "Dashboard",
+    selector: '[data-tour-nav="reports"]',
+    title: "Reports",
+    body: "Snapshots become trends and polished PDF exports for owners and partners.",
+  },
+  {
+    id: "nav-ask",
+    tab: "Dashboard",
+    selector: '[data-tour-nav="ask"]',
+    title: "Ask",
+    body: "Plain-English answers about your profit, risk, and routes.",
+  },
+  {
+    id: "nav-settings",
+    tab: "Dashboard",
+    selector: '[data-tour-nav="settings"]',
+    title: "Settings",
+    body: "Company profile, team access, targets, and dashboard layout.",
   },
   {
     id: "handoff",
     tab: "Dashboard",
-    anchor: "setup-progress",
-    fallbackAnchor: "business-workflow",
-    title: "Now let's set up yours",
-    body: "That was a sample. Next, add your first contract and team — your real numbers take over from here.",
+    anchor: "nav-take-tour",
+    title: "That's the tour",
+    body: "Replay this anytime from here. Ready to add your first contract and team?",
     isFinal: true,
   },
 ];

@@ -10,7 +10,7 @@ const POLL_BUDGET_MS = 1800;
 // changes. Returns { rect, resolved }: `resolved` flips true once the element
 // is found (rect set) OR the budget expires (rect stays null so the overlay can
 // auto-advance past a step whose anchor never mounts).
-export function useTourAnchor({ anchor, fallbackAnchor, active, stepIndex, prefersReducedMotion }) {
+export function useTourAnchor({ anchor, fallbackAnchor, selector, active, stepIndex, prefersReducedMotion }) {
   const [rect, setRect] = useState(null);
   const [resolved, setResolved] = useState(false);
   const elRef = useRef(null);
@@ -29,9 +29,13 @@ export function useTourAnchor({ anchor, fallbackAnchor, active, stepIndex, prefe
     let timerId = null;
     const start = performance.now();
 
-    const find = () =>
-      document.querySelector(`[data-tour="${anchor}"]`) ||
-      (fallbackAnchor ? document.querySelector(`[data-tour="${fallbackAnchor}"]`) : null);
+    const find = () => {
+      if (selector) return document.querySelector(selector);
+      return (
+        document.querySelector(`[data-tour="${anchor}"]`) ||
+        (fallbackAnchor ? document.querySelector(`[data-tour="${fallbackAnchor}"]`) : null)
+      );
+    };
 
     const measure = (el) => {
       const r = el.getBoundingClientRect();
@@ -74,7 +78,7 @@ export function useTourAnchor({ anchor, fallbackAnchor, active, stepIndex, prefe
       if (rafId) cancelAnimationFrame(rafId);
       if (timerId) window.clearTimeout(timerId);
     };
-  }, [anchor, fallbackAnchor, active, stepIndex, prefersReducedMotion]);
+  }, [anchor, fallbackAnchor, selector, active, stepIndex, prefersReducedMotion]);
 
   // Keep the rect glued to the target as the layout settles, scrolls, or resizes.
   useEffect(() => {

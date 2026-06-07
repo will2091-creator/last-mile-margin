@@ -20,7 +20,7 @@ import AppBottomNav from "./components/app/AppBottomNav";
 import ErrorBoundary from "./components/ErrorBoundary";
 import TourOverlay from "./tour/TourOverlay";
 import { tourSteps } from "./tour/tourSteps";
-import { demoDataset } from "./tour/tourDemoData";
+import { demoDataset, demoContracts } from "./tour/tourDemoData";
 import { useToast } from "./components/Toast";
 import { loadAppStateFromSupabase, saveAppStateToSupabase } from "./lib/appStateRepository";
 import { loadClaimsFromSupabase, syncClaimsToSupabase } from "./lib/claimsRepository";
@@ -780,7 +780,21 @@ export default function App() {
     // Idempotent — guards React StrictMode's double effect invocation and any
     // double-click on the replay button.
     if (tourActive || tourSnapshotRef.current) return;
-    tourSnapshotRef.current = { claims, teams, savedScenarios, savedDays, form, loadedSavedDay };
+    tourSnapshotRef.current = {
+      claims,
+      teams,
+      savedScenarios,
+      savedDays,
+      form,
+      loadedSavedDay,
+      // The dashboard's Contract Performance table reads contracts from
+      // localStorage, so snapshot + swap that key too (restored on exit, never
+      // synced because the React persisters are gated while the tour runs).
+      rollupRows: (() => {
+        try { return localStorage.getItem("finalMileRollupRows"); } catch { return null; }
+      })(),
+    };
+    try { localStorage.setItem("finalMileRollupRows", JSON.stringify(demoContracts)); } catch (error) { console.warn("tour: could not stage demo contracts", error); }
     setClaims(demoDataset.claims);
     setTeams(demoDataset.teams);
     setForm(demoDataset.form);
@@ -803,6 +817,13 @@ export default function App() {
       setSavedDays(snap.savedDays);
       setForm(snap.form);
       setLoadedSavedDay(snap.loadedSavedDay);
+      // Restore the contracts localStorage key byte-for-byte.
+      try {
+        if (snap.rollupRows === null) localStorage.removeItem("finalMileRollupRows");
+        else localStorage.setItem("finalMileRollupRows", snap.rollupRows);
+      } catch (error) {
+        console.warn("tour: could not restore contracts", error);
+      }
     }
     tourSnapshotRef.current = null;
     setAppSettings((current) => ({ ...current, tourCompleted: true }));
@@ -816,12 +837,20 @@ export default function App() {
   };
 
   const finishTour = () => {
-    // Compute the real next setup step from the restored data BEFORE clearing the
-    // snapshot — real localStorage (contracts/imports/receipts) is untouched.
+    // Compute the real next setup step from the snapshot BEFORE clearing it.
+    // Pass the real contracts explicitly (localStorage still holds the demo ones
+    // until endTour restores them).
     const snap = tourSnapshotRef.current;
+    let realContracts = [];
+    try {
+      realContracts = snap?.rollupRows ? JSON.parse(snap.rollupRows) : [];
+    } catch {
+      realContracts = [];
+    }
     const realStatus = getSetupStatus({
       teams: snap?.teams,
       claims: snap?.claims,
+      quickContracts: realContracts,
       savedScenarios: snap?.savedScenarios,
       savedDays: snap?.savedDays,
       appSettings,
@@ -1352,7 +1381,7 @@ export default function App() {
             <ErrorBoundary key={activeTab} variant="page">
             <Suspense fallback={<PageFallback />}>
             {activeTab === "Dashboard" ? (
-              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} ownerName={ownerName} />
+              <DashboardHome key={tourActive ? "dash-tour" : "dash-live"} teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} ownerName={ownerName} />
             ) : activeTab === "Intake" ? (
               <AiQuickIntake
                 teams={teams}
@@ -1434,7 +1463,7 @@ export default function App() {
                 isDemoMode={isDemoMode}
               />
             ) : (
-              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} ownerName={ownerName} />
+              <DashboardHome key={tourActive ? "dash-tour" : "dash-live"} teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} ownerName={ownerName} />
             )}
             </Suspense>
             </ErrorBoundary>
