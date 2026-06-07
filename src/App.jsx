@@ -18,6 +18,7 @@ import AppSidebar from "./components/app/AppSidebar";
 import AppToolbar from "./components/app/AppToolbar";
 import AppBottomNav from "./components/app/AppBottomNav";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { useToast } from "./components/Toast";
 import { loadAppStateFromSupabase, saveAppStateToSupabase } from "./lib/appStateRepository";
 import { loadClaimsFromSupabase, syncClaimsToSupabase } from "./lib/claimsRepository";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
@@ -146,6 +147,7 @@ export default function App() {
   const isDemoMode = false;
   const isDemoWorkspace = false;
   const isBlankDemoWorkspace = false;
+  const { toast } = useToast();
   const [form, setForm] = useState(defaultForm);
   const [savedScenarios, setSavedScenarios] = useState(() =>
     loadFromLocalStorage("finalMileSavedScenarios", [])
@@ -788,6 +790,7 @@ export default function App() {
     setAppStateBackendStatus(isDemoMode ? "Demo snapshot saved locally." : "Snapshot saved locally. Supabase sync queued.");
     setSavedDayFlash(true);
     window.setTimeout(() => setSavedDayFlash(false), 1600);
+    toast({ tone: "success", title: "Snapshot saved", description: `${snapshot.label || "Today"} saved to your daily history.` });
   };
 
   const saveIntakeToDay = (intakeDraft) => {
