@@ -253,7 +253,9 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     label: day.label || day.date || `#${index + 1}`,
     profit: Number(day.profit || 0),
   }));
-  const hasProfitTrend = profitTrendData.length >= 2;
+  // Only show the trend chart once there are a few days of history — a 2-point
+  // near-flat line reads as empty.
+  const hasProfitTrend = profitTrendData.length >= 3;
 
   // Claims grouped by status (for the Risk section detail).
 
@@ -878,7 +880,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
             {currency.format(animatedProfit)}
           </p>
           <p className={`mt-1 text-sm font-bold ${mutedText}`}>{dashboardPeriod} net profit · {number.format(animatedMargin)}% margin</p>
-          <div className="mt-5 h-44">
+          <div className="mt-5 h-36">
             {hasProfitTrend ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={profitTrendData} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
@@ -971,11 +973,20 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
             <Users className="h-6 w-6" />
           </span>
           <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Team Readiness</p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <p className={`safe-number text-3xl font-black ${titleText}`}>{currentReadiness}%</p>
-            {renderTrendChip(readinessTrendDelta, { suffix: " pts", goodIsUp: true })}
-          </div>
-          <p className={`mt-1 text-xs font-semibold ${mutedText}`}>{photosUploaded} of {activeTeams} teams ready</p>
+          {activeTeams === 0 ? (
+            <>
+              <p className="safe-number mt-2 text-2xl font-black text-blue-600">Add a team</p>
+              <p className={`mt-1 text-xs font-semibold ${mutedText}`}>Set up a team to track readiness.</p>
+            </>
+          ) : (
+            <>
+              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <p className={`safe-number text-3xl font-black ${titleText}`}>{currentReadiness}%</p>
+                {renderTrendChip(readinessTrendDelta, { suffix: " pts", goodIsUp: true })}
+              </div>
+              <p className={`mt-1 text-xs font-semibold ${mutedText}`}>{photosUploaded} of {activeTeams} teams ready</p>
+            </>
+          )}
         </button>
       </div>
 

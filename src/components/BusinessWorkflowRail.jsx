@@ -20,6 +20,8 @@ export default function BusinessWorkflowRail({
   const activeStepId = getWorkflowActiveStep({ activeTab, activeOperationsTab, activeFinanceTab });
   const activeStep = businessWorkflowSteps.find((step) => step.id === activeStepId) || businessWorkflowSteps[0];
   const completeCount = businessWorkflowSteps.filter((step) => getWorkflowStepStatus(step.id, setupStatus)).length;
+  // Once every step is connected the workflow rail is just clutter — retire it.
+  if (completeCount >= businessWorkflowSteps.length) return null;
   const shellClass = isDark
     ? "mx-auto mb-5 max-w-[1600px] rounded-2xl border border-white/10 bg-slate-900/80 p-3 shadow-card sm:p-4"
     : "mx-auto mb-5 max-w-[1600px] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4";
@@ -34,7 +36,7 @@ export default function BusinessWorkflowRail({
           className="flex w-full items-center justify-between gap-3 text-left"
         >
           <span className="flex min-w-0 flex-wrap items-center gap-2">
-            <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
+            <span className={isDark ? "rounded-full bg-blue-500/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-200" : "rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700"}>
               Core Workflow
             </span>
             <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
