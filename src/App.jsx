@@ -1075,6 +1075,11 @@ export default function App() {
           font-weight: 600;
           letter-spacing: 0.04em;
           white-space: nowrap;
+          /* Stick the header to the top of any vertically-scrolling table
+             container (no-op for short, non-scrolling tables). */
+          position: sticky;
+          top: 0;
+          z-index: 1;
         }
         /* Subtle header band so the column labels read as a distinct row. */
         .theme-light main table thead th {

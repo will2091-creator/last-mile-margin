@@ -48,6 +48,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
   const [dashboardPeriod, setDashboardPeriod] = useState("Day");
   const [setupExpanded, setSetupExpanded] = useState(false);
+  const [contractSort, setContractSort] = useState({ key: "netProfit", dir: "desc" });
   const contractStorageKey = isDemoMode ? "finalMileDemoRollupRows" : isBlankDemo ? "finalMileBlankDemoRollupRows" : "finalMileRollupRows";
   const importStorageKey = isDemoMode ? "finalMileDemoOnboardingImports" : isBlankDemo ? "finalMileBlankDemoOnboardingImports" : "finalMileOnboardingImports";
   const emptyContractDraft = {
@@ -285,7 +286,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   const hasStartedWorkspace = hasQuickContracts || hasQuickImports || claims.length > 0 || teams.length > 0 || savedDays.length > 0;
   const isCleanBlankWorkspace = !hasStartedWorkspace;
 
-  const quickContractCards = quickContracts.slice(0, 4).map((row) => {
+  const quickContractCards = quickContracts.map((row) => {
     const revenue = Number(row.revenue || 0);
     const totalCosts = Number(row.labor || 0) + Number(row.fuel || 0) + Number(row.truckInsurance || 0) + Number(row.maintenance || 0) + Number(row.claims || 0) + Number(row.other || 0);
     const netProfit = revenue - totalCosts;
@@ -299,6 +300,17 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
       margin: revenue > 0 ? (netProfit / revenue) * 100 : 0,
     };
   });
+
+  const toggleContractSort = (key) =>
+    setContractSort((current) => (current.key === key ? { key, dir: current.dir === "desc" ? "asc" : "desc" } : { key, dir: "desc" }));
+  const sortedContractCards = [...quickContractCards]
+    .sort((a, b) => {
+      const av = a[contractSort.key];
+      const bv = b[contractSort.key];
+      if (typeof av === "string") return contractSort.dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      return contractSort.dir === "asc" ? av - bv : bv - av;
+    })
+    .slice(0, 6);
 
   const missingPhotoTeams = teams.filter((team) => team.photoStatus === "Missing");
   const needsAttention = [
@@ -1053,14 +1065,27 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                 <table className="w-full min-w-[460px] text-left text-sm">
                   <thead className={`border-b ${rowBorder}`}>
                     <tr className={`text-xs uppercase tracking-wide ${mutedText}`}>
-                      <th className="py-3">Contract</th>
-                      <th className="py-3 text-right">Revenue</th>
-                      <th className="py-3 text-right">Profit</th>
-                      <th className="py-3 text-right">Margin</th>
+                      {[
+                        ["name", "Contract", "left"],
+                        ["revenue", "Revenue", "right"],
+                        ["netProfit", "Profit", "right"],
+                        ["margin", "Margin", "right"],
+                      ].map(([key, label, align]) => (
+                        <th key={key} className={`py-3 ${align === "right" ? "text-right" : ""}`}>
+                          <button
+                            type="button"
+                            onClick={() => toggleContractSort(key)}
+                            className={`inline-flex items-center gap-1 uppercase tracking-wide transition hover:text-blue-600 ${align === "right" ? "flex-row-reverse" : ""} ${contractSort.key === key ? "text-blue-600" : ""}`}
+                          >
+                            {label}
+                            <span className="text-[9px]">{contractSort.key === key ? (contractSort.dir === "desc" ? "▼" : "▲") : "↕"}</span>
+                          </button>
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {quickContractCards.map((contract) => (
+                    {sortedContractCards.map((contract) => (
                       <tr key={contract.id} onClick={() => setActiveTab("Finance")} className={`cursor-pointer border-b transition ${rowBorder} ${isDark ? "hover:bg-white/5" : "hover:bg-blue-50/60"}`}>
                         <td className={`py-3 font-bold ${titleText}`}>{contract.name}</td>
                         <td className={`py-3 text-right font-semibold ${titleText}`}>{currency.format(contract.revenue)}</td>
