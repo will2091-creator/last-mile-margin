@@ -14,6 +14,7 @@ Both apps should use the same Supabase project:
 - Claims: `claims`.
 - Evidence files: `claim-evidence` storage bucket plus `claim_evidence`.
 - Documents: `documents` storage bucket plus `documents`.
+- Expense receipts: `documents` storage bucket plus `documents` rows categorized as `Expense Receipts`.
 - App settings/history: `app_state` for owner/admin web state.
 - Mobile check-ins: `route_checkins`.
 
@@ -25,6 +26,7 @@ Both apps should use the same Supabase project:
 4. Update claim status from the field.
 5. Save route check-in notes.
 6. Upload claim evidence photos to Supabase Storage.
+7. Upload gas, tools, maintenance, parking/toll, and other receipts as expense documents.
 
 ## Compatibility Rules
 
@@ -38,6 +40,7 @@ Both apps should use the same Supabase project:
 
 - Make sure `route_checkins` exists in Supabase.
 - Confirm `claim_evidence` table and `claim-evidence` bucket exist.
+- Confirm the `documents` bucket and `documents` table exist before using mobile receipt uploads.
 - Add signed URL preview support for uploaded files.
 - Tighten RLS so dispatchers/drivers only see allowed workspace records.
 - Decide whether drivers can close claims or only move them to Under Review.
