@@ -2,7 +2,6 @@ import React, { useMemo, useState } from "react";
 import {
   accentThemes,
   BarChart3,
-  BriefcaseBusiness,
   CheckCircle2,
   currency,
   defaultSettings,
@@ -170,11 +169,6 @@ function SettingsDashboard({
   teamAccessStatus = "",
   onInviteTeamMember,
   onUpdateTeamMemberRole,
-  isDemoMode = false,
-  onLaunchDemo,
-  onExitDemo,
-  onResetDemo,
-  onRestartDemo,
 }) {
   const selectedAccent = accentThemes?.[appSettings?.accentColor] || accentThemes?.blue || { from: "#2563eb", to: "#1d4ed8" };
   const isDark = appSettings?.themeMode === "dark";
@@ -399,19 +393,19 @@ function SettingsDashboard({
   const launchQaChecks = [
     {
       label: "Workspace save state",
-      done: isDemoMode || statusLooksSynced(appStateBackendStatus),
+      done: statusLooksSynced(appStateBackendStatus),
       detail: appStateBackendStatus || "App state sync has not reported yet.",
       next: statusLooksLocal(appStateBackendStatus) ? "Review Supabase app state setup" : "Waiting on sync status",
     },
     {
       label: "Claims save state",
-      done: isDemoMode || statusLooksSynced(claimsBackendStatus),
+      done: statusLooksSynced(claimsBackendStatus),
       detail: claimsBackendStatus || "Claims sync has not reported yet.",
       next: statusLooksLocal(claimsBackendStatus) ? "Review Supabase claims setup" : "Waiting on claims status",
     },
     {
       label: "Team access",
-      done: isDemoMode || statusLooksSynced(teamAccessStatus) || teamMembers.length > 0,
+      done: statusLooksSynced(teamAccessStatus) || teamMembers.length > 0,
       detail: teamAccessStatus || "Team access has not loaded yet.",
       next: "Invite a team member or confirm Supabase access",
     },
@@ -420,12 +414,6 @@ function SettingsDashboard({
       done: companyCompletenessCount >= 4,
       detail: `${companyCompletenessCount} of ${companyCompleteness.length} profile controls are filled.`,
       next: "Finish company profile",
-    },
-    {
-      label: "Demo isolation",
-      done: true,
-      detail: "Demo data uses isolated storage and can be reset or exited from Settings.",
-      next: "No action needed",
     },
     {
       label: "Onboarding recovery",
@@ -447,7 +435,7 @@ function SettingsDashboard({
     },
     {
       label: "Refresh survival",
-      done: isDemoMode || statusLooksSynced(appStateBackendStatus),
+      done: statusLooksSynced(appStateBackendStatus),
       detail: "Hard refresh every major tab before launch to confirm data survives route reloads.",
       next: "Run refresh QA",
     },
@@ -559,62 +547,6 @@ function SettingsDashboard({
               {appStateBackendStatus || "App state sync pending."}
             </div>
           </div>
-        </div>
-      </div>
-
-      <div data-tour="settings-demo-workspace" className={isDemoMode ? (isDark ? "rounded-2xl border border-blue-400/30 bg-blue-500/15 p-5 shadow-card" : "rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm") : cardClass}>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-3">
-            <div className={toneStyles.blue + " flex h-11 w-11 items-center justify-center rounded-2xl"}>
-              <BriefcaseBusiness className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Demo Workspace</p>
-              <h2 className={`mt-1 text-lg font-bold ${titleText}`}>{isDemoMode ? "Viewing Demo Workspace" : "Demo Mode is off"}</h2>
-              <p className={`mt-1 max-w-3xl text-sm font-semibold leading-6 ${mutedText}`}>
-                Demo data is stored separately from real workspace data. Use it to show contracts, claims, teams, receipts, reports, trend history, and Ask responses without touching live information.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className={isDark ? "flex items-center gap-3 rounded-xl border border-white/10 px-4 py-2" : "flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2"}>
-              <span className={`text-sm font-black ${titleText}`}>Demo Mode</span>
-              <Toggle checked={isDemoMode} onClick={() => (isDemoMode ? onExitDemo?.() : onLaunchDemo?.({ reset: false }))} />
-            </div>
-            <button
-              type="button"
-              onClick={() => (isDemoMode ? onExitDemo?.() : onLaunchDemo?.({ reset: false }))}
-              className={isDemoMode ? "rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white hover:bg-slate-800" : "rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500"}
-            >
-              {isDemoMode ? "Exit Demo Mode" : "Launch Demo Workspace"}
-            </button>
-            <button
-              type="button"
-              onClick={onResetDemo}
-              className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/5" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
-            >
-              Reset Demo Data
-            </button>
-            <button
-              type="button"
-              onClick={onRestartDemo}
-              className={isDark ? "rounded-xl border border-emerald-400/30 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/10" : "rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-50"}
-            >
-              Restart Guided Demo
-            </button>
-          </div>
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {[
-            ["State separation", "Demo rows use finalMileDemo* storage keys."],
-            ["Safe return", "Exit Demo Mode restores your real/blank workspace."],
-            ["Reset anytime", "Reset Demo Data reloads the original sample company."],
-          ].map(([label, detail]) => (
-            <div key={label} className={isDark ? "rounded-xl border border-white/10 bg-slate-950/50 p-3" : "rounded-xl border border-blue-100 bg-white p-3"}>
-              <p className={`text-sm font-black ${titleText}`}>{label}</p>
-              <p className={`mt-1 text-xs font-bold leading-5 ${mutedText}`}>{detail}</p>
-            </div>
-          ))}
         </div>
       </div>
 
