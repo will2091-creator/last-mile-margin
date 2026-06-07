@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { CheckCircle2 } from "../shared";
 import {
   businessWorkflowSteps,
@@ -13,7 +13,10 @@ export default function BusinessWorkflowRail({
   activeOperationsTab,
   activeFinanceTab,
   onNavigate,
+  collapsible = false,
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const showFull = !collapsible || expanded;
   const activeStepId = getWorkflowActiveStep({ activeTab, activeOperationsTab, activeFinanceTab });
   const activeStep = businessWorkflowSteps.find((step) => step.id === activeStepId) || businessWorkflowSteps[0];
   const completeCount = businessWorkflowSteps.filter((step) => getWorkflowStepStatus(step.id, setupStatus)).length;
@@ -22,8 +25,48 @@ export default function BusinessWorkflowRail({
     : "mx-auto mb-5 max-w-[1600px] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
 
+  if (!showFull) {
+    return (
+      <section data-tour="business-workflow" className={shellClass}>
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="flex w-full items-center justify-between gap-3 text-left"
+        >
+          <span className="flex min-w-0 flex-wrap items-center gap-2">
+            <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-black uppercase tracking-wide text-white">
+              Core Workflow
+            </span>
+            <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
+              {completeCount} of {businessWorkflowSteps.length} connected
+            </span>
+            <span className={`hidden truncate text-sm font-bold sm:inline ${mutedText}`}>
+              Current step: {activeStep.label}
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-1 text-sm font-black text-blue-600">
+            Show steps
+            <span aria-hidden="true">▾</span>
+          </span>
+        </button>
+      </section>
+    );
+  }
+
   return (
     <section data-tour="business-workflow" className={shellClass}>
+      {collapsible && (
+        <div className="mb-3 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setExpanded(false)}
+            className="flex items-center gap-1 text-xs font-black text-blue-600 hover:underline"
+          >
+            Hide steps
+            <span aria-hidden="true">▴</span>
+          </button>
+        </div>
+      )}
       <div className="mb-3 flex flex-col gap-3 sm:mb-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
