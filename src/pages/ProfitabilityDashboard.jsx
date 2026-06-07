@@ -1573,24 +1573,23 @@ function ProfitabilityDashboard({
 
           return (
             <div key={card.title} className={`${cardClass} overflow-hidden`}>
-              <div className="flex items-start gap-4">
-                <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${toneStyles[card.tone]}`}>
-                  <Icon className="h-7 w-7" />
+              <div className="min-w-0">
+                <div className={`mb-3 flex h-11 w-11 items-center justify-center rounded-2xl ${toneStyles[card.tone]}`}>
+                  <Icon className="h-6 w-6" />
                 </div>
-                <div className="min-w-0">
-                  <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{card.title}</p>
-                  <p
-                    className={`mt-2 truncate text-2xl font-black ${card.tone === "green"
-                        ? "text-emerald-700"
-                        : card.tone === "red"
-                          ? "text-red-600"
-                          : titleText
-                      }`}
-                  >
-                    {card.value}
-                  </p>
-                  <p className={`mt-2 text-xs font-semibold ${mutedText}`}>{card.note}</p>
-                </div>
+                <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{card.title}</p>
+                <p
+                  className={`safe-number mt-2 text-2xl font-black ${card.tone === "green"
+                      ? "text-emerald-700"
+                      : card.tone === "red"
+                        ? "text-red-600"
+                        : titleText
+                    }`}
+                  title={card.value}
+                >
+                  {card.value}
+                </p>
+                <p className={`mt-2 text-xs font-semibold ${mutedText}`}>{card.note}</p>
               </div>
 
               <div className={isDark ? "mt-5 space-y-3 rounded-xl bg-slate-950/30 p-3" : "mt-5 space-y-3 rounded-xl bg-slate-50/80 p-3"}>
