@@ -6,9 +6,6 @@ export default function SetupWizard({
   isDark,
   showGuidedSetup,
   isDemoMode,
-  onLaunchDemo,
-  onStartGuidedDemo,
-  showDemoActions,
   setupNextStep,
   sharedNextAction,
   setupCompleteCount,
@@ -46,16 +43,6 @@ export default function SetupWizard({
                 <button onClick={setupNextStep.onClick} className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500 sm:w-auto">
                   Continue Setup
                 </button>
-                {showDemoActions && !isDemoMode && onLaunchDemo && (
-                  <button onClick={() => onLaunchDemo({ reset: false })} className={isDark ? "w-full rounded-xl bg-emerald-500/15 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/20 sm:w-auto" : "w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 sm:w-auto"}>
-                    Launch Demo Workspace
-                  </button>
-                )}
-                {showDemoActions && onStartGuidedDemo && (
-                  <button onClick={onStartGuidedDemo} className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500 sm:w-auto">
-                    Interactive Demo
-                  </button>
-                )}
                 <button onClick={() => openPreviewModal("preview")} className={isDark ? "w-full rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/5 sm:w-auto" : "w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50 sm:w-auto"}>
                   Preview Dashboard
                 </button>

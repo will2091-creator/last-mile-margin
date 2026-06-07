@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import lastMileMarginLogo from "./assets/last-mile-margin-logo-transparent.svg";
 import lastMileMarginLogoDark from "./assets/last-mile-margin-logo-transparent-dark.svg";
@@ -11,53 +11,32 @@ import ReportsDashboard from "./pages/ReportsDashboard";
 import AskBusinessDashboard from "./pages/AskBusinessDashboard";
 import AiQuickIntake from "./components/AiQuickIntake";
 import BusinessWorkflowRail from "./components/BusinessWorkflowRail";
-import DemoCompletionModal from "./components/DemoCompletionModal";
-import GuidedDemoTour from "./components/GuidedDemoTour";
-import ProductTour from "./components/ProductTour";
 import SyncConfidencePanel from "./components/SyncConfidencePanel";
-import { navPreviewContent } from "./components/guidedDemoContent";
 import AppSidebar from "./components/app/AppSidebar";
-import DemoBanner from "./components/app/DemoBanner";
 import AppToolbar from "./components/app/AppToolbar";
 import AppBottomNav from "./components/app/AppBottomNav";
 import { loadAppStateFromSupabase, saveAppStateToSupabase } from "./lib/appStateRepository";
 import { loadClaimsFromSupabase, syncClaimsToSupabase } from "./lib/claimsRepository";
-import {
-  clearDemoWorkspaceData,
-  demoStorageKeys,
-  getDemoWorkspaceData,
-  isDemoModeActive,
-  seedDemoWorkspace,
-  setDemoModeActive,
-} from "./lib/demoWorkspace";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 import { addTeamMember, loadTeamAccess, updateTeamMemberRole } from "./lib/teamAccessRepository";
-import { emptyTourStatus, markProductTourCompleted, markProductTourProgress, markProductTourSkipped, readProductTourStatus, resetProductTourStatus } from "./lib/tourStorage";
 import { getSetupStatus } from "./lib/onboarding";
 import {
   accentThemes,
   Bot,
   BriefcaseBusiness,
   Calculator,
-  Camera,
   ClipboardCheck,
   currency,
   defaultForm,
   defaultSettings,
-  FileText,
   getGrade,
   initialClaims,
   initialTeams,
   LayoutDashboard,
-  Moon,
   number,
-  Save,
   Settings,
-  ShieldCheck,
-  Sun,
   toNum,
   Upload,
-  Users,
 } from "./shared";
 
 const usernameEmailMap = {
@@ -126,73 +105,7 @@ const getLocalDateKey = (date = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
-const blankDemoForm = {
-  ...defaultForm,
-  scenarioName: "",
-  routePay: 0,
-  perStopPay: 0,
-  stops: 0,
-  installPay: 0,
-  accessorialPay: 0,
-  fuelSurcharge: 0,
-  reattemptPay: 0,
-  miles: 0,
-  mpg: 0,
-  fuelPrice: 0,
-  routeHours: 0,
-  driverPay: 0,
-  helperPay: 0,
-  tollsParking: 0,
-  dailyTruckPayment: 0,
-  dailyInsurance: 0,
-  maintenancePerMile: 0,
-  phoneSoftware: 0,
-  claimsChargebacks: 0,
-  otherCosts: 0,
-  targetProfit: 0,
-  claimsPerWeek: 0,
-  averageClaimAmount: 0,
-  routesPerWeek: 0,
-  escrowPerWeek: 0,
-  routeType: "",
-  vehicleType: "",
-};
-
-const blankDemoSettings = {
-  ...defaultSettings,
-  companyName: "New Demo Company",
-  profitabilityBenchmarks: {
-    ...defaultSettings.profitabilityBenchmarks,
-    enabled: false,
-  },
-};
-
-const blankDemoStorageKeys = [
-  "finalMileBlankDemoRollupRows",
-  "finalMileBlankDemoContracts",
-  "finalMileBlankDemoOnboardingImports",
-  "finalMileBlankDemoSetupWizard",
-  "finalMileBlankDemoUploadedReceipts",
-  "finalMileBlankDemoRouteProfitContractId",
-];
-
-const resetBlankDemoStorage = () => {
-  if (typeof window === "undefined") return;
-  blankDemoStorageKeys.forEach((key) => localStorage.removeItem(key));
-};
-
-let hasResetBlankDemoStorageOnStartup = false;
-
 export default function App() {
-  if (
-    typeof window !== "undefined" &&
-    !hasResetBlankDemoStorageOnStartup &&
-    sessionStorage.getItem("finalMileBlankDemo") === "true"
-  ) {
-    hasResetBlankDemoStorageOnStartup = true;
-    resetBlankDemoStorage();
-  }
-
   const loadFromLocalStorage = (key, fallback) => {
     try {
       const saved = localStorage.getItem(key);
@@ -203,42 +116,25 @@ export default function App() {
     }
   };
 
-  const [isDemoBannerDismissed, setIsDemoBannerDismissed] = useState(false);
-  const [isDemoMode, setIsDemoMode] = useState(() => isDemoModeActive());
-  const [isDemoWorkspace, setIsDemoWorkspace] = useState(() =>
-    sessionStorage.getItem("finalMileBlankDemo") === "true" || isDemoModeActive()
-  );
-  const isBlankDemoWorkspace = isDemoWorkspace && !isDemoMode;
-  const [form, setForm] = useState(() => {
-    if (isDemoMode) {
-      const demo = seedDemoWorkspace();
-      return loadFromLocalStorage(demoStorageKeys.form, demo.form);
-    }
-    return isDemoWorkspace ? blankDemoForm : defaultForm;
-  });
+  // Demo mode and tours were removed. These remain as constant `false` so the
+  // existing non-demo conditionals and page props continue to behave correctly.
+  const isDemoMode = false;
+  const isDemoWorkspace = false;
+  const isBlankDemoWorkspace = false;
+  const [form, setForm] = useState(defaultForm);
   const [savedScenarios, setSavedScenarios] = useState(() =>
-    isDemoMode
-      ? loadFromLocalStorage(demoStorageKeys.savedScenarios, seedDemoWorkspace().savedScenarios)
-      : loadFromLocalStorage("finalMileSavedScenarios", [])
+    loadFromLocalStorage("finalMileSavedScenarios", [])
   );
   const initialUrlTab = getTabFromUrl();
   const [activeTab, setActiveTab] = useState(() => normalizeTopTab(initialUrlTab));
   const [activeOperationsTab, setActiveOperationsTab] = useState(() => groupedTabs[initialUrlTab]?.[0] === "Operations" ? groupedTabs[initialUrlTab][1] : "Dispatch");
   const [activeFinanceTab, setActiveFinanceTab] = useState(() => groupedTabs[initialUrlTab]?.[0] === "Finance" ? groupedTabs[initialUrlTab][1] : "Profitability");
   const [reportsHomeSignal, setReportsHomeSignal] = useState(0);
-  const [isProductTourOpen, setIsProductTourOpen] = useState(false);
-  const [isGuidedDemoOpen, setIsGuidedDemoOpen] = useState(false);
-  const [isDemoCompletionOpen, setIsDemoCompletionOpen] = useState(false);
-  const [tourInitialStepIndex, setTourInitialStepIndex] = useState(() => readProductTourStatus().tourStepIndex || 0);
-  const [hasAutoStartedBlankDemoTour, setHasAutoStartedBlankDemoTour] = useState(false);
-  const [productTourStatus, setProductTourStatus] = useState(readProductTourStatus);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showSavedDays, setShowSavedDays] = useState(false);
   const [savedDayFlash, setSavedDayFlash] = useState(false);
   const [savedDays, setSavedDays] = useState(() =>
-    isDemoMode
-      ? loadFromLocalStorage(demoStorageKeys.savedDays, seedDemoWorkspace().savedDays)
-      : isDemoWorkspace ? [] : loadFromLocalStorage("finalMileSavedDays", [])
+    loadFromLocalStorage("finalMileSavedDays", [])
   );
   const [loadedSavedDay, setLoadedSavedDay] = useState(null);
   const [currentWorkDate, setCurrentWorkDate] = useState(() =>
@@ -257,46 +153,16 @@ export default function App() {
     return new Date(date.getFullYear(), date.getMonth(), 1);
   });
   const [claims, setClaims] = useState(() =>
-    isDemoMode
-      ? loadFromLocalStorage(demoStorageKeys.claims, seedDemoWorkspace().claims)
-      : isDemoWorkspace ? [] : loadFromLocalStorage("finalMileClaims", initialClaims)
+    loadFromLocalStorage("finalMileClaims", initialClaims)
   );
   const [claimsBackendStatus, setClaimsBackendStatus] = useState("Local claims ready.");
   const [hasLoadedRemoteClaims, setHasLoadedRemoteClaims] = useState(false);
   const [appStateBackendStatus, setAppStateBackendStatus] = useState("Local app state ready.");
   const [hasLoadedRemoteAppState, setHasLoadedRemoteAppState] = useState(false);
   const [teams, setTeams] = useState(() =>
-    isDemoMode
-      ? loadFromLocalStorage(demoStorageKeys.teams, seedDemoWorkspace().teams)
-      : isDemoWorkspace ? [] : loadFromLocalStorage("finalMileTeams", initialTeams)
+    loadFromLocalStorage("finalMileTeams", initialTeams)
   );
   const [appSettings, setAppSettings] = useState(() => {
-    if (isDemoMode) {
-      const demoSettings = loadFromLocalStorage(demoStorageKeys.settings, seedDemoWorkspace().settings);
-      return {
-        ...defaultSettings,
-        ...demoSettings,
-        dashboardWidgets: {
-          ...defaultSettings.dashboardWidgets,
-          ...(demoSettings.dashboardWidgets || {}),
-        },
-        dashboardWidgetOrder: [
-          ...new Set([
-            ...(demoSettings.dashboardWidgetOrder || []),
-            ...(defaultSettings.dashboardWidgetOrder || Object.keys(defaultSettings.dashboardWidgets)),
-          ]),
-        ].filter((key) => Object.prototype.hasOwnProperty.call(defaultSettings.dashboardWidgets, key)),
-        claimRiskThresholds: {
-          ...defaultSettings.claimRiskThresholds,
-          ...(demoSettings.claimRiskThresholds || {}),
-        },
-        profitabilityBenchmarks: {
-          ...defaultSettings.profitabilityBenchmarks,
-          ...(demoSettings.profitabilityBenchmarks || {}),
-        },
-      };
-    }
-    if (isDemoWorkspace) return blankDemoSettings;
     const savedSettings = loadFromLocalStorage("finalMileSettings", defaultSettings);
 
     return {
@@ -323,55 +189,21 @@ export default function App() {
     };
   });
   const [isLoggedIn, setIsLoggedIn] = useState(() =>
-    isDemoWorkspace || localStorage.getItem("finalMileLoggedIn") === "true"
+    localStorage.getItem("finalMileLoggedIn") === "true"
   );
   const [authUser, setAuthUser] = useState(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(isSupabaseConfigured && !isDemoWorkspace);
+  const [isAuthLoading, setIsAuthLoading] = useState(isSupabaseConfigured);
   const [teamMembers, setTeamMembers] = useState([]);
   const [currentUserRole, setCurrentUserRole] = useState("owner");
   const [teamAccessStatus, setTeamAccessStatus] = useState("Team access will load after sign in.");
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem(demoStorageKeys.settings, JSON.stringify(appSettings));
-      return;
-    }
-    if (isDemoWorkspace) return;
     localStorage.setItem("finalMileSettings", JSON.stringify(appSettings));
-  }, [appSettings, isDemoMode, isDemoWorkspace]);
+  }, [appSettings]);
 
   useEffect(() => {
-    if (!isDemoMode) return;
-    localStorage.setItem(demoStorageKeys.form, JSON.stringify(form));
-  }, [form, isDemoMode]);
-
-  useEffect(() => {
-    if (isDemoWorkspace) return;
     localStorage.setItem("finalMileLoggedIn", String(isLoggedIn));
-  }, [isDemoWorkspace, isLoggedIn]);
-
-  useEffect(() => {
-    if (!isLoggedIn || isDemoMode || activeTab !== "Dashboard") return;
-    if (isProductTourOpen || isGuidedDemoOpen || hasAutoStartedBlankDemoTour) return;
-    const contractKey = isBlankDemoWorkspace ? "finalMileBlankDemoRollupRows" : "finalMileRollupRows";
-    const importKey = isBlankDemoWorkspace ? "finalMileBlankDemoOnboardingImports" : "finalMileOnboardingImports";
-    const hasStoredContracts = loadFromLocalStorage(contractKey, []).length > 0;
-    const hasStoredImports = loadFromLocalStorage(importKey, []).length > 0;
-    const isEmptyWorkspace =
-      teams.length === 0 &&
-      claims.length === 0 &&
-      savedDays.length === 0 &&
-      savedScenarios.length === 0 &&
-      !hasStoredContracts &&
-      !hasStoredImports;
-    if (!isEmptyWorkspace) return;
-    setHasAutoStartedBlankDemoTour(true);
-    const tourTimer = window.setTimeout(() => {
-      setTourInitialStepIndex(readProductTourStatus().tourStepIndex || 0);
-      setIsProductTourOpen(true);
-    }, 450);
-    return () => window.clearTimeout(tourTimer);
-  }, [activeTab, claims.length, hasAutoStartedBlankDemoTour, isBlankDemoWorkspace, isDemoMode, isGuidedDemoOpen, isLoggedIn, isProductTourOpen, savedDays.length, savedScenarios.length, teams.length]);
+  }, [isLoggedIn]);
 
   const refreshTeamAccess = async () => {
     const result = await loadTeamAccess();
@@ -387,7 +219,6 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (isDemoWorkspace) return;
     if (!isSupabaseConfigured || !supabase) {
       setIsAuthLoading(false);
       return undefined;
@@ -414,15 +245,9 @@ export default function App() {
       isMounted = false;
       listener.subscription.unsubscribe();
     };
-  }, [isDemoWorkspace]);
+  }, []);
 
   useEffect(() => {
-    if (isDemoWorkspace) {
-      setTeamMembers([]);
-      setCurrentUserRole("owner");
-      setTeamAccessStatus(isDemoMode ? "Viewing Demo Workspace. Team access is demo-only." : "Blank demo workspace. No team users have been added.");
-      return;
-    }
     if (!authUser) {
       setTeamMembers([]);
       setCurrentUserRole("owner");
@@ -448,32 +273,17 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, [authUser, isDemoMode, isDemoWorkspace]);
+  }, [authUser]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem(demoStorageKeys.teams, JSON.stringify(teams));
-      return;
-    }
-    if (isDemoWorkspace) return;
     localStorage.setItem("finalMileTeams", JSON.stringify(teams));
-  }, [isDemoMode, isDemoWorkspace, teams]);
+  }, [teams]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem(demoStorageKeys.claims, JSON.stringify(claims));
-      return;
-    }
-    if (isDemoWorkspace) return;
     localStorage.setItem("finalMileClaims", JSON.stringify(claims));
-  }, [claims, isDemoMode, isDemoWorkspace]);
+  }, [claims]);
 
   useEffect(() => {
-    if (isDemoWorkspace) {
-      setAppStateBackendStatus(isDemoMode ? "Viewing Demo Workspace. Supabase sync is off." : "Blank demo workspace. Supabase sync is off.");
-      setHasLoadedRemoteAppState(true);
-      return;
-    }
     let isMounted = true;
 
     const loadRemoteAppState = async () => {
@@ -531,14 +341,9 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, [isDemoMode, isDemoWorkspace]);
+  }, []);
 
   useEffect(() => {
-    if (isDemoWorkspace) {
-      setClaimsBackendStatus(isDemoMode ? "Viewing Demo Workspace. Claims are demo-only." : "Blank demo workspace. No claims entered yet.");
-      setHasLoadedRemoteClaims(true);
-      return;
-    }
     let isMounted = true;
 
     const loadRemoteClaims = async () => {
@@ -561,10 +366,9 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, [isDemoMode, isDemoWorkspace]);
+  }, []);
 
   useEffect(() => {
-    if (isDemoWorkspace) return;
     if (!hasLoadedRemoteClaims) return;
 
     let isMounted = true;
@@ -587,10 +391,9 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, [claims, hasLoadedRemoteClaims, isDemoWorkspace]);
+  }, [claims, hasLoadedRemoteClaims]);
 
   useEffect(() => {
-    if (isDemoWorkspace) return;
     if (!hasLoadedRemoteAppState) return;
 
     let isMounted = true;
@@ -619,30 +422,19 @@ export default function App() {
       isMounted = false;
       window.clearTimeout(syncTimer);
     };
-  }, [appSettings, currentWorkDate, form, globalDateRange, hasLoadedRemoteAppState, isDemoWorkspace, savedDays, savedScenarios, teams]);
+  }, [appSettings, currentWorkDate, form, globalDateRange, hasLoadedRemoteAppState, savedDays, savedScenarios, teams]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem(demoStorageKeys.savedScenarios, JSON.stringify(savedScenarios));
-      return;
-    }
-    if (isDemoWorkspace) return;
     localStorage.setItem("finalMileSavedScenarios", JSON.stringify(savedScenarios));
-  }, [isDemoMode, isDemoWorkspace, savedScenarios]);
+  }, [savedScenarios]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem(demoStorageKeys.savedDays, JSON.stringify(savedDays));
-      return;
-    }
-    if (isDemoWorkspace) return;
     localStorage.setItem("finalMileSavedDays", JSON.stringify(savedDays));
-  }, [isDemoMode, isDemoWorkspace, savedDays]);
+  }, [savedDays]);
 
   useEffect(() => {
-    if (isDemoWorkspace) return;
     localStorage.setItem("finalMileCurrentWorkDate", currentWorkDate);
-  }, [currentWorkDate, isDemoWorkspace]);
+  }, [currentWorkDate]);
 
   useEffect(() => {
     const handleHistoryChange = () => {
@@ -927,268 +719,6 @@ export default function App() {
     setActiveTab(tabName);
   };
 
-  const startProductTour = () => {
-    const nextStatus = productTourStatus.hasCompletedTour ? resetProductTourStatus() : readProductTourStatus();
-    if (productTourStatus.hasCompletedTour) {
-      setProductTourStatus(nextStatus);
-    }
-    setTourInitialStepIndex(nextStatus.tourStepIndex || 0);
-    setIsGuidedDemoOpen(false);
-    setIsDemoCompletionOpen(false);
-    if (isBlankDemoWorkspace || isDemoMode) {
-      loadDemoWorkspace({ reset: true, startTour: true });
-      return;
-    }
-    navigateToTab("Dashboard");
-    window.setTimeout(() => setIsProductTourOpen(true), 120);
-  };
-
-  const finishProductTour = () => {
-    setProductTourStatus(markProductTourCompleted());
-    setIsProductTourOpen(false);
-    clearCompletedDemoWorkspace();
-    setIsDemoCompletionOpen(true);
-  };
-
-  const skipProductTour = () => {
-    setProductTourStatus(markProductTourSkipped());
-    setIsProductTourOpen(false);
-  };
-
-  const handleProductTourStepChange = useCallback((stepIndex, stepId) => {
-    markProductTourProgress(stepIndex, stepId);
-  }, []);
-
-  const clearCompletedDemoWorkspace = () => {
-    if (!isDemoWorkspace) return;
-    clearDemoWorkspaceData();
-    resetBlankDemoStorage();
-    sessionStorage.removeItem("finalMileBlankDemo");
-    setDemoModeActive(false);
-    setIsDemoMode(false);
-    setIsDemoWorkspace(false);
-    setForm(defaultForm);
-    setSavedScenarios(loadFromLocalStorage("finalMileSavedScenarios", []));
-    setSavedDays(loadFromLocalStorage("finalMileSavedDays", []));
-    setLoadedSavedDay(null);
-    setClaims(loadFromLocalStorage("finalMileClaims", initialClaims));
-    setTeams(loadFromLocalStorage("finalMileTeams", initialTeams));
-    const savedSettings = loadFromLocalStorage("finalMileSettings", defaultSettings);
-    setAppSettings({
-      ...defaultSettings,
-      ...savedSettings,
-      dashboardWidgets: {
-        ...defaultSettings.dashboardWidgets,
-        ...(savedSettings.dashboardWidgets || {}),
-      },
-      dashboardWidgetOrder: [
-        ...new Set([
-          ...(savedSettings.dashboardWidgetOrder || []),
-          ...(defaultSettings.dashboardWidgetOrder || Object.keys(defaultSettings.dashboardWidgets)),
-        ]),
-      ].filter((key) => Object.prototype.hasOwnProperty.call(defaultSettings.dashboardWidgets, key)),
-      claimRiskThresholds: {
-        ...defaultSettings.claimRiskThresholds,
-        ...(savedSettings.claimRiskThresholds || {}),
-      },
-      profitabilityBenchmarks: {
-        ...defaultSettings.profitabilityBenchmarks,
-        ...(savedSettings.profitabilityBenchmarks || {}),
-      },
-    });
-    setClaimsBackendStatus("Demo complete. Sample claims were cleared.");
-    setAppStateBackendStatus("Demo complete. Sample data was cleared.");
-    setActiveTab("Dashboard");
-    setActiveOperationsTab("Dispatch");
-    setActiveFinanceTab("Profitability");
-    setShowSavedDays(false);
-    setShowDatePicker(false);
-    window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
-  };
-
-  const loadDemoWorkspace = ({ reset = false, startTour = false, startGuidedDemo = false, resetTour = false } = {}) => {
-    let nextTourStatus = readProductTourStatus();
-    if (resetTour) {
-      nextTourStatus = resetProductTourStatus();
-      setProductTourStatus(nextTourStatus);
-    }
-    const resumeStepIndex = nextTourStatus.tourStepIndex || 0;
-    const demo = seedDemoWorkspace({ reset });
-    sessionStorage.removeItem("finalMileBlankDemo");
-    setDemoModeActive(true);
-    setIsDemoWorkspace(true);
-    setIsDemoMode(true);
-    setAuthUser(null);
-    setIsLoggedIn(true);
-    setIsAuthLoading(false);
-    setCurrentUserRole("owner");
-    setTeamMembers([]);
-    setTeamAccessStatus("Viewing Demo Workspace. Team access is demo-only.");
-    setForm(demo.form);
-    setSavedScenarios(demo.savedScenarios);
-    setSavedDays(demo.savedDays);
-    setLoadedSavedDay(null);
-    setClaims(demo.claims);
-    setTeams(demo.teams);
-    setAppSettings(demo.settings);
-    setClaimsBackendStatus("Viewing Demo Workspace. Claims are demo-only.");
-    setAppStateBackendStatus("Viewing Demo Workspace. Supabase sync is off.");
-    setHasLoadedRemoteClaims(true);
-    setHasLoadedRemoteAppState(true);
-    setActiveTab("Dashboard");
-    setActiveOperationsTab("Dispatch");
-    setActiveFinanceTab("Profitability");
-    setShowSavedDays(false);
-    setShowDatePicker(false);
-    setIsProductTourOpen(false);
-    setIsGuidedDemoOpen(false);
-    setIsDemoCompletionOpen(false);
-    window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
-    if (startTour) {
-      setTourInitialStepIndex(resumeStepIndex);
-      window.setTimeout(() => setIsProductTourOpen(true), 180);
-    }
-    if (startGuidedDemo) {
-      setTourInitialStepIndex(resumeStepIndex);
-      window.setTimeout(() => setIsGuidedDemoOpen(true), 220);
-    }
-  };
-
-  const exitDemoWorkspace = () => {
-    setDemoModeActive(false);
-    setIsDemoMode(false);
-    setIsDemoWorkspace(false);
-    setIsProductTourOpen(false);
-    setIsGuidedDemoOpen(false);
-    setIsDemoCompletionOpen(false);
-    setForm(defaultForm);
-    setSavedScenarios(loadFromLocalStorage("finalMileSavedScenarios", []));
-    setSavedDays(loadFromLocalStorage("finalMileSavedDays", []));
-    setLoadedSavedDay(null);
-    setClaims(loadFromLocalStorage("finalMileClaims", initialClaims));
-    setTeams(loadFromLocalStorage("finalMileTeams", initialTeams));
-    const savedSettings = loadFromLocalStorage("finalMileSettings", defaultSettings);
-    setAppSettings({
-      ...defaultSettings,
-      ...savedSettings,
-      dashboardWidgets: {
-        ...defaultSettings.dashboardWidgets,
-        ...(savedSettings.dashboardWidgets || {}),
-      },
-      dashboardWidgetOrder: [
-        ...new Set([
-          ...(savedSettings.dashboardWidgetOrder || []),
-          ...(defaultSettings.dashboardWidgetOrder || Object.keys(defaultSettings.dashboardWidgets)),
-        ]),
-      ].filter((key) => Object.prototype.hasOwnProperty.call(defaultSettings.dashboardWidgets, key)),
-      claimRiskThresholds: {
-        ...defaultSettings.claimRiskThresholds,
-        ...(savedSettings.claimRiskThresholds || {}),
-      },
-      profitabilityBenchmarks: {
-        ...defaultSettings.profitabilityBenchmarks,
-        ...(savedSettings.profitabilityBenchmarks || {}),
-      },
-    });
-    setClaimsBackendStatus("Local claims ready.");
-    setAppStateBackendStatus("Local app state ready.");
-    setActiveTab("Dashboard");
-    window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
-  };
-
-  const turnOffDemoAndTour = () => {
-    clearDemoWorkspaceData();
-    resetBlankDemoStorage();
-    sessionStorage.removeItem("finalMileBlankDemo");
-    setDemoModeActive(false);
-    setIsDemoMode(false);
-    setIsDemoWorkspace(false);
-    setIsProductTourOpen(false);
-    setIsGuidedDemoOpen(false);
-    setIsDemoCompletionOpen(false);
-    setProductTourStatus(markProductTourCompleted());
-    setForm(defaultForm);
-    setSavedScenarios(loadFromLocalStorage("finalMileSavedScenarios", []));
-    setSavedDays(loadFromLocalStorage("finalMileSavedDays", []));
-    setLoadedSavedDay(null);
-    setClaims(loadFromLocalStorage("finalMileClaims", initialClaims));
-    setTeams(loadFromLocalStorage("finalMileTeams", initialTeams));
-    const savedSettings = loadFromLocalStorage("finalMileSettings", defaultSettings);
-    setAppSettings({
-      ...defaultSettings,
-      ...savedSettings,
-      dashboardWidgets: {
-        ...defaultSettings.dashboardWidgets,
-        ...(savedSettings.dashboardWidgets || {}),
-      },
-      dashboardWidgetOrder: [
-        ...new Set([
-          ...(savedSettings.dashboardWidgetOrder || []),
-          ...(defaultSettings.dashboardWidgetOrder || Object.keys(defaultSettings.dashboardWidgets)),
-        ]),
-      ].filter((key) => Object.prototype.hasOwnProperty.call(defaultSettings.dashboardWidgets, key)),
-      claimRiskThresholds: {
-        ...defaultSettings.claimRiskThresholds,
-        ...(savedSettings.claimRiskThresholds || {}),
-      },
-      profitabilityBenchmarks: {
-        ...defaultSettings.profitabilityBenchmarks,
-        ...(savedSettings.profitabilityBenchmarks || {}),
-      },
-    });
-    setClaimsBackendStatus("Demo and tour are turned off.");
-    setAppStateBackendStatus("Demo and tour are turned off.");
-    setHasAutoStartedBlankDemoTour(true);
-    setActiveTab("Dashboard");
-    setActiveOperationsTab("Dispatch");
-    setActiveFinanceTab("Profitability");
-    setShowSavedDays(false);
-    setShowDatePicker(false);
-    window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
-  };
-
-  const resetDemoWorkspace = () => {
-    loadDemoWorkspace({ reset: true, resetTour: true });
-  };
-
-  const restartGuidedDemo = () => {
-    loadDemoWorkspace({ reset: true, startGuidedDemo: true, resetTour: true });
-  };
-
-  const startInteractiveDemo = () => {
-    const nextStatus = productTourStatus.hasCompletedTour ? resetProductTourStatus() : readProductTourStatus();
-    if (productTourStatus.hasCompletedTour) {
-      setProductTourStatus(nextStatus);
-    }
-    setTourInitialStepIndex(nextStatus.tourStepIndex || 0);
-    setIsProductTourOpen(false);
-    setIsDemoCompletionOpen(false);
-    loadDemoWorkspace({ reset: true, startGuidedDemo: true });
-  };
-
-  const closeGuidedDemo = () => {
-    setProductTourStatus(markProductTourSkipped());
-    setIsGuidedDemoOpen(false);
-  };
-
-  const completeGuidedDemo = () => {
-    setProductTourStatus(markProductTourCompleted());
-    setIsGuidedDemoOpen(false);
-    clearCompletedDemoWorkspace();
-    setIsDemoCompletionOpen(true);
-    navigateToTab("Dashboard");
-  };
-
-  const closeDemoCompletion = () => {
-    setIsDemoCompletionOpen(false);
-    navigateToTab("Dashboard");
-  };
-
-  const restartDemoFromCompletion = () => {
-    setIsDemoCompletionOpen(false);
-    restartGuidedDemo();
-  };
-
   useEffect(() => {
     if (!isLoggedIn || canAccessTab(currentUserRole, activeTab)) return;
     navigateToTab(defaultAllowedTab, { replace: true });
@@ -1367,51 +897,10 @@ export default function App() {
   };
 
   const signInWithSupabase = async ({ identifier, password }) => {
-    const cleanIdentifier = String(identifier || "").trim().toLowerCase();
-    if (cleanIdentifier === "demo123" && password === "demo1234") {
-      if (supabase) await supabase.auth.signOut();
-      resetBlankDemoStorage();
-      resetProductTourStatus();
-      sessionStorage.setItem("finalMileBlankDemo", "true");
-      setDemoModeActive(false);
-      setIsDemoMode(false);
-      setIsDemoWorkspace(true);
-      setAuthUser(null);
-      setIsLoggedIn(true);
-      setIsAuthLoading(false);
-      setCurrentUserRole("owner");
-      setTeamMembers([]);
-      setTeamAccessStatus("Blank demo workspace. No team users have been added.");
-      setForm(blankDemoForm);
-      setSavedScenarios([]);
-      setSavedDays([]);
-      setLoadedSavedDay(null);
-      setClaims([]);
-      setTeams([]);
-      setAppSettings(blankDemoSettings);
-      setClaimsBackendStatus("Blank demo workspace. No claims entered yet.");
-      setAppStateBackendStatus("Blank demo workspace. Supabase sync is off.");
-      setHasLoadedRemoteClaims(true);
-      setHasLoadedRemoteAppState(true);
-      setActiveTab("Dashboard");
-      setActiveOperationsTab("Dispatch");
-      setActiveFinanceTab("Profitability");
-      setProductTourStatus(emptyTourStatus);
-      setIsProductTourOpen(false);
-      setIsDemoCompletionOpen(false);
-      setHasAutoStartedBlankDemoTour(false);
-      window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
-      return { ok: true };
-    }
-
     if (!isSupabaseConfigured || !supabase) {
       return { ok: false, error: "Supabase Auth is not configured." };
     }
 
-    sessionStorage.removeItem("finalMileBlankDemo");
-    setDemoModeActive(false);
-    setIsDemoMode(false);
-    setIsDemoWorkspace(false);
     const email = normalizeLoginIdentifier(identifier);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { ok: false, error: error.message };
@@ -1422,12 +911,6 @@ export default function App() {
   };
 
   const signOut = async () => {
-    sessionStorage.removeItem("finalMileBlankDemo");
-    setDemoModeActive(false);
-    setIsDemoMode(false);
-    setIsDemoWorkspace(false);
-    setIsProductTourOpen(false);
-    setHasAutoStartedBlankDemoTour(false);
     if (supabase) {
       await supabase.auth.signOut();
     }
@@ -1480,14 +963,6 @@ export default function App() {
       />
     );
   }
-
-  const showDemoTourOffControl =
-    isDemoMode ||
-    isDemoWorkspace ||
-    isProductTourOpen ||
-    isGuidedDemoOpen ||
-    isDemoCompletionOpen ||
-    !productTourStatus?.hasCompletedTour;
 
   return (
     <div className={isDark ? "theme-dark min-h-screen bg-slate-950 text-white" : "theme-light min-h-screen bg-slate-100 text-slate-950"}>
@@ -1667,23 +1142,13 @@ export default function App() {
           toggleThemeMode={toggleThemeMode}
           navigateToTab={navigateToTab}
           signOut={signOut}
-          onLoadDemo={loadDemoWorkspace}
-          onExitDemo={exitDemoWorkspace}
         />
 
         <main className="min-w-0 flex-1 p-4 pb-28 sm:p-6 sm:pb-28 lg:p-8">
-          {isDemoMode && (
-            <DemoBanner
-              isDark={isDark}
-              isDemoBannerDismissed={isDemoBannerDismissed}
-              setIsDemoBannerDismissed={setIsDemoBannerDismissed}
-            />
-          )}
           <AppToolbar
             isDark={isDark}
             isDemoMode={isDemoMode}
             canManageBusiness={canManageBusiness}
-            showDemoTourOffControl={showDemoTourOffControl}
             savedDayFlash={savedDayFlash}
             savedDays={savedDays}
             showSavedDays={showSavedDays}
@@ -1703,11 +1168,8 @@ export default function App() {
             selectThisWeek={selectThisWeek}
             loadSavedDay={loadSavedDay}
             saveCurrentDay={saveCurrentDay}
-            turnOffDemoAndTour={turnOffDemoAndTour}
             formatDateLabel={formatDateLabel}
             formatDateRangeLabel={formatDateRangeLabel}
-            onLoadDemo={loadDemoWorkspace}
-            onExitDemo={exitDemoWorkspace}
           />
           {!isDemoMode && (
             <div className="mx-auto mb-3 max-w-[1600px] sm:mb-5">
@@ -1732,7 +1194,7 @@ export default function App() {
           />
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1600px]">
             {activeTab === "Dashboard" ? (
-              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onStartTour={startProductTour} onStartGuidedDemo={startInteractiveDemo} onLaunchDemo={loadDemoWorkspace} onSaveSnapshot={saveCurrentDay} productTourStatus={productTourStatus} ownerName={ownerName} />
+              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} ownerName={ownerName} />
             ) : activeTab === "Intake" ? (
               <AiQuickIntake
                 teams={teams}
@@ -1789,10 +1251,6 @@ export default function App() {
                 onInviteTeamMember={inviteTeamMember}
                 onUpdateTeamMemberRole={changeTeamMemberRole}
                 isDemoMode={isDemoMode}
-                onLaunchDemo={loadDemoWorkspace}
-                onExitDemo={exitDemoWorkspace}
-                onResetDemo={resetDemoWorkspace}
-                onRestartDemo={restartGuidedDemo}
               />
             ) : activeTab === "Finance" ? (
               <FinanceDashboard
@@ -1808,7 +1266,7 @@ export default function App() {
                 loadScenario={loadScenario}
                 deleteScenario={deleteScenario}
                 exportSummary={exportSummary}
-                resetForm={() => setForm(isDemoMode ? getDemoWorkspaceData().form : defaultForm)}
+                resetForm={() => setForm(defaultForm)}
                 isDark={isDark}
                 appSettings={appSettings}
                 teams={teams}
@@ -1818,7 +1276,7 @@ export default function App() {
                 isDemoMode={isDemoMode}
               />
             ) : (
-              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onStartTour={startProductTour} onStartGuidedDemo={startInteractiveDemo} onLaunchDemo={loadDemoWorkspace} onSaveSnapshot={saveCurrentDay} productTourStatus={productTourStatus} ownerName={ownerName} />
+              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} ownerName={ownerName} />
             )}
           </motion.div>
         </main>
@@ -1829,31 +1287,6 @@ export default function App() {
           visibleNavItems={visibleNavItems}
           activeTab={activeTab}
           navigateToTab={navigateToTab}
-        />
-
-        <ProductTour
-          isOpen={isProductTourOpen}
-          isDark={isDark}
-          initialStepIndex={tourInitialStepIndex}
-          onFinish={finishProductTour}
-          onSkip={skipProductTour}
-          onNavigate={navigateToTab}
-          onStepChange={handleProductTourStepChange}
-        />
-        <GuidedDemoTour
-          isOpen={isGuidedDemoOpen}
-          isDark={isDark}
-          initialStepIndex={tourInitialStepIndex}
-          onClose={closeGuidedDemo}
-          onComplete={completeGuidedDemo}
-          onNavigate={navigateToTab}
-          onStepChange={handleProductTourStepChange}
-        />
-        <DemoCompletionModal
-          isOpen={isDemoCompletionOpen}
-          isDark={isDark}
-          onClose={closeDemoCompletion}
-          onRestart={restartDemoFromCompletion}
         />
       </div>
     </div>

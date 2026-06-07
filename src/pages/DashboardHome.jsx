@@ -26,7 +26,6 @@ import {
   XAxis,
   YAxis,
 } from "../shared";
-import TakeTourButton from "../components/TakeTourButton";
 import NextActionCard from "../components/NextActionCard";
 import { getNextBestSetupAction, getSetupStatus } from "../lib/onboarding";
 import ContractModal from "../components/dashboard/ContractModal";
@@ -35,7 +34,7 @@ import ExpenseModal from "../components/dashboard/ExpenseModal";
 import ImportModal from "../components/dashboard/ImportModal";
 import SetupWizard from "../components/dashboard/SetupWizard";
 
-function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDark, appSettings, savedDaySnapshot, savedDays = [], isBlankDemo = false, isDemoMode = false, onStartTour, onStartGuidedDemo, onLaunchDemo, onSaveSnapshot, productTourStatus, ownerName = "" }) {
+function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDark, appSettings, savedDaySnapshot, savedDays = [], isBlankDemo = false, isDemoMode = false, onSaveSnapshot, ownerName = "" }) {
   const defaultDashboardOrder = defaultSettings.dashboardWidgetOrder || Object.keys(defaultSettings.dashboardWidgets);
   const dashboardWidgetOrder = [
     ...new Set([...(appSettings?.dashboardWidgetOrder || []), ...defaultDashboardOrder]),
@@ -93,7 +92,6 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   const [importSaveStatus, setImportSaveStatus] = useState("");
   const [expenseSaveStatus, setExpenseSaveStatus] = useState("");
   const [activeSetupStep, setActiveSetupStep] = useState("contract");
-  const [hasAutoStartedBlankTour, setHasAutoStartedBlankTour] = useState(false);
   const setupStorageKey = isDemoMode ? "finalMileDemoSetupWizard" : isBlankDemo ? "finalMileBlankDemoSetupWizard" : "finalMileSetupWizard";
   const [setupWizard, setSetupWizard] = useState(() => {
     try {
@@ -278,13 +276,6 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   );
   const hasStartedWorkspace = hasQuickContracts || hasQuickImports || claims.length > 0 || teams.length > 0 || savedDays.length > 0;
   const isCleanBlankWorkspace = !hasStartedWorkspace;
-
-  useEffect(() => {
-    if (productTourStatus?.hasCompletedTour) return;
-    if (!onStartTour || !isCleanBlankWorkspace || isDemoMode || hasAutoStartedBlankTour) return;
-    setHasAutoStartedBlankTour(true);
-    window.setTimeout(onStartTour, 650);
-  }, [hasAutoStartedBlankTour, isCleanBlankWorkspace, isDemoMode, onStartTour, productTourStatus?.hasCompletedTour]);
 
   const quickContractCards = quickContracts.slice(0, 4).map((row) => {
     const revenue = Number(row.revenue || 0);
@@ -721,7 +712,6 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   const setupIsComplete = setupCompleteCount === setupSteps.length;
   const setupNextStep = setupSteps.find((step) => !step.complete && !step.skipped) || setupSteps.find((step) => !step.complete) || setupSteps[setupSteps.length - 1];
   const showGuidedSetup = !setupIsComplete && (isBlankDemo || !hasStartedWorkspace || setupCompleteCount > 0 || setupSkippedCount > 0);
-  const showDemoActions = !productTourStatus?.hasCompletedTour && Boolean(onStartTour || onStartGuidedDemo);
   const setupTourTargets = {
     profile: "settings",
     contract: "contracts",
@@ -967,42 +957,10 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
         </button>
       </div>
 
-      {showDemoActions && (onStartTour || onStartGuidedDemo || (!isDemoMode && onLaunchDemo)) && (
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <span className={`text-sm font-bold ${mutedText}`}>Just exploring?</span>
-          {onStartTour && (
-            <TakeTourButton onClick={onStartTour} isDark={isDark} className="w-full sm:w-auto" />
-          )}
-          {onStartGuidedDemo && (
-            <button
-              data-tour="dashboard-interactive-demo"
-              type="button"
-              onClick={onStartGuidedDemo}
-              className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500 sm:w-auto"
-            >
-              Interactive Demo
-            </button>
-          )}
-          {!isDemoMode && onLaunchDemo && (
-            <button
-              data-tour="dashboard-launch-demo"
-              type="button"
-              onClick={() => onLaunchDemo({ reset: false })}
-              className={isDark ? "w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/15 sm:w-auto" : "w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-100 sm:w-auto"}
-            >
-              Launch Demo Workspace
-            </button>
-          )}
-        </div>
-      )}
-
       <SetupWizard
         isDark={isDark}
         showGuidedSetup={showGuidedSetup}
         isDemoMode={isDemoMode}
-        onLaunchDemo={onLaunchDemo}
-        onStartGuidedDemo={onStartGuidedDemo}
-        showDemoActions={showDemoActions}
         setupNextStep={setupNextStep}
         sharedNextAction={sharedNextAction}
         setupCompleteCount={setupCompleteCount}

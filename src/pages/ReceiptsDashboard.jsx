@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Camera, currency, DollarSign, FileText, Upload } from "../shared";
 import { loadVaultDocumentsFromSupabase } from "../lib/documentRepository";
 import EmptyState from "../components/EmptyState";
-import { demoReceipts, demoStorageKeys } from "../lib/demoWorkspace";
 
 const receiptCategories = ["All", "Gas", "Tools", "Maintenance", "Parking/Tolls", "Other"];
 
@@ -21,43 +20,15 @@ function parseReceipt(doc) {
   };
 }
 
-const readStoredReceipts = (key) => {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(key) || "[]");
-    return Array.isArray(parsed) ? parsed.map(parseReceipt) : [];
-  } catch {
-    return [];
-  }
-};
-
 export default function ReceiptsDashboard({ isDark, isBlankDemo = false, isDemoMode = false, navigateToTab }) {
-  const [receipts, setReceipts] = useState(() => {
-    if (isDemoMode) {
-      const stored = readStoredReceipts(demoStorageKeys.receipts);
-      return stored.length ? stored : demoReceipts.map(parseReceipt);
-    }
-    return [];
-  });
-  const [status, setStatus] = useState(isDemoMode ? "Viewing Demo Workspace receipts." : isBlankDemo ? "Blank demo workspace. No receipts uploaded yet." : "No uploaded receipts yet. Mobile uploads will appear here.");
+  const [receipts, setReceipts] = useState([]);
+  const [status, setStatus] = useState("No uploaded receipts yet. Mobile uploads will appear here.");
   const [filter, setFilter] = useState("All");
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadReceipts() {
-      if (isBlankDemo) {
-        setReceipts([]);
-        setStatus("Blank demo workspace. No receipts uploaded yet.");
-        return;
-      }
-
-      if (isDemoMode) {
-        const stored = readStoredReceipts(demoStorageKeys.receipts);
-        setReceipts(stored.length ? stored : demoReceipts.map(parseReceipt));
-        setStatus("Viewing Demo Workspace receipts. These sample uploads do not affect real expenses.");
-        return;
-      }
-
       const result = await loadVaultDocumentsFromSupabase();
       if (!isMounted) return;
 
