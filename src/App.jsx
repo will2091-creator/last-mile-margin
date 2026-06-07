@@ -682,6 +682,11 @@ export default function App() {
 
   const isDark = appSettings.themeMode === "dark";
   const activeAccent = accentThemes[appSettings.accentColor] || accentThemes.blue;
+  const ownerName = (() => {
+    const local = (authUser?.email || "").split("@")[0] || "";
+    const first = local.split(/[._-]/)[0] || "";
+    return first ? first.charAt(0).toUpperCase() + first.slice(1) : "";
+  })();
 
   const toggleThemeMode = () => {
     setAppSettings((current) => ({
@@ -1691,7 +1696,7 @@ export default function App() {
           />
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1600px]">
             {activeTab === "Dashboard" ? (
-              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onStartTour={startProductTour} onStartGuidedDemo={startInteractiveDemo} onLaunchDemo={loadDemoWorkspace} onSaveSnapshot={saveCurrentDay} productTourStatus={productTourStatus} />
+              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onStartTour={startProductTour} onStartGuidedDemo={startInteractiveDemo} onLaunchDemo={loadDemoWorkspace} onSaveSnapshot={saveCurrentDay} productTourStatus={productTourStatus} ownerName={ownerName} />
             ) : activeTab === "Intake" ? (
               <AiQuickIntake
                 teams={teams}
@@ -1777,7 +1782,7 @@ export default function App() {
                 isDemoMode={isDemoMode}
               />
             ) : (
-              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onStartTour={startProductTour} onStartGuidedDemo={startInteractiveDemo} onLaunchDemo={loadDemoWorkspace} onSaveSnapshot={saveCurrentDay} productTourStatus={productTourStatus} />
+              <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onStartTour={startProductTour} onStartGuidedDemo={startInteractiveDemo} onLaunchDemo={loadDemoWorkspace} onSaveSnapshot={saveCurrentDay} productTourStatus={productTourStatus} ownerName={ownerName} />
             )}
           </motion.div>
         </main>

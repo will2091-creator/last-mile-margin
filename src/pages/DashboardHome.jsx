@@ -62,7 +62,7 @@ import ExpenseModal from "../components/dashboard/ExpenseModal";
 import ImportModal from "../components/dashboard/ImportModal";
 import SetupWizard from "../components/dashboard/SetupWizard";
 
-function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDark, appSettings, savedDaySnapshot, savedDays = [], isBlankDemo = false, isDemoMode = false, onStartTour, onStartGuidedDemo, onLaunchDemo, onSaveSnapshot, productTourStatus }) {
+function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDark, appSettings, savedDaySnapshot, savedDays = [], isBlankDemo = false, isDemoMode = false, onStartTour, onStartGuidedDemo, onLaunchDemo, onSaveSnapshot, productTourStatus, ownerName = "" }) {
   const widgets = {
     ...defaultSettings.dashboardWidgets,
     ...(appSettings?.dashboardWidgets || {}),
@@ -1373,29 +1373,25 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     return null;
   };
 
+  const greetingHour = new Date().getHours();
+  const greetingWord = greetingHour < 12 ? "Good morning" : greetingHour < 18 ? "Good afternoon" : "Good evening";
+  const greetingTitle = ownerName ? `${greetingWord}, ${ownerName}` : greetingWord;
+
   return (
     <div className={pageClass}>
       <div data-tour="dashboard-overview" className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex min-w-0 items-start gap-4">
-          <div className={isDark ? "hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-300 sm:flex" : "hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 sm:flex"}>
-            <LayoutDashboard className="h-7 w-7" />
-          </div>
-          <div className="min-w-0">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <span className={isDark ? "rounded-full bg-blue-500/10 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-200" : "rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700"}>
-                Daily Command Center
-              </span>
-              <span className={isDark ? "rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-200" : "rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700"}>
-                {openClaims} open claims
-              </span>
-            </div>
-            <h1 className={`text-3xl font-black leading-none tracking-tight sm:text-4xl ${titleText}`}>Dashboard</h1>
-            {savedDaySnapshot && (
-              <p className={isDark ? "mt-3 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-200" : "mt-3 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700"}>
-                Viewing daily history: {savedDaySnapshot.label}
-              </p>
-            )}
-          </div>
+        <div className="min-w-0">
+          <h1 className={`text-3xl font-black leading-tight tracking-tight sm:text-4xl ${titleText}`}>
+            {greetingTitle} <span aria-hidden="true">👋</span>
+          </h1>
+          <p className={`mt-2 text-sm font-semibold sm:text-base ${mutedText}`}>
+            Here's how your business is performing today.
+          </p>
+          {savedDaySnapshot && (
+            <p className={isDark ? "mt-3 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-200" : "mt-3 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700"}>
+              Viewing daily history: {savedDaySnapshot.label}
+            </p>
+          )}
         </div>
 
         <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
@@ -1428,90 +1424,124 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
 
 
-      {/* HERO — the headline numbers an owner needs at a glance */}
-      <section data-tour="dashboard-overview-kpis" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {/* PRIMARY ROW — net profit with trend, and what needs attention today */}
+      <div className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
         <button
           type="button"
+          data-tour="dashboard-net-profit"
           onClick={() => goToSource("Profitability")}
-          className={isDark ? "min-w-0 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-6 text-left transition hover:border-emerald-300/50" : "min-w-0 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-left transition hover:border-emerald-300 hover:bg-emerald-100/60"}
+          className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/60 p-6 text-left shadow-xl shadow-black/20 transition hover:border-blue-300/40" : "rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-blue-300"}
         >
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-black uppercase tracking-wide text-emerald-700">Profit</p>
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+            <p className="text-xs font-black uppercase tracking-wide text-blue-600">Net Profit Today</p>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white">
               <DollarSign className="h-5 w-5" />
             </span>
           </div>
-          <p className={`safe-number mt-4 text-4xl font-black tracking-tight ${todayProfit >= 0 ? "text-emerald-700" : "text-red-600"}`} title={currency.format(todayProfit)}>
+          <p className={`safe-number mt-3 text-4xl font-black tracking-tight sm:text-5xl ${todayProfit >= 0 ? "text-emerald-700" : "text-red-600"}`} title={currency.format(todayProfit)}>
             {currency.format(todayProfit)}
           </p>
-          <p className={isDark ? "mt-2 text-sm font-bold text-emerald-100" : "mt-2 text-sm font-bold text-emerald-900"}>
-            {dashboardPeriod} net profit
-          </p>
+          <p className={`mt-1 text-sm font-bold ${mutedText}`}>{dashboardPeriod} net profit · {number.format(margin)}% margin</p>
+          <div className="mt-5 h-44">
+            {hasProfitTrend ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={profitTrendData} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="dashNetProfitTrend" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2563EB" stopOpacity={0.5} />
+                      <stop offset="95%" stopColor="#2563EB" stopOpacity={0.04} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "rgba(255,255,255,0.06)" : "#eef2f7"} vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fontWeight: 700, fill: isDark ? "#94a3b8" : "#64748b" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fontWeight: 700, fill: isDark ? "#94a3b8" : "#64748b" }} axisLine={false} tickLine={false} width={64} tickFormatter={(value) => currency.format(value)} />
+                  <Tooltip formatter={(value) => [currency.format(value), "Profit"]} contentStyle={{ borderRadius: 12, border: "none", fontWeight: 700, color: "#0f172a" }} />
+                  <Area type="monotone" dataKey="profit" stroke="#2563EB" strokeWidth={3} fill="url(#dashNetProfitTrend)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className={`flex h-full items-center justify-center rounded-2xl border border-dashed text-center ${isDark ? "border-white/10" : "border-slate-200"}`}>
+                <p className={`max-w-xs text-sm font-semibold ${mutedText}`}>Save daily snapshots to build your profit trend here.</p>
+              </div>
+            )}
+          </div>
         </button>
 
-        <button
-          type="button"
-          onClick={() => goToSource("Profitability")}
-          className={isDark ? "min-w-0 rounded-2xl border border-blue-400/20 bg-blue-500/10 p-6 text-left transition hover:border-blue-300/50" : "min-w-0 rounded-2xl border border-blue-200 bg-blue-50 p-6 text-left transition hover:border-blue-300 hover:bg-blue-100/60"}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-black uppercase tracking-wide text-blue-700">Margin</p>
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white">
-              <BarChart3 className="h-5 w-5" />
-            </span>
+        <div data-tour="dashboard-needs-attention" className={cardClass}>
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-xs font-black uppercase tracking-wide text-red-600">Needs Attention</p>
+            {needsAttention.length > 0 && (
+              <button onClick={() => setActiveTab("Operations")} className="text-sm font-bold text-blue-600">View all</button>
+            )}
           </div>
-          <p className={`safe-number mt-4 text-4xl font-black tracking-tight ${margin >= 0 ? titleText : "text-red-600"}`} title={`${number.format(margin)}%`}>
-            {number.format(margin)}%
-          </p>
-          <p className={isDark ? "mt-2 text-sm font-bold text-blue-100" : "mt-2 text-sm font-bold text-blue-900"}>
-            Profit margin
-          </p>
+          {needsAttention.length === 0 ? (
+            <div className={`flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed py-10 text-center ${isDark ? "border-white/10" : "border-slate-200"}`}>
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700">
+                <CheckCircle2 className="h-5 w-5" />
+              </span>
+              <p className={`text-sm font-black ${titleText}`}>All clear</p>
+              <p className={`text-xs font-semibold ${mutedText}`}>No issues need attention right now.</p>
+            </div>
+          ) : (
+            <div className={`divide-y ${isDark ? "divide-white/10" : "divide-slate-200"}`}>
+              {needsAttention.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button key={item.title} onClick={() => goToSource(item.tab)} className={`flex w-full items-center gap-3 py-3 text-left transition ${isDark ? "hover:bg-white/5" : "hover:bg-blue-50/60"}`}>
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${toneIcon(item.tone)}`}>
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className={`truncate text-sm font-black ${titleText}`}>{item.title}</p>
+                      <p className={`truncate text-xs font-semibold ${mutedText}`}>{item.detail}</p>
+                    </div>
+                    <span className="text-lg text-slate-400">›</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* SECONDARY ROW — revenue, cost, margin, and team readiness */}
+      <div data-tour="dashboard-kpis" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <button onClick={() => goToSource("Profitability")} className={`${cardClass} overflow-hidden text-left transition hover:border-blue-500/50`}>
+          <span className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ${toneIcon("blue")}`}>
+            <DollarSign className="h-6 w-6" />
+          </span>
+          <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Revenue Today</p>
+          <p className="safe-number mt-2 text-3xl font-black text-blue-600" title={currency.format(dashboardRevenue)}>{currency.format(dashboardRevenue)}</p>
         </button>
 
-        <button
-          type="button"
-          onClick={() => goToSource("Claims")}
-          className={isDark ? "min-w-0 rounded-2xl border border-red-400/20 bg-red-500/10 p-6 text-left transition hover:border-red-300/50" : "min-w-0 rounded-2xl border border-red-200 bg-red-50 p-6 text-left transition hover:border-red-300 hover:bg-red-100/60"}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-black uppercase tracking-wide text-red-600">Open Claims</p>
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-red-600 text-white">
-              <ShieldCheck className="h-5 w-5" />
-            </span>
-          </div>
-          <p className="safe-number mt-4 text-4xl font-black tracking-tight text-red-600">
-            {openClaims}
-          </p>
+        <button onClick={() => goToSource("Profitability")} className={`${cardClass} overflow-hidden text-left transition hover:border-blue-500/50`}>
+          <span className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ${toneIcon("amber")}`}>
+            <Calculator className="h-6 w-6" />
+          </span>
+          <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Costs Today</p>
+          <p className="safe-number mt-2 text-3xl font-black text-amber-700" title={currency.format(dashboardCosts)}>{currency.format(dashboardCosts)}</p>
+        </button>
+
+        <button onClick={() => goToSource("Profitability")} className={`${cardClass} overflow-hidden text-left transition hover:border-blue-500/50`}>
+          <span className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ${toneIcon(margin >= 0 ? "green" : "red")}`}>
+            <BarChart3 className="h-6 w-6" />
+          </span>
+          <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Margin</p>
+          <p className={`safe-number mt-2 text-3xl font-black ${margin >= 0 ? "text-emerald-700" : "text-red-600"}`} title={`${number.format(margin)}%`}>{number.format(margin)}%</p>
+        </button>
+
+        <button onClick={() => goToSource("Teams")} className={`${cardClass} overflow-hidden text-left transition hover:border-blue-500/50`}>
+          <span className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ${toneIcon("blue")}`}>
+            <Users className="h-6 w-6" />
+          </span>
+          <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Team Readiness</p>
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-            {renderTrendChip(claimsTrendDelta, { suffix: "", goodIsUp: false })}
-            <p className={isDark ? "text-sm font-bold text-red-100" : "text-sm font-bold text-red-900"}>
-              {currency.format(periodClaimsExposure)} at risk
-            </p>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => goToSource("Teams")}
-          className={isDark ? "min-w-0 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-6 text-left transition hover:border-amber-300/50" : "min-w-0 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-left transition hover:border-amber-300 hover:bg-amber-100/60"}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-black uppercase tracking-wide text-amber-700">Team Readiness</p>
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white">
-              <Users className="h-5 w-5" />
-            </span>
-          </div>
-          <p className={`safe-number mt-4 text-4xl font-black tracking-tight ${titleText}`}>
-            {currentReadiness}%
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <p className={`safe-number text-3xl font-black ${titleText}`}>{currentReadiness}%</p>
             {renderTrendChip(readinessTrendDelta, { suffix: " pts", goodIsUp: true })}
-            <p className={isDark ? "text-sm font-bold text-amber-100" : "text-sm font-bold text-amber-900"}>
-              {photosUploaded} of {activeTeams} teams ready
-            </p>
           </div>
+          <p className={`mt-1 text-xs font-semibold ${mutedText}`}>{photosUploaded} of {activeTeams} teams ready</p>
         </button>
-      </section>
+      </div>
 
       {showDemoActions && (onStartTour || onStartGuidedDemo || (!isDemoMode && onLaunchDemo)) && (
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -1568,283 +1598,88 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
       />
 
 
-      {/* MONEY — revenue, cost, and what the owner keeps */}
+
+      {/* DETAIL ROW — contract performance and recent claims */}
       {!isCleanBlankWorkspace && (
-        <section data-tour="dashboard-money" className="space-y-4">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-blue-600">Money</p>
-              <h2 className={`mt-1 text-xl font-black ${titleText}`}>Revenue, cost, and what you keep</h2>
+        <div className="grid gap-4 xl:grid-cols-2">
+          <div data-tour="dashboard-contract-performance" className={cardClass}>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className={`text-lg font-black ${titleText}`}>Contract Performance</h2>
+              <button onClick={() => setActiveTab("Finance")} className="text-sm font-bold text-blue-600">View all</button>
             </div>
-            <button onClick={() => goToSource("Profitability")} className="text-sm font-bold text-blue-600">Open Profitability</button>
-          </div>
-          {hasProfitTrend && (
-            <div className={cardClass}>
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className={`text-lg font-black ${titleText}`}>Profit Trend</h3>
-                <span className={`text-xs font-bold ${mutedText}`}>Last {profitTrendData.length} snapshots</span>
-              </div>
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={profitTrendData} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="dashProfitTrend" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#2563EB" stopOpacity={0.5} />
-                        <stop offset="95%" stopColor="#2563EB" stopOpacity={0.04} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "rgba(255,255,255,0.06)" : "#eef2f7"} vertical={false} />
-                    <XAxis dataKey="label" tick={{ fontSize: 11, fontWeight: 700, fill: isDark ? "#94a3b8" : "#64748b" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 11, fontWeight: 700, fill: isDark ? "#94a3b8" : "#64748b" }} axisLine={false} tickLine={false} width={70} tickFormatter={(value) => currency.format(value)} />
-                    <Tooltip formatter={(value) => [currency.format(value), "Profit"]} contentStyle={{ borderRadius: 12, border: "none", fontWeight: 700, color: "#0f172a" }} />
-                    <Area type="monotone" dataKey="profit" stroke="#2563EB" strokeWidth={3} fill="url(#dashProfitTrend)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-          <div className="grid gap-4 sm:grid-cols-3">
-            {[
-              ["Revenue", currency.format(dashboardRevenue), "blue", "text-blue-600", DollarSign],
-              ["Costs", currency.format(dashboardCosts), "amber", "text-amber-700", Calculator],
-              ["Net Profit", currency.format(todayProfit), todayProfit >= 0 ? "green" : "red", todayProfit >= 0 ? "text-emerald-700" : "text-red-600", BarChart3],
-            ].map(([label, value, toneKey, toneColor, Icon]) => (
-              <button key={label} onClick={() => goToSource("Profitability")} className={`${cardClass} overflow-hidden text-left transition hover:border-blue-500/50`}>
-                <span className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ${toneIcon(toneKey)}`}>
-                  <Icon className="h-6 w-6" />
-                </span>
-                <p className={`text-sm ${mutedText}`}>{label}</p>
-                <p className={`safe-number mt-2 text-3xl font-black ${toneColor}`} title={value}>{value}</p>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {hasQuickContracts && (
-        <section data-tour="dashboard-saved-contracts" className={cardClass}>
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-blue-600">Saved contracts</p>
-              <h2 className={`mt-1 text-2xl font-black ${titleText}`}>Your contract is on the dashboard</h2>
-              <p className={`mt-2 text-sm font-semibold ${mutedText}`}>
-                These are saved from the setup popup and feed Finance &gt; Profitability.
+            {quickContractCards.length === 0 ? (
+              <p className={`rounded-xl border border-dashed p-5 text-center text-sm font-semibold ${mutedText} ${isDark ? "border-white/10" : "border-slate-200"}`}>
+                Save a contract to see its revenue, profit, and margin here.
               </p>
-            </div>
-            <button
-              onClick={() => setActiveTab("Finance")}
-              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500"
-            >
-              Open Profitability
-            </button>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {quickContractCards.map((contract, index) => (
-              <button
-                key={contract.id}
-                data-tour={`dashboard-contract-card-${index}`}
-                onClick={() => setActiveTab("Finance")}
-                className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-blue-500/50" : "rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-blue-300 hover:bg-white"}
-              >
-                <p className={`truncate text-lg font-black ${titleText}`}>{contract.name}</p>
-                <p className={`mt-1 text-xs font-black uppercase tracking-wide ${mutedText}`}>{contract.routes || 0} routes / week</p>
-                <div className={`mt-4 grid grid-cols-2 gap-3 border-t pt-4 ${rowBorder}`}>
-                  <div>
-                    <p className={`text-[11px] font-black uppercase tracking-wide ${mutedText}`}>Revenue</p>
-                    <p className={`safe-number mt-1 text-lg font-black ${titleText}`} title={currency.format(contract.revenue)}>{currency.format(contract.revenue)}</p>
-                  </div>
-                  <div>
-                    <p className={`text-[11px] font-black uppercase tracking-wide ${mutedText}`}>Profit</p>
-                    <p className={`safe-number mt-1 text-lg font-black ${contract.netProfit >= 0 ? "text-emerald-700" : "text-red-600"}`} title={currency.format(contract.netProfit)}>{currency.format(contract.netProfit)}</p>
-                  </div>
-                </div>
-                <p className={`mt-3 text-sm font-black ${contract.margin >= 0 ? "text-emerald-700" : "text-red-600"}`}>
-                  {number.format(contract.margin)}% margin
-                </p>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-
-
-      {/* RISK — claims and money at risk */}
-      {!isCleanBlankWorkspace && (
-        <section data-tour="dashboard-risk" className="space-y-4">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-red-600">Risk</p>
-              <h2 className={`mt-1 text-xl font-black ${titleText}`}>Claims and money at risk</h2>
-            </div>
-            <button onClick={() => setActiveTab("Claims")} className="text-sm font-bold text-blue-600">View All Claims</button>
-          </div>
-          <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
-            <button
-              type="button"
-              onClick={() => goToSource("Claims")}
-              className={isDark ? "rounded-2xl border border-red-400/20 bg-red-500/10 p-5 text-left transition hover:border-red-300/50" : "rounded-2xl border border-red-200 bg-red-50 p-5 text-left transition hover:border-red-300 hover:bg-red-100/60"}
-            >
-              <p className="text-xs font-black uppercase tracking-wide text-red-600">Claim Exposure</p>
-              <p className="safe-number mt-3 text-4xl font-black tracking-tight text-red-600" title={currency.format(periodClaimsExposure)}>
-                {currency.format(periodClaimsExposure)}
-              </p>
-              <p className={isDark ? "mt-2 text-sm font-bold text-red-100" : "mt-2 text-sm font-bold text-red-900"}>
-                {openClaims} open claim{openClaims === 1 ? "" : "s"} need review
-              </p>
-              {claimStatusEntries.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {claimStatusEntries.map(([status, count]) => (
-                    <span key={status} className={isDark ? "rounded-full bg-white/10 px-2.5 py-1 text-xs font-black text-slate-200" : "rounded-full bg-white px-2.5 py-1 text-xs font-black text-slate-700 shadow-sm"}>
-                      {status}: {count}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </button>
-
-            <div className={cardClass}>
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className={`text-lg font-black ${titleText}`}>Recent Claims</h3>
-                <button onClick={() => setActiveTab("Claims")} className="text-sm font-bold text-blue-600">View All</button>
-              </div>
-              {recentClaims.length === 0 ? (
-                <p className={`rounded-xl border border-dashed p-5 text-center text-sm font-semibold ${mutedText} ${isDark ? "border-white/10" : "border-slate-200"}`}>
-                  No claims yet. New claims will show up here.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[460px] text-left text-sm">
-                    <thead className={`border-b ${rowBorder}`}>
-                      <tr className={`text-xs uppercase tracking-wide ${mutedText}`}>
-                        <th className="py-3">Type</th>
-                        <th className="py-3 text-right">Amount</th>
-                        <th className="py-3">Status</th>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[460px] text-left text-sm">
+                  <thead className={`border-b ${rowBorder}`}>
+                    <tr className={`text-xs uppercase tracking-wide ${mutedText}`}>
+                      <th className="py-3">Contract</th>
+                      <th className="py-3 text-right">Revenue</th>
+                      <th className="py-3 text-right">Profit</th>
+                      <th className="py-3 text-right">Margin</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {quickContractCards.map((contract) => (
+                      <tr key={contract.id} onClick={() => setActiveTab("Finance")} className={`cursor-pointer border-b transition ${rowBorder} ${isDark ? "hover:bg-white/5" : "hover:bg-blue-50/60"}`}>
+                        <td className={`py-3 font-bold ${titleText}`}>{contract.name}</td>
+                        <td className={`py-3 text-right font-semibold ${titleText}`}>{currency.format(contract.revenue)}</td>
+                        <td className={`py-3 text-right font-black ${contract.netProfit >= 0 ? "text-emerald-700" : "text-red-600"}`}>{currency.format(contract.netProfit)}</td>
+                        <td className={`py-3 text-right font-black ${contract.margin >= 0 ? "text-emerald-700" : "text-red-600"}`}>{number.format(contract.margin)}%</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {recentClaims.map((claim) => (
-                        <tr key={claim.id} onClick={() => goToSource("Claims")} className={`cursor-pointer border-b transition ${rowBorder} ${isDark ? "hover:bg-white/5" : "hover:bg-blue-50/60"}`}>
-                          <td className={`py-3 font-semibold ${titleText}`}>{claim.type}</td>
-                          <td className="py-3 text-right font-black text-red-600">{currency.format(claim.amount)}</td>
-                          <td className="py-3">
-                            <span className={claim.status === "Open" ? "rounded-full bg-red-500/10 px-2 py-1 text-xs font-bold text-red-600" : "rounded-full bg-amber-500/10 px-2 py-1 text-xs font-bold text-amber-700"}>
-                              {claim.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* OPERATIONS — team and route status */}
-      {!isCleanBlankWorkspace && (
-        <section data-tour="dashboard-operations" className="space-y-4">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-blue-600">Operations</p>
-              <h2 className={`mt-1 text-xl font-black ${titleText}`}>Team and route status</h2>
-            </div>
-            <button onClick={() => setActiveTab("Operations")} className="text-sm font-bold text-blue-600">Open Operations</button>
-          </div>
-          <div className="grid gap-4 xl:grid-cols-2">
-            <button onClick={() => goToSource("Teams")} className={`${cardClass} text-left transition hover:border-blue-500/50`}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className={`text-lg font-black ${titleText}`}>Team Readiness</h3>
-                  <p className={`mt-1 text-sm ${mutedText}`}>Daily photo proof by team.</p>
-                </div>
-                <p className="shrink-0 text-4xl font-black text-emerald-700">{currentReadiness}%</p>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              {teams.length === 0 ? (
-                <p className={`mt-4 rounded-xl border border-dashed p-4 text-center text-sm font-semibold ${mutedText} ${isDark ? "border-white/10" : "border-slate-200"}`}>
-                  Add a team to track daily photo proof.
-                </p>
-              ) : (
-                <div className={`mt-4 divide-y ${isDark ? "divide-white/10" : "divide-slate-200"}`}>
-                  {teams.slice(0, 5).map((team) => {
-                    const ready = team.photoStatus === "Uploaded";
-                    return (
-                      <div key={team.id || team.name} className="flex items-center justify-between gap-3 py-2.5">
-                        <p className={`min-w-0 truncate text-sm font-bold ${titleText}`}>{team.name}</p>
-                        <span className={ready ? "shrink-0 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-black text-emerald-700" : "shrink-0 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-black text-amber-700"}>
-                          {ready ? "Ready" : "Missing photo"}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  {teams.length > 5 && (
-                    <p className={`pt-2.5 text-xs font-bold ${mutedText}`}>+{teams.length - 5} more teams</p>
-                  )}
-                </div>
-              )}
-            </button>
+            )}
+          </div>
 
-            <div className={cardClass}>
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className={`text-lg font-black ${titleText}`}>Route Health</h3>
-                <button onClick={() => setActiveTab("Profitability")} className="text-sm font-bold text-blue-600">View Details</button>
+          <div data-tour="dashboard-recent-claims" className={cardClass}>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className={`text-lg font-black ${titleText}`}>Recent Claims</h2>
+              <button onClick={() => setActiveTab("Claims")} className="text-sm font-bold text-blue-600">View all</button>
+            </div>
+            {recentClaims.length === 0 ? (
+              <p className={`rounded-xl border border-dashed p-5 text-center text-sm font-semibold ${mutedText} ${isDark ? "border-white/10" : "border-slate-200"}`}>
+                No claims yet. New claims will show up here.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[420px] text-left text-sm">
+                  <thead className={`border-b ${rowBorder}`}>
+                    <tr className={`text-xs uppercase tracking-wide ${mutedText}`}>
+                      <th className="py-3">Type</th>
+                      <th className="py-3 text-right">Amount</th>
+                      <th className="py-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentClaims.map((claim) => (
+                      <tr key={claim.id} onClick={() => goToSource("Claims")} className={`cursor-pointer border-b transition ${rowBorder} ${isDark ? "hover:bg-white/5" : "hover:bg-blue-50/60"}`}>
+                        <td className={`py-3 font-semibold ${titleText}`}>{claim.type}</td>
+                        <td className="py-3 text-right font-black text-red-600">{currency.format(claim.amount)}</td>
+                        <td className="py-3">
+                          <span className={claim.status === "Open" ? "rounded-full bg-red-500/10 px-2 py-1 text-xs font-bold text-red-600" : claim.status === "Closed" ? "rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-bold text-emerald-700" : "rounded-full bg-amber-500/10 px-2 py-1 text-xs font-bold text-amber-700"}>
+                            {claim.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              {routeHealth.length === 0 ? (
-                <p className={`rounded-xl border border-dashed p-5 text-center text-sm font-semibold ${mutedText} ${isDark ? "border-white/10" : "border-slate-200"}`}>
-                  Save a contract to see route health.
-                </p>
-              ) : (
-                <div className={`divide-y ${isDark ? "divide-white/10" : "divide-slate-200"}`}>
-                  {routeHealth.map(([label, value, status]) => (
-                    <button key={label} onClick={() => goToSource("Profitability")} className={`flex w-full items-center justify-between py-3 text-left transition ${isDark ? "hover:bg-white/5" : "hover:bg-blue-50/60"}`}>
-                      <p className={`text-sm font-semibold ${mutedText}`}>{label}</p>
-                      <div className="flex items-center gap-3">
-                        <p className={status === "Good" ? `font-black ${titleText}` : "font-black text-red-600"}>{value}</p>
-                        <span className={status === "Good" ? "h-3 w-3 rounded-full bg-emerald-600" : "h-3 w-3 rounded-full bg-red-600"} />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            )}
           </div>
-        </section>
+        </div>
       )}
 
-      {/* ACTIONS — what needs attention today */}
-      {!isCleanBlankWorkspace && needsAttention.length > 0 && (
-        <section data-tour="dashboard-actions" className="space-y-4">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-amber-700">Today's Actions</p>
-              <h2 className={`mt-1 text-xl font-black ${titleText}`}>What needs attention first</h2>
-            </div>
-            <button onClick={() => setActiveTab("Compliance")} className="text-sm font-bold text-blue-600">View All Issues</button>
-          </div>
-          <div className={cardClass}>
-            <div className={`divide-y ${isDark ? "divide-white/10" : "divide-slate-200"}`}>
-              {needsAttention.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button key={item.title} onClick={() => goToSource(item.tab)} className={`flex w-full items-center gap-4 py-3 text-left transition ${isDark ? "hover:bg-white/5" : "hover:bg-blue-50/60"}`}>
-                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${toneIcon(item.tone)}`}>
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className={`font-bold ${titleText}`}>{item.title}</p>
-                      <p className={`text-sm ${mutedText}`}>{item.detail}</p>
-                    </div>
-                    <span className="text-xl text-slate-400">›</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
+
+
+
+
 
       <ContractModal
         isDark={isDark}
