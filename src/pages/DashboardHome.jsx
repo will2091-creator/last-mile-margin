@@ -269,6 +269,67 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
   const recentClaims = claims.slice(0, 4);
 
+  // Real period-over-period trend from saved snapshots (honest, not synthetic).
+  const chronologicalSavedDays = Array.isArray(savedDays)
+    ? [...savedDays]
+      .filter((day) => day && Number.isFinite(Number(day.profit)))
+      .sort((a, b) => new Date(a.savedAt || 0) - new Date(b.savedAt || 0))
+    : [];
+  // Compare to the most recent saved snapshot (or the one before the snapshot being viewed).
+  // Only metrics that share a data source with snapshots get a delta, so the numbers stay honest:
+  // open claims and team readiness are point-in-time counts; profit/margin trend lives in the chart below.
+  const comparisonSnapshot = (() => {
+    if (!chronologicalSavedDays.length) return null;
+    if (savedDaySnapshot) {
+      const index = chronologicalSavedDays.findIndex((day) => day.id === savedDaySnapshot.id);
+      return index > 0 ? chronologicalSavedDays[index - 1] : null;
+    }
+    return chronologicalSavedDays[chronologicalSavedDays.length - 1];
+  })();
+  const currentReadiness = Math.round((photosUploaded / Math.max(activeTeams, 1)) * 100);
+  const previousReadiness = comparisonSnapshot && Number(comparisonSnapshot.teamsCount) > 0
+    ? Math.round((Number(comparisonSnapshot.photosUploaded || 0) / Math.max(Number(comparisonSnapshot.teamsCount), 1)) * 100)
+    : null;
+  const pointChange = (current, previous) =>
+    previous === null || previous === undefined || !Number.isFinite(previous) ? null : current - previous;
+  const claimsTrendDelta = comparisonSnapshot ? pointChange(openClaims, Number(comparisonSnapshot.openClaims)) : null;
+  const readinessTrendDelta = previousReadiness !== null ? pointChange(currentReadiness, previousReadiness) : null;
+  const comparisonLabel = comparisonSnapshot ? `vs ${comparisonSnapshot.label || "last snapshot"}` : "";
+
+  // Profit trend chart series (chronological, most recent 8 snapshots).
+  const profitTrendData = chronologicalSavedDays.slice(-8).map((day, index) => ({
+    label: day.label || day.date || `#${index + 1}`,
+    profit: Number(day.profit || 0),
+  }));
+  const hasProfitTrend = profitTrendData.length >= 2;
+
+  // Claims grouped by status (for the Risk section detail).
+  const claimStatusEntries = Object.entries(
+    claims.reduce((acc, claim) => {
+      const key = claim.status || "Open";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  );
+
+  const renderTrendChip = (delta, { suffix = "%", goodIsUp = true } = {}) => {
+    if (delta === null || delta === undefined || !Number.isFinite(delta)) return null;
+    const flat = Math.abs(delta) < 0.05;
+    const isUp = delta > 0;
+    const good = flat ? null : goodIsUp ? isUp : !isUp;
+    const arrow = flat ? "→" : isUp ? "↑" : "↓";
+    const toneClass = flat
+      ? isDark ? "bg-white/10 text-slate-300" : "bg-slate-100 text-slate-600"
+      : good
+        ? isDark ? "bg-emerald-500/15 text-emerald-200" : "bg-emerald-500/10 text-emerald-700"
+        : isDark ? "bg-red-500/15 text-red-200" : "bg-red-500/10 text-red-600";
+    return (
+      <span title={comparisonLabel} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-black ${toneClass}`}>
+        {arrow} {number.format(Math.abs(flat ? 0 : delta))}{suffix}
+      </span>
+    );
+  };
+
   const hasQuickImports = quickImports.length > 0;
   const hasExpenseSetup = quickContracts.some((row) =>
     Number(row.labor || 0) +
@@ -1329,9 +1390,6 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
               </span>
             </div>
             <h1 className={`text-3xl font-black leading-none tracking-tight sm:text-4xl ${titleText}`}>Dashboard</h1>
-            <p className={`mt-3 max-w-2xl text-sm leading-6 sm:text-base ${mutedText}`}>
-              Today’s action list only. Use Operations for field work, Finance for money detail, and Reports for history.
-            </p>
             {savedDaySnapshot && (
               <p className={isDark ? "mt-3 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-200" : "mt-3 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700"}>
                 Viewing daily history: {savedDaySnapshot.label}
@@ -1341,32 +1399,6 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
         </div>
 
         <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
-          {showDemoActions && onStartTour && (
-            <TakeTourButton onClick={onStartTour} isDark={isDark} className="w-full sm:w-auto" />
-          )}
-
-          {showDemoActions && onStartGuidedDemo && (
-            <button
-              data-tour="dashboard-interactive-demo"
-              type="button"
-              onClick={onStartGuidedDemo}
-              className={isDark ? "w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500 sm:w-auto" : "w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500 sm:w-auto"}
-            >
-              Interactive Demo
-            </button>
-          )}
-
-          {showDemoActions && !isDemoMode && onLaunchDemo && (
-            <button
-              data-tour="dashboard-launch-demo"
-              type="button"
-              onClick={() => onLaunchDemo({ reset: false })}
-              className={isDark ? "w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/15 sm:w-auto" : "w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-100 sm:w-auto"}
-            >
-              Launch Demo Workspace
-            </button>
-          )}
-
           <div data-tour="dashboard-period-tabs" className={isDark ? "flex w-full overflow-x-auto rounded-2xl bg-white/5 p-1 sm:w-auto" : "flex w-full overflow-x-auto rounded-2xl bg-slate-100 p-1 sm:w-auto"}>
             {["Day", "Week", "Month", "Qtr", "Year"].map((period) => (
               <button
@@ -1450,9 +1482,12 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           <p className="safe-number mt-4 text-4xl font-black tracking-tight text-red-600">
             {openClaims}
           </p>
-          <p className={isDark ? "mt-2 text-sm font-bold text-red-100" : "mt-2 text-sm font-bold text-red-900"}>
-            {currency.format(periodClaimsExposure)} at risk
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+            {renderTrendChip(claimsTrendDelta, { suffix: "", goodIsUp: false })}
+            <p className={isDark ? "text-sm font-bold text-red-100" : "text-sm font-bold text-red-900"}>
+              {currency.format(periodClaimsExposure)} at risk
+            </p>
+          </div>
         </button>
 
         <button
@@ -1467,13 +1502,45 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
             </span>
           </div>
           <p className={`safe-number mt-4 text-4xl font-black tracking-tight ${titleText}`}>
-            {Math.round((photosUploaded / Math.max(activeTeams, 1)) * 100)}%
+            {currentReadiness}%
           </p>
-          <p className={isDark ? "mt-2 text-sm font-bold text-amber-100" : "mt-2 text-sm font-bold text-amber-900"}>
-            {photosUploaded} of {activeTeams} teams ready
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+            {renderTrendChip(readinessTrendDelta, { suffix: " pts", goodIsUp: true })}
+            <p className={isDark ? "text-sm font-bold text-amber-100" : "text-sm font-bold text-amber-900"}>
+              {photosUploaded} of {activeTeams} teams ready
+            </p>
+          </div>
         </button>
       </section>
+
+      {showDemoActions && (onStartTour || onStartGuidedDemo || (!isDemoMode && onLaunchDemo)) && (
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <span className={`text-sm font-bold ${mutedText}`}>Just exploring?</span>
+          {onStartTour && (
+            <TakeTourButton onClick={onStartTour} isDark={isDark} className="w-full sm:w-auto" />
+          )}
+          {onStartGuidedDemo && (
+            <button
+              data-tour="dashboard-interactive-demo"
+              type="button"
+              onClick={onStartGuidedDemo}
+              className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500 sm:w-auto"
+            >
+              Interactive Demo
+            </button>
+          )}
+          {!isDemoMode && onLaunchDemo && (
+            <button
+              data-tour="dashboard-launch-demo"
+              type="button"
+              onClick={() => onLaunchDemo({ reset: false })}
+              className={isDark ? "w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/15 sm:w-auto" : "w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-100 sm:w-auto"}
+            >
+              Launch Demo Workspace
+            </button>
+          )}
+        </div>
+      )}
 
       <SetupWizard
         isDark={isDark}
@@ -1511,6 +1578,31 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
             </div>
             <button onClick={() => goToSource("Profitability")} className="text-sm font-bold text-blue-600">Open Profitability</button>
           </div>
+          {hasProfitTrend && (
+            <div className={cardClass}>
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className={`text-lg font-black ${titleText}`}>Profit Trend</h3>
+                <span className={`text-xs font-bold ${mutedText}`}>Last {profitTrendData.length} snapshots</span>
+              </div>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={profitTrendData} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="dashProfitTrend" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#2563EB" stopOpacity={0.5} />
+                        <stop offset="95%" stopColor="#2563EB" stopOpacity={0.04} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "rgba(255,255,255,0.06)" : "#eef2f7"} vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fontWeight: 700, fill: isDark ? "#94a3b8" : "#64748b" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fontWeight: 700, fill: isDark ? "#94a3b8" : "#64748b" }} axisLine={false} tickLine={false} width={70} tickFormatter={(value) => currency.format(value)} />
+                    <Tooltip formatter={(value) => [currency.format(value), "Profit"]} contentStyle={{ borderRadius: 12, border: "none", fontWeight: 700, color: "#0f172a" }} />
+                    <Area type="monotone" dataKey="profit" stroke="#2563EB" strokeWidth={3} fill="url(#dashProfitTrend)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-3">
             {[
               ["Revenue", currency.format(dashboardRevenue), "blue", "text-blue-600", DollarSign],
@@ -1601,6 +1693,15 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
               <p className={isDark ? "mt-2 text-sm font-bold text-red-100" : "mt-2 text-sm font-bold text-red-900"}>
                 {openClaims} open claim{openClaims === 1 ? "" : "s"} need review
               </p>
+              {claimStatusEntries.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {claimStatusEntries.map(([status, count]) => (
+                    <span key={status} className={isDark ? "rounded-full bg-white/10 px-2.5 py-1 text-xs font-black text-slate-200" : "rounded-full bg-white px-2.5 py-1 text-xs font-black text-slate-700 shadow-sm"}>
+                      {status}: {count}
+                    </span>
+                  ))}
+                </div>
+              )}
             </button>
 
             <div className={cardClass}>
@@ -1655,12 +1756,35 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           </div>
           <div className="grid gap-4 xl:grid-cols-2">
             <button onClick={() => goToSource("Teams")} className={`${cardClass} text-left transition hover:border-blue-500/50`}>
-              <h3 className={`text-lg font-black ${titleText}`}>Team Readiness</h3>
-              <p className={`mt-1 text-sm ${mutedText}`}>Daily photo and team status.</p>
-              <div className="mt-5 flex items-center justify-between gap-3">
-                <p className="text-4xl font-black text-emerald-700">{Math.round((photosUploaded / Math.max(activeTeams, 1)) * 100)}%</p>
-                <p className={`text-sm ${mutedText}`}>{photosUploaded} of {activeTeams} teams uploaded photos</p>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className={`text-lg font-black ${titleText}`}>Team Readiness</h3>
+                  <p className={`mt-1 text-sm ${mutedText}`}>Daily photo proof by team.</p>
+                </div>
+                <p className="shrink-0 text-4xl font-black text-emerald-700">{currentReadiness}%</p>
               </div>
+              {teams.length === 0 ? (
+                <p className={`mt-4 rounded-xl border border-dashed p-4 text-center text-sm font-semibold ${mutedText} ${isDark ? "border-white/10" : "border-slate-200"}`}>
+                  Add a team to track daily photo proof.
+                </p>
+              ) : (
+                <div className={`mt-4 divide-y ${isDark ? "divide-white/10" : "divide-slate-200"}`}>
+                  {teams.slice(0, 5).map((team) => {
+                    const ready = team.photoStatus === "Uploaded";
+                    return (
+                      <div key={team.id || team.name} className="flex items-center justify-between gap-3 py-2.5">
+                        <p className={`min-w-0 truncate text-sm font-bold ${titleText}`}>{team.name}</p>
+                        <span className={ready ? "shrink-0 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-black text-emerald-700" : "shrink-0 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-black text-amber-700"}>
+                          {ready ? "Ready" : "Missing photo"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {teams.length > 5 && (
+                    <p className={`pt-2.5 text-xs font-bold ${mutedText}`}>+{teams.length - 5} more teams</p>
+                  )}
+                </div>
+              )}
             </button>
 
             <div className={cardClass}>
