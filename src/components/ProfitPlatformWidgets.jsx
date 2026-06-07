@@ -432,7 +432,7 @@ export function DocumentVaultTable({ documents, isDark }) {
                 <div className="mx-auto min-h-[680px] max-w-2xl rounded-2xl bg-white p-8 text-slate-950 shadow-xl">
                   <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-6">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-700">Final Mile Margin</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-700">Last Mile Margin</p>
                       <h4 className="mt-3 text-3xl font-black leading-tight">{selectedDocument.name}</h4>
                       <p className="mt-2 text-sm font-semibold text-slate-500">Mock stored document preview</p>
                     </div>

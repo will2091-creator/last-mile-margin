@@ -63,7 +63,7 @@ export default class ErrorBoundary extends React.Component {
           onClick={isPage ? this.handleTryAgain : this.handleReload}
           className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-sm shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-500"
         >
-          {isPage ? "Try again" : "Reload Final Mile Margin"}
+          {isPage ? "Try again" : "Reload Last Mile Margin"}
         </button>
         {detail && (
           <pre className={`mt-4 max-h-40 overflow-auto rounded-lg p-3 text-left font-mono text-[11px] leading-5 ${isDark ? "bg-slate-950 text-red-400" : "bg-slate-50 text-red-600"}`}>

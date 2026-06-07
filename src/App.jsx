@@ -869,7 +869,7 @@ export default function App() {
 
   const exportSummary = () => {
     const summary = [
-      "Final Mile Margin Summary",
+      "Last Mile Margin Summary",
       `Scenario: ${form.scenarioName}`,
       "",
       `Revenue: ${currency.format(results.totalRevenue)}`,

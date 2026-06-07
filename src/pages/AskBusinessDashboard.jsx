@@ -903,7 +903,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
         <div className="flex items-start gap-3">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
           <p className={isDark ? "text-sm font-semibold leading-6 text-amber-100" : "text-sm font-semibold leading-6 text-amber-900"}>
-            Ask My Business answers from the app data currently loaded in Final Mile Margin. Add new claims, routes, teams, and contract numbers to make the answers sharper.
+            Ask My Business answers from the app data currently loaded in Last Mile Margin. Add new claims, routes, teams, and contract numbers to make the answers sharper.
           </p>
         </div>
       </div>

@@ -346,7 +346,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
     });
     const commands = [
       "0.02 0.05 0.15 rg",
-      "BT /F2 24 Tf 54 742 Td (Final Mile Margin) Tj ET",
+      "BT /F2 24 Tf 54 742 Td (Last Mile Margin) Tj ET",
       "0.10 0.38 0.95 rg",
       "BT /F2 13 Tf 54 716 Td (Owner-Ready Performance Report) Tj ET",
       "0.02 0.05 0.15 rg",
@@ -418,7 +418,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
     });
 
     commands.push("0.36 0.43 0.54 rg");
-    commands.push("BT /F1 9 Tf 54 54 Td (Generated from Final Mile Margin. Verify source records before sharing outside the business.) Tj ET");
+    commands.push("BT /F1 9 Tf 54 54 Td (Generated from Last Mile Margin. Verify source records before sharing outside the business.) Tj ET");
 
     const stream = commands.join("\n");
     const encoder = new TextEncoder();

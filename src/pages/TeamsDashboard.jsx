@@ -474,7 +474,7 @@ function TeamsDashboard({ teams, setTeams, claims, isDark = true }) {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="mb-2 text-sm font-semibold text-blue-400">Final Mile Margin</p>
+          <p className="mb-2 text-sm font-semibold text-blue-400">Last Mile Margin</p>
           <h1 className="text-3xl font-black tracking-tight sm:text-5xl">People Dashboard</h1>
           <p className="mt-3 max-w-3xl text-slate-400">
             Track each driver or helper as an individual, upload their daily photo, then pair people side by side when

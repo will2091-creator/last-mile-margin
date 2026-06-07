@@ -771,7 +771,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     <div className={pageClass}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm font-semibold text-blue-600">Final Mile Margin</p>
+          <p className="text-sm font-semibold text-blue-600">Last Mile Margin</p>
           <h1 className={`mt-1 text-3xl font-black tracking-tight sm:text-5xl ${titleText}`}>Claims Dashboard</h1>
           <p className={`mt-3 max-w-3xl text-sm sm:text-base ${mutedText}`}>
             Track penalty claims, cargo claims, property claims, preventability, and profit impact.
