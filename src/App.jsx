@@ -86,6 +86,7 @@ const groupedTabs = {
   Claims: ["Operations", "Claims"],
   Teams: ["Operations", "Teams"],
   Compliance: ["Operations", "Compliance"],
+  Dispatch: ["Operations", "Dispatch"],
   Profitability: ["Finance", "Profitability"],
   Receipts: ["Finance", "Receipts"],
   Contracts: ["Finance", "Contracts"],

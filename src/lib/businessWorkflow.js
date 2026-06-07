@@ -14,6 +14,7 @@ export const businessWorkflowSteps = [
     id: "contracts",
     label: "Contracts",
     tab: "Contracts",
+    parentTab: "Finance",
     Icon: BriefcaseBusiness,
     purpose: "Set the customer terms before any margin math runs.",
     data: "Retailer, route pay, stop pay, weekly route count, claim terms, renewal dates.",
@@ -24,6 +25,7 @@ export const businessWorkflowSteps = [
     id: "teams",
     label: "Teams",
     tab: "Teams",
+    parentTab: "Operations",
     Icon: Users,
     purpose: "Define who is doing the route work.",
     data: "Drivers, helpers, trucks, route assignments, readiness, daily photo requirements.",
@@ -32,8 +34,9 @@ export const businessWorkflowSteps = [
   },
   {
     id: "operations",
-    label: "Operations",
-    tab: "Operations",
+    label: "Dispatch",
+    tab: "Dispatch",
+    parentTab: "Operations",
     Icon: Truck,
     purpose: "Run the daily field workflow.",
     data: "Route health, team readiness, dispatch blockers, photo proof, active work.",
@@ -44,16 +47,18 @@ export const businessWorkflowSteps = [
     id: "claims",
     label: "Claims",
     tab: "Claims",
+    parentTab: "Operations",
     Icon: FileText,
     purpose: "Control the money leaks from damage, disputes, and chargebacks.",
     data: "Open claims, risk level, amount, driver assigned, evidence needed, dispute status.",
     decision: "Know what to dispute, resolve, or reserve against margin.",
-    dependsOn: "Operations",
+    dependsOn: "Dispatch",
   },
   {
     id: "receipts",
     label: "Receipts",
     tab: "Receipts",
+    parentTab: "Finance",
     Icon: ReceiptText,
     purpose: "Prove the costs that reduce margin.",
     data: "Fuel, tolls, tools, parking, maintenance, repairs, supplies.",
@@ -64,6 +69,7 @@ export const businessWorkflowSteps = [
     id: "profitability",
     label: "Profitability",
     tab: "Profitability",
+    parentTab: "Finance",
     Icon: Calculator,
     purpose: "Turn revenue, labor, expenses, and claims into net margin.",
     data: "Revenue, labor, fuel, truck insurance, maintenance, claims, profit per stop and mile.",
@@ -74,6 +80,7 @@ export const businessWorkflowSteps = [
     id: "reports",
     label: "Reports",
     tab: "Reports",
+    parentTab: "Reports",
     Icon: ClipboardCheck,
     purpose: "Review history and turn daily data into decisions.",
     data: "Profit snapshots, claims reports, route reports, team reports, PDF exports.",
@@ -84,6 +91,7 @@ export const businessWorkflowSteps = [
     id: "ask",
     label: "Ask AI",
     tab: "Ask",
+    parentTab: "Ask",
     Icon: Bot,
     purpose: "Ask business questions after the system has data.",
     data: "Contracts, teams, claims, receipts, profitability, reports, and saved history.",
@@ -114,7 +122,7 @@ export function getWorkflowActiveStep({ activeTab, activeOperationsTab, activeFi
   if (activeTab === "Operations") {
     if (activeOperationsTab === "Claims") return "claims";
     if (activeOperationsTab === "Teams") return "teams";
-    return "operations";
+    return "operations"; // Dispatch and other sub-tabs all map to the operations step
   }
 
   if (activeTab === "Finance") {

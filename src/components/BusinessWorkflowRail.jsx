@@ -126,6 +126,11 @@ export default function BusinessWorkflowRail({
                       {index + 1}. {index === 0 ? "Starting point" : `After ${step.dependsOn}`}
                     </span>
                     <span className="block truncate text-sm font-black">{step.label}</span>
+                    {step.parentTab && (
+                      <span className={isActive ? "mt-0.5 block text-[10px] font-bold text-blue-200" : isDark ? "mt-0.5 block text-[10px] font-bold text-slate-600" : "mt-0.5 block text-[10px] font-bold text-slate-400"}>
+                        Opens {step.parentTab} tab
+                      </span>
+                    )}
                   </span>
                 </span>
                 {isComplete && (
