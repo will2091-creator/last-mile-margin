@@ -9,6 +9,7 @@ import {
   Camera,
   CartesianGrid,
   CheckCircle2,
+  ClipboardCheck,
   currency,
   defaultSettings,
   DollarSign,
@@ -45,6 +46,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   const claimsExposure = claims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
 
   const [dashboardPeriod, setDashboardPeriod] = useState("Day");
+  const [setupExpanded, setSetupExpanded] = useState(false);
   const contractStorageKey = isDemoMode ? "finalMileDemoRollupRows" : isBlankDemo ? "finalMileBlankDemoRollupRows" : "finalMileRollupRows";
   const importStorageKey = isDemoMode ? "finalMileDemoOnboardingImports" : isBlankDemo ? "finalMileBlankDemoOnboardingImports" : "finalMileOnboardingImports";
   const emptyContractDraft = {
@@ -712,6 +714,11 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   const setupIsComplete = setupCompleteCount === setupSteps.length;
   const setupNextStep = setupSteps.find((step) => !step.complete && !step.skipped) || setupSteps.find((step) => !step.complete) || setupSteps[setupSteps.length - 1];
   const showGuidedSetup = !setupIsComplete && (isBlankDemo || !hasStartedWorkspace || setupCompleteCount > 0 || setupSkippedCount > 0);
+  // Once the contractor has started setup, demote the full launch center to a
+  // compact progress strip so the dashboard leads with business numbers, not a
+  // wizard. Brand-new/empty workspaces still get the full guided experience.
+  const showFullWizard = showGuidedSetup && (setupCompleteCount === 0 || setupExpanded);
+  const showCompactSetup = showGuidedSetup && !showFullWizard;
   const setupTourTargets = {
     profile: "settings",
     contract: "contracts",
@@ -957,9 +964,51 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
         </button>
       </div>
 
+      {showCompactSetup && (
+        <div className={`${cardClass} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">
+              <ClipboardCheck className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className={`text-sm font-black ${titleText}`}>Finish setting up your workspace</p>
+              <p className={`mt-0.5 text-xs font-bold ${mutedText}`}>
+                {setupCompleteCount} of {setupSteps.length} steps done · Next: {setupNextStep?.title || "Review setup"}
+              </p>
+              <div className={isDark ? "mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-white/10" : "mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-slate-200"}>
+                <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${setupPercent}%` }} />
+              </div>
+            </div>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <button
+              onClick={() => setSetupExpanded(true)}
+              className={isDark ? "rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-slate-200 hover:bg-white/5" : "rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"}
+            >
+              View all steps
+            </button>
+            <button
+              onClick={setupNextStep?.onClick}
+              className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showFullWizard && setupExpanded && setupCompleteCount > 0 && (
+        <button
+          onClick={() => setSetupExpanded(false)}
+          className={isDark ? "text-xs font-black text-blue-300 hover:underline" : "text-xs font-black text-blue-600 hover:underline"}
+        >
+          ← Collapse setup
+        </button>
+      )}
+
       <SetupWizard
         isDark={isDark}
-        showGuidedSetup={showGuidedSetup}
+        showGuidedSetup={showFullWizard}
         isDemoMode={isDemoMode}
         setupNextStep={setupNextStep}
         sharedNextAction={sharedNextAction}

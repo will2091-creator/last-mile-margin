@@ -36,6 +36,24 @@ export default function SyncConfidencePanel({
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
   const titleText = isDark ? "text-white" : "text-slate-950";
 
+  // When everything is synced and there's nothing to act on, collapse to a
+  // single reassurance line instead of a full status card — keep the dashboard
+  // leading with business numbers, not chrome.
+  const isHealthy = overallTone === "green";
+  if (isHealthy) {
+    return (
+      <section data-tour="sync-confidence" className={`${shellClass} flex items-center gap-3 py-2.5`}>
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${iconClass}`}>
+          <Icon className="h-4 w-4" />
+        </span>
+        <p className={`min-w-0 flex-1 truncate text-xs font-bold ${mutedText}`}>
+          <span className={`font-black ${titleText}`}>All synced.</span> Workspace, claims, and team data are saved and backed up to Supabase.
+        </p>
+        <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-black text-emerald-700">Ready</span>
+      </section>
+    );
+  }
+
   return (
     <section data-tour="sync-confidence" className={shellClass}>
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
