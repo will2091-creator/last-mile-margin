@@ -1,6 +1,19 @@
 -- ===========================================================================
 -- New-user workspace provisioning (enables the Contractor Launch Hub funnel)
 -- ===========================================================================
+-- ⚠️ DO NOT RUN AS-IS — NEEDS SCHEMA CORRECTION (discovered 2026-06-07).
+-- The columns below were written from docs/supabase-team-access.sql, but the
+-- LIVE public.profiles table does NOT match that doc. Actual live columns:
+--   profiles:        id, company_id, full_name, role (default 'owner'), created_at
+--                    (NO email, NO display_name)
+--   team_memberships: id, owner_id, user_id, ... (confirm full column list)
+-- A trigger that inserts profiles(id, email, display_name) THROWS on every new
+-- signup and ROLLS BACK the signup — i.e. it breaks auth for BOTH apps. This
+-- was caught and the trigger removed during setup; FMM auth is untouched.
+-- Before enabling the funnel handoff: rewrite the inserts to the real columns
+-- (profiles(id, full_name, role), team_memberships(...)), confirm FMM's intended
+-- provisioning semantics, and TEST on a throwaway signup first.
+-- ===========================================================================
 -- WHY: Contractor Launch Hub is the front door where brand-new contractor
 -- accounts are created. When such a user is handed off into Final Mile Margin
 -- (same shared Supabase project), FMM expects a profile + an "owner" workspace
