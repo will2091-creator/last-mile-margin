@@ -52,7 +52,7 @@ import {
   XAxis,
   YAxis,
 } from "../shared";
-import EmptyState from "../components/EmptyState";
+import EmptyState, { InlineEmpty } from "../components/EmptyState";
 import DataHealthChecklist from "../components/DataHealthChecklist";
 import { getPageEmptyStateConfig, getSetupStatus } from "../lib/onboarding";
 
@@ -714,8 +714,13 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
                 ))}
                 {visibleExports.length === 0 && (
                   <tr>
-                    <td colSpan="5" className={`py-8 text-center text-sm font-bold ${mutedText}`}>
-                      No exports yet. Save daily snapshots from the Dashboard, then Reports will build history here.
+                    <td colSpan="5" className="px-2">
+                      <InlineEmpty
+                        isDark={isDark}
+                        Icon={FileDown}
+                        title="No exports yet"
+                        hint="Save daily snapshots from the Dashboard, then Reports will build your export history here."
+                      />
                     </td>
                   </tr>
                 )}

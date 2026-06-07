@@ -14,6 +14,7 @@ import {
   Truck,
   Upload,
 } from "../shared";
+import { InlineEmpty } from "./EmptyState";
 
 const getAmount = (text) => {
   const dollarMatch = text.match(/\$\s*([0-9][0-9,]*(?:\.\d{2})?)/);
@@ -1021,7 +1022,12 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
             </div>
 
             {drafts.length === 0 ? (
-              <p className={`rounded-xl py-6 text-center text-sm font-semibold ${mutedText}`}>You do not have any drafts yet.</p>
+              <InlineEmpty
+                isDark={isDark}
+                Icon={FileText}
+                title="No drafts yet"
+                hint="Paste an email, upload a PDF, or type notes above and the AI will draft an entry here for review."
+              />
             ) : (
               <div className="space-y-2">
                 {drafts.map((draft) => (

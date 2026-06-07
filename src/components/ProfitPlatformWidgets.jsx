@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { FileText, Upload } from "../shared";
+import { InlineEmpty } from "./EmptyState";
 import { loadVaultDocumentsFromSupabase, uploadVaultDocument } from "../lib/documentRepository";
 
 const toneClasses = (isDark) => ({
@@ -372,8 +373,13 @@ export function DocumentVaultTable({ documents, isDark }) {
 
             {filteredVaultDocuments.length === 0 && (
               <tr>
-                <td colSpan="7" className={`py-10 text-center text-sm font-semibold ${styles.muted}`}>
-                  No documents in this category yet.
+                <td colSpan="7" className="px-2">
+                  <InlineEmpty
+                    isDark={isDark}
+                    Icon={FileText}
+                    title="No documents in this category yet"
+                    hint="Switch categories above, or upload a document to start building this vault."
+                  />
                 </td>
               </tr>
             )}
