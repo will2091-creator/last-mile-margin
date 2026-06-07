@@ -15,6 +15,7 @@ import SyncConfidencePanel from "./components/SyncConfidencePanel";
 import AppSidebar from "./components/app/AppSidebar";
 import AppToolbar from "./components/app/AppToolbar";
 import AppBottomNav from "./components/app/AppBottomNav";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { loadAppStateFromSupabase, saveAppStateToSupabase } from "./lib/appStateRepository";
 import { loadClaimsFromSupabase, syncClaimsToSupabase } from "./lib/claimsRepository";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
@@ -1193,6 +1194,7 @@ export default function App() {
             collapsible={activeTab === "Dashboard"}
           />
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1600px]">
+            <ErrorBoundary key={activeTab} variant="page">
             {activeTab === "Dashboard" ? (
               <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} ownerName={ownerName} />
             ) : activeTab === "Intake" ? (
@@ -1278,6 +1280,7 @@ export default function App() {
             ) : (
               <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} ownerName={ownerName} />
             )}
+            </ErrorBoundary>
           </motion.div>
         </main>
 
