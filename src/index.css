@@ -83,6 +83,21 @@ button :where(.text-2xl, .text-3xl, .text-4xl, .text-5xl, .text-6xl).font-black 
   font-feature-settings: "tnum";
 }
 
+/*
+  Premium weight hierarchy. font-black (900) was applied broadly to small
+  helper text, labels, pills, and table cells, which reads heavy and shouty.
+  Soften 900 -> bold 700 on small text centrally; large headings and KPI
+  figures (text-base and up) keep their full weight, and buttons keep their
+  CTA weight so calls-to-action still lead.
+*/
+main :where(.text-xs, .text-sm).font-black {
+  font-weight: 700;
+}
+main button.font-black,
+main button .font-black {
+  font-weight: 900;
+}
+
 /* Polished keyboard focus — a clean ring on tab/keyboard nav only, never on click. */
 @layer base {
   :focus-visible {
