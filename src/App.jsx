@@ -1565,6 +1565,40 @@ export default function App() {
           border-color: #e2e8f0 !important;
         }
 
+        /* ---- Premium table polish (both themes) ---- */
+        /* Consistent header typography across every table. */
+        main table thead th {
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          white-space: nowrap;
+        }
+        /* Subtle header band so the column labels read as a distinct row. */
+        .theme-light main table thead th {
+          background: #f8fafc;
+        }
+        .theme-dark main table thead th {
+          background: rgba(255, 255, 255, 0.035);
+        }
+        main table thead th:first-child {
+          border-top-left-radius: 8px;
+          border-bottom-left-radius: 8px;
+        }
+        main table thead th:last-child {
+          border-top-right-radius: 8px;
+          border-bottom-right-radius: 8px;
+        }
+        /* Clean bottom edge — drop the dangling divider on the final row. */
+        main table tbody tr:last-child,
+        main table tbody tr:last-child td {
+          border-bottom-width: 0 !important;
+        }
+        /* Column breathing room so adjacent headers/values never collide
+           (e.g. a right-aligned "Amount" bumping into "Status"). */
+        main table th:not(:first-child),
+        main table td:not(:first-child) {
+          padding-left: 1.25rem;
+        }
+
         .theme-light .app-card .text-slate-200,
         .theme-light .app-card .text-slate-300 {
           color: #334155 !important;

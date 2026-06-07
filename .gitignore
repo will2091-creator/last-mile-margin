@@ -27,3 +27,4 @@ dist-ssr
 *.sw?
 .vercel
 mobile/.expo
+.docbuild/
