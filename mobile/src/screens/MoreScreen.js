@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { theme } from "../theme";
 import { loadOwnerCommandCenter } from "../lib/mobileRepository";
 
@@ -66,18 +66,23 @@ export default function MoreScreen({ refreshToken }) {
         <Text style={styles.kicker}>More</Text>
         <Text style={styles.title}>Owner tools</Text>
         <Text style={styles.copy}>{status}</Text>
+        <Text style={styles.note}>
+          Full management for these lives in the web dashboard. Here&apos;s the live status from your workspace.
+        </Text>
       </View>
 
       {items.map((item) => (
-        <TouchableOpacity key={item.title} style={styles.toolCard} onPress={() => setStatus(`${item.title}: ${item.outcome}`)}>
+        <View key={item.title} style={styles.toolCard}>
           <View style={[styles.toolMark, styles[`${item.tone}Mark`] || styles.blueMark]} />
           <View style={styles.toolCopy}>
             <Text style={styles.toolTitle}>{item.title}</Text>
             <Text style={styles.toolSubtitle}>{item.subtitle}</Text>
             <Text style={styles.toolOutcome}>{item.outcome}</Text>
           </View>
-          <Text style={styles.toolChevron}>Open</Text>
-        </TouchableOpacity>
+          <View style={styles.webTag}>
+            <Text style={styles.webTagText}>On web</Text>
+          </View>
+        </View>
       ))}
     </ScrollView>
   );
@@ -111,6 +116,13 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     fontWeight: "800",
     marginTop: 4,
+  },
+  note: {
+    color: theme.colors.muted,
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 17,
+    marginTop: 8,
   },
   toolCard: {
     alignItems: "center",
@@ -160,9 +172,15 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginTop: 4,
   },
-  toolChevron: {
+  webTag: {
+    backgroundColor: "#eff6ff",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  webTagText: {
     color: theme.colors.blue,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "900",
   },
 });
