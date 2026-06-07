@@ -29,6 +29,7 @@ import {
 } from "../shared";
 import NextActionCard from "../components/NextActionCard";
 import { getNextBestSetupAction, getSetupStatus } from "../lib/onboarding";
+import { useCountUp } from "../hooks/useCountUp";
 import ContractModal from "../components/dashboard/ContractModal";
 import TeamModal from "../components/dashboard/TeamModal";
 import ExpenseModal from "../components/dashboard/ExpenseModal";
@@ -208,6 +209,11 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   const dashboardRevenue = savedDaySnapshot?.revenue ?? (hasQuickContracts ? quickContractTotals.revenue * rollupPeriodMultiplier : 0);
   const dashboardCosts = savedDaySnapshot?.costs ?? (hasQuickContracts ? quickContractTotals.totalCosts * rollupPeriodMultiplier : 0);
   const margin = savedDaySnapshot ? savedDaySnapshot.margin * 100 : dashboardRevenue > 0 ? (todayProfit / dashboardRevenue) * 100 : 0;
+  // Animate the headline figures counting up on load / period change.
+  const animatedProfit = useCountUp(todayProfit);
+  const animatedMargin = useCountUp(margin);
+  const animatedRevenue = useCountUp(dashboardRevenue);
+  const animatedCosts = useCountUp(dashboardCosts);
   const periodClaimsExposure = savedDaySnapshot?.claimsExposure ?? (hasQuickContracts ? quickContractTotals.claims * rollupPeriodMultiplier : claimsExposure * Math.min(periodMultiplier, 12));
   const escrowBalance = savedDaySnapshot?.escrow ?? (periodClaimsExposure > 0 ? Math.max(periodClaimsExposure * 0.35, 0) : 0);
 
@@ -860,9 +866,9 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
             </span>
           </div>
           <p className={`safe-number mt-3 text-4xl font-black tracking-tight sm:text-5xl ${todayProfit >= 0 ? "text-emerald-700" : "text-red-600"}`} title={currency.format(todayProfit)}>
-            {currency.format(todayProfit)}
+            {currency.format(animatedProfit)}
           </p>
-          <p className={`mt-1 text-sm font-bold ${mutedText}`}>{dashboardPeriod} net profit · {number.format(margin)}% margin</p>
+          <p className={`mt-1 text-sm font-bold ${mutedText}`}>{dashboardPeriod} net profit · {number.format(animatedMargin)}% margin</p>
           <div className="mt-5 h-44">
             {hasProfitTrend ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -932,7 +938,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
             <DollarSign className="h-6 w-6" />
           </span>
           <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Revenue Today</p>
-          <p className="safe-number mt-2 text-3xl font-black text-blue-600" title={currency.format(dashboardRevenue)}>{currency.format(dashboardRevenue)}</p>
+          <p className="safe-number mt-2 text-3xl font-black text-blue-600" title={currency.format(dashboardRevenue)}>{currency.format(animatedRevenue)}</p>
         </button>
 
         <button onClick={() => goToSource("Profitability")} className={`${cardClass} overflow-hidden text-left transition hover:border-blue-500/50`}>
@@ -940,7 +946,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
             <Calculator className="h-6 w-6" />
           </span>
           <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Costs Today</p>
-          <p className="safe-number mt-2 text-3xl font-black text-amber-700" title={currency.format(dashboardCosts)}>{currency.format(dashboardCosts)}</p>
+          <p className="safe-number mt-2 text-3xl font-black text-amber-700" title={currency.format(dashboardCosts)}>{currency.format(animatedCosts)}</p>
         </button>
 
         <button onClick={() => goToSource("Profitability")} className={`${cardClass} overflow-hidden text-left transition hover:border-blue-500/50`}>
@@ -948,7 +954,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
             <BarChart3 className="h-6 w-6" />
           </span>
           <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Margin</p>
-          <p className={`safe-number mt-2 text-3xl font-black ${margin >= 0 ? "text-emerald-700" : "text-red-600"}`} title={`${number.format(margin)}%`}>{number.format(margin)}%</p>
+          <p className={`safe-number mt-2 text-3xl font-black ${margin >= 0 ? "text-emerald-700" : "text-red-600"}`} title={`${number.format(margin)}%`}>{number.format(animatedMargin)}%</p>
         </button>
 
         <button onClick={() => goToSource("Teams")} className={`${cardClass} overflow-hidden text-left transition hover:border-blue-500/50`}>
