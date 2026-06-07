@@ -697,23 +697,10 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
       )}
 
       {standalone && (
-        <section data-tour="intake-examples" className={isDark ? "rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4" : "rounded-2xl border border-blue-100 bg-blue-50 p-4"}>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-            {[
-              ["Claim emails", AlertTriangle, "damage, penalties, cargo, property"],
-              ["Route sheets", BarChart3, "stops, route pay, miles, hours"],
-              ["Contract terms", ClipboardCheck, "rates, claim rules, renewal notes"],
-              ["Receipts", DollarSign, "gas, tools, maintenance, tolls"],
-              ["Notes", FileText, "anything you need sorted later"],
-            ].map(([title, Icon, detail]) => (
-              <div key={title} className={isDark ? "rounded-xl bg-white/5 p-3" : "rounded-xl bg-white p-3 shadow-sm"}>
-                <Icon className="h-5 w-5 text-blue-600" />
-                <p className={`mt-2 text-sm font-black ${titleText}`}>{title}</p>
-                <p className={`mt-1 text-xs font-semibold leading-5 ${mutedText}`}>{detail}</p>
-              </div>
-            ))}
-          </div>
-          <p className={`mt-3 text-xs font-bold ${mutedText}`}>Sample prompts only load into the reviewer. Nothing saves until you choose where the draft should go.</p>
+        <section data-tour="intake-examples" className={isDark ? "rounded-2xl border border-blue-400/20 bg-blue-500/10 px-4 py-3" : "rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3"}>
+          <p className={`text-xs font-bold leading-5 ${mutedText}`}>
+            <span className={`font-black ${titleText}`}>Handles</span> claim emails · route sheets · contract terms · receipts · notes. AI drafts entries first — nothing saves until you choose where it goes.
+          </p>
         </section>
       )}
 

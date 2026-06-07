@@ -4,6 +4,9 @@ import { getNextBestSetupAction } from "../lib/onboarding";
 
 export default function SetupProgressPanel({ isDark, status, onAction, onTakeTour, compact = false, title = "Setup progress" }) {
   if (!status) return null;
+  // Once setup is finished, retire the panel — it's onboarding, not a permanent
+  // fixture on Operations/Finance.
+  if (status.isComplete) return null;
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
   const cardClass = isDark
