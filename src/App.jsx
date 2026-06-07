@@ -1204,18 +1204,21 @@ export default function App() {
             formatDateLabel={formatDateLabel}
             formatDateRangeLabel={formatDateRangeLabel}
           />
-          {!isDemoMode && (
-            <div className="mx-auto mb-3 max-w-[1600px] sm:mb-5">
-              <SyncConfidencePanel
-                isDark={isDark}
-                appStateStatus={appStateBackendStatus}
-                claimsStatus={claimsBackendStatus}
-                teamStatus={teamAccessStatus}
-                isDemoMode={isDemoMode}
-                isDemoWorkspace={isDemoWorkspace}
-              />
-            </div>
-          )}
+          {!isDemoMode &&
+            [appStateBackendStatus, claimsBackendStatus, teamAccessStatus].some((status) =>
+              /fail|unavailable|local/i.test(String(status || ""))
+            ) && (
+              <div className="mx-auto mb-3 max-w-[1600px] sm:mb-5">
+                <SyncConfidencePanel
+                  isDark={isDark}
+                  appStateStatus={appStateBackendStatus}
+                  claimsStatus={claimsBackendStatus}
+                  teamStatus={teamAccessStatus}
+                  isDemoMode={isDemoMode}
+                  isDemoWorkspace={isDemoWorkspace}
+                />
+              </div>
+            )}
           <BusinessWorkflowRail
             isDark={isDark}
             setupStatus={workflowSetupStatus}

@@ -823,9 +823,6 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           <h1 className={`text-3xl font-black leading-tight tracking-tight sm:text-4xl ${titleText}`}>
             {greetingTitle} <span aria-hidden="true">👋</span>
           </h1>
-          <p className={`mt-2 text-sm font-semibold sm:text-base ${mutedText}`}>
-            Here's how your business is performing today.
-          </p>
           {savedDaySnapshot && (
             <p className={isDark ? "mt-3 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-200" : "mt-3 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700"}>
               Viewing daily history: {savedDaySnapshot.label}
@@ -864,7 +861,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
 
       {/* PRIMARY ROW — net profit with trend, and what needs attention today */}
-      <div className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid items-start gap-4 xl:grid-cols-[1.5fr_1fr]">
         <button
           type="button"
           data-tour="dashboard-net-profit"
