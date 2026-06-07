@@ -355,7 +355,7 @@ function OperationMetric({ isDark, icon: Icon, label, value, note, tone, onClick
         <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-slate-400" : "text-xs font-semibold uppercase tracking-wide text-slate-500"}>{label}</p>
       </div>
       <p className={isDark ? "mt-4 truncate text-3xl font-black text-white" : "mt-4 truncate text-3xl font-black text-slate-950"}>{value}</p>
-      <p className={isDark ? "mt-1 truncate text-sm font-bold text-slate-400" : "mt-1 truncate text-sm font-bold text-slate-500"}>{note}</p>
+      <p className={isDark ? "mt-1 text-sm font-bold leading-5 text-slate-400" : "mt-1 text-sm font-bold leading-5 text-slate-500"}>{note}</p>
     </button>
   );
 }
