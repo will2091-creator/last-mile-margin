@@ -21,8 +21,8 @@ export default function SetupProgressPanel({ isDark, status, onAction, onTakeTou
               <ClipboardCheck className="h-5 w-5" />
             </span>
             <div>
-              <p className="text-xs font-black uppercase tracking-wide text-blue-600">{title}</p>
-              <h2 className={`mt-1 text-xl font-black ${titleText}`}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">{title}</p>
+              <h2 className={`mt-1 text-xl font-bold ${titleText}`}>
                 {status.completeCount} of {status.requiredCount} setup items complete
               </h2>
             </div>
@@ -37,7 +37,7 @@ export default function SetupProgressPanel({ isDark, status, onAction, onTakeTou
               <div key={item.id} className={isDark ? "flex items-center justify-between gap-3 rounded-xl bg-white/5 px-3 py-2" : "flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2"}>
                 <div className="flex min-w-0 items-center gap-2">
                   <span className={item.complete ? "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white" : item.skipped ? "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-700" : isDark ? "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/15 text-slate-400" : "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-400"}>
-                    {item.complete ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="text-[10px] font-black">{index + 1}</span>}
+                    {item.complete ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="text-[10px] font-bold">{index + 1}</span>}
                   </span>
                   <span className={`truncate text-sm font-black ${titleText}`}>{item.label}</span>
                 </div>
@@ -50,8 +50,8 @@ export default function SetupProgressPanel({ isDark, status, onAction, onTakeTou
         </div>
 
         <div className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-4 lg:w-80" : "rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:w-80"}>
-          <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Next</p>
-          <h3 className={`mt-1 text-lg font-black ${titleText}`}>{status.isComplete ? "Ready for daily operations" : nextAction.title}</h3>
+          <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Next</p>
+          <h3 className={`mt-1 text-lg font-bold ${titleText}`}>{status.isComplete ? "Ready for daily operations" : nextAction.title}</h3>
           <p className={`mt-2 text-sm font-semibold leading-6 ${mutedText}`}>
             {status.isComplete ? "Keep receipts, claims, snapshots, and team photos current." : nextAction.detail}
           </p>

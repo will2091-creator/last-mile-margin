@@ -65,7 +65,7 @@ export default function ContractChargeRules({
                   onChange={(event) => updateCustomContractCharge(activeRouteContractId, charge.id, "enabled", event.target.checked)}
                   className="h-4 w-4 accent-emerald-600"
                 />
-                <span className={charge.enabled ? "text-xs font-black uppercase tracking-wide text-emerald-700" : `text-xs font-black uppercase tracking-wide ${mutedText}`}>
+                <span className={charge.enabled ? "text-xs font-semibold uppercase tracking-wide text-emerald-700" : `text-xs font-semibold uppercase tracking-wide ${mutedText}`}>
                   Custom
                 </span>
               </label>
@@ -85,7 +85,7 @@ export default function ContractChargeRules({
               className={isDark ? "w-full rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 text-sm font-black text-white outline-none focus:border-emerald-500" : "w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-black text-slate-950 outline-none focus:border-emerald-500"}
             />
             <div className="mt-2">
-              <label className={`mb-1 block text-[11px] font-black uppercase tracking-wide ${mutedText}`}>Amount</label>
+              <label className={`mb-1 block text-[11px] font-semibold uppercase tracking-wide ${mutedText}`}>Amount</label>
               <div className="relative">
                 <span className={`absolute left-3 top-2 text-sm font-black ${mutedText}`}>$</span>
                 <input

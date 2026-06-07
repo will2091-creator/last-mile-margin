@@ -576,7 +576,7 @@ function TeamsDashboard({ teams, setTeams, claims, isDark = true }) {
 
         <div className="overflow-x-auto">
           <div className="min-w-[980px] overflow-hidden rounded-2xl border border-white/10">
-            <div className="grid grid-cols-[1.4fr_1.2fr_1fr_0.8fr_0.9fr_0.9fr] gap-4 bg-slate-950/40 px-4 py-3 text-xs font-black uppercase tracking-wide text-slate-500">
+            <div className="grid grid-cols-[1.4fr_1.2fr_1fr_0.8fr_0.9fr_0.9fr] gap-4 bg-slate-950/40 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <p>People</p>
               <p>Route</p>
               <p>Truck</p>
@@ -640,7 +640,7 @@ function TeamsDashboard({ teams, setTeams, claims, isDark = true }) {
                           event.preventDefault();
                           handleDropOnSeat(team.id, lead ? "Helper" : "Lead Driver");
                         }}
-                        className={`flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed border-slate-500 bg-slate-950 text-lg font-black text-slate-500 ${
+                        className={`flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed border-slate-500 bg-slate-950 text-lg font-bold text-slate-500 ${
                           dropTarget === `${team.id}-open` ? "ring-2 ring-blue-500" : ""
                         }`}
                       >
@@ -743,7 +743,7 @@ function TeamsDashboard({ teams, setTeams, claims, isDark = true }) {
                         <p className="truncate text-xs text-slate-400">{person.role} · Truck {person.truck}</p>
                         <p className="truncate text-xs text-slate-500">{person.route}</p>
                       </div>
-                      <span className={person.photoStatus === "Uploaded" ? "rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-black text-emerald-400" : "rounded-full bg-red-500/10 px-2 py-1 text-[10px] font-black text-red-400"}>
+                      <span className={person.photoStatus === "Uploaded" ? "rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-400" : "rounded-full bg-red-500/10 px-2 py-1 text-[10px] font-bold text-red-400"}>
                         {person.photoStatus}
                       </span>
                     </div>

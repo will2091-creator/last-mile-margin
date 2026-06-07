@@ -678,7 +678,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
       {standalone && (
         <div data-tour="intake-header">
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-black uppercase tracking-wide text-white">Intake</span>
+            <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">Intake</span>
             {isDemoMode && (
               <span className={isDark ? "rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-200" : "rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700"}>
                 Demo examples available
@@ -721,12 +721,12 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
           <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-black uppercase tracking-wide text-white">AI Quick Intake</span>
+                <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">AI Quick Intake</span>
                 <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
                   Drop email, route sheet, contract terms, screenshot, or notes
                 </span>
               </div>
-              <h2 className={`text-xl font-black ${titleText}`}>Put it in once. Let the system sort it.</h2>
+              <h2 className={`text-xl font-bold ${titleText}`}>Put it in once. Let the system sort it.</h2>
               <p className={`mt-1 text-sm ${mutedText}`}>AI drafts entries first, then you choose what gets saved.</p>
             </div>
             <button onClick={() => setIsOpen(false)} className={isDark ? "self-start rounded-xl bg-white/10 px-3 py-2 text-xs font-black text-white hover:bg-white/15 lg:self-auto" : "self-start rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 lg:self-auto"}>
@@ -754,7 +754,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
           <div className={isDark ? "mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-300" : "mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-blue-600 shadow-sm"}>
             <Upload className="h-7 w-7" />
           </div>
-          <h2 className={`text-xl font-black ${titleText}`}>Drop a claim email, file, or notes here</h2>
+          <h2 className={`text-xl font-bold ${titleText}`}>Drop a claim email, file, or notes here</h2>
           <p className={`mt-1 text-sm ${mutedText}`}>The fastest path is claim intake: paste it, review the draft, then save it to Needs Review.</p>
 
           <textarea
@@ -765,7 +765,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
           />
 
           <div className={isDark ? "mt-3 flex w-full flex-wrap items-center justify-center gap-2 rounded-2xl border border-white/10 bg-slate-950/40 p-3" : "mt-3 flex w-full flex-wrap items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/70 p-3"}>
-            <span className={`mr-1 text-xs font-black uppercase tracking-wide ${mutedText}`}>Mock forms</span>
+            <span className={`mr-1 text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Mock forms</span>
             {intakeMockForms.map((mockForm) => (
               <button
                 key={mockForm.id}
@@ -830,7 +830,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className={`text-lg font-black ${titleText}`}>{isClaimDraft ? "Review Claim Draft" : "Extracted Information"}</h2>
+                <h2 className={`text-lg font-bold ${titleText}`}>{isClaimDraft ? "Review Claim Draft" : "Extracted Information"}</h2>
                 <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700">
                   {isClaimDraft ? "Claim Ready" : "AI Review Complete"}
                 </span>
@@ -918,7 +918,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
                   <p className={`mt-2 text-sm font-black ${titleText}`}>{claimIntelligence.nextAction}</p>
                 </div>
                 <div className={isDark ? "rounded-2xl bg-slate-950/60 p-4 text-center" : "rounded-2xl bg-white p-4 text-center shadow-sm"}>
-                  <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Dispute Score</p>
+                  <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Dispute Score</p>
                   <p className="mt-1 text-3xl font-black text-blue-600">{claimIntelligence.disputeScore}</p>
                 </div>
               </div>
@@ -941,7 +941,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
         </div>
 
         <div data-tour="intake-next-step" className={cardClass}>
-          <h2 className={`text-lg font-black ${titleText}`}>Next Step</h2>
+          <h2 className={`text-lg font-bold ${titleText}`}>Next Step</h2>
           <p className={`mt-2 text-sm leading-6 ${mutedText}`}>
             {isClaimDraft ? "Save the draft when the claim details look right." : "Choose where you want to send this intake after review."}
           </p>
@@ -1038,7 +1038,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
 
       <div className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
         <div data-tour="intake-recent" className={cardClass}>
-          <h2 className={`text-lg font-black ${titleText}`}>Recent Intakes</h2>
+          <h2 className={`text-lg font-bold ${titleText}`}>Recent Intakes</h2>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[680px] text-left text-sm">
               <thead className={isDark ? "border-b border-white/10 text-slate-400" : "border-b border-slate-200 text-slate-500"}>

@@ -172,7 +172,7 @@ export default function GuidedDemoTour({ isOpen, isDark = false, initialStepInde
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className={isDark ? "text-xs font-black uppercase tracking-[0.18em] text-blue-200" : "text-xs font-black uppercase tracking-[0.18em] text-blue-700"}>
+            <p className={isDark ? "text-xs font-semibold uppercase tracking-[0.18em] text-blue-200" : "text-xs font-semibold uppercase tracking-[0.18em] text-blue-700"}>
               Interactive Demo
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -202,22 +202,22 @@ export default function GuidedDemoTour({ isOpen, isDark = false, initialStepInde
         <p className={`mt-3 text-sm font-semibold leading-6 ${mutedText}`}>{step.lesson}</p>
 
         <div className={isDark ? "mt-4 rounded-2xl border border-white/10 bg-white/5 p-4" : "mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4"}>
-          <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>Why it matters</p>
+          <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-slate-400" : "text-xs font-semibold uppercase tracking-wide text-slate-500"}>Why it matters</p>
           <p className={`mt-1 text-sm font-bold leading-6 ${mutedText}`}>{step.why}</p>
         </div>
 
         <div className={isDark ? "mt-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4" : "mt-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4"}>
-          <p className={isDark ? "text-xs font-black uppercase tracking-wide text-emerald-200" : "text-xs font-black uppercase tracking-wide text-emerald-700"}>Demo story</p>
+          <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-emerald-200" : "text-xs font-semibold uppercase tracking-wide text-emerald-700"}>Demo story</p>
           <p className={isDark ? "mt-1 text-sm font-bold leading-6 text-emerald-50" : "mt-1 text-sm font-bold leading-6 text-emerald-900"}>{step.story}</p>
         </div>
 
         {step.walkthrough?.length > 0 && (
           <div className={isDark ? "mt-3 rounded-2xl border border-white/10 bg-slate-950/60 p-4" : "mt-3 rounded-2xl border border-slate-200 bg-white p-4"}>
-            <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>Dashboard readout</p>
+            <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-slate-400" : "text-xs font-semibold uppercase tracking-wide text-slate-500"}>Dashboard readout</p>
             <div className="mt-3 grid gap-2">
               {step.walkthrough.map((item, index) => (
                 <div key={item} className="flex gap-2">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[10px] font-black text-white">{index + 1}</span>
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">{index + 1}</span>
                   <p className={`text-xs font-bold leading-5 ${mutedText}`}>{item}</p>
                 </div>
               ))}
@@ -235,11 +235,11 @@ export default function GuidedDemoTour({ isOpen, isDark = false, initialStepInde
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-3" : "rounded-2xl border border-slate-200 bg-slate-50 p-3"}>
-            <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>What to enter</p>
+            <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-slate-400" : "text-xs font-semibold uppercase tracking-wide text-slate-500"}>What to enter</p>
             <p className={`mt-1 text-xs font-bold leading-5 ${mutedText}`}>{step.dataToEnter}</p>
           </div>
           <div className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-3" : "rounded-2xl border border-slate-200 bg-slate-50 p-3"}>
-            <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>Owner decision</p>
+            <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-slate-400" : "text-xs font-semibold uppercase tracking-wide text-slate-500"}>Owner decision</p>
             <p className={`mt-1 text-xs font-bold leading-5 ${mutedText}`}>{step.ownerDecision}</p>
           </div>
         </div>

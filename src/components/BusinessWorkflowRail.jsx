@@ -34,7 +34,7 @@ export default function BusinessWorkflowRail({
           className="flex w-full items-center justify-between gap-3 text-left"
         >
           <span className="flex min-w-0 flex-wrap items-center gap-2">
-            <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-black uppercase tracking-wide text-white">
+            <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
               Core Workflow
             </span>
             <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
@@ -70,7 +70,7 @@ export default function BusinessWorkflowRail({
       <div className="mb-3 flex flex-col gap-3 sm:mb-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-black uppercase tracking-wide text-white">
+            <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
               Core Workflow
             </span>
             <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
@@ -85,7 +85,7 @@ export default function BusinessWorkflowRail({
           </p>
         </div>
         <div className={isDark ? "rounded-xl bg-slate-950/60 px-4 py-3" : "rounded-xl bg-slate-50 px-4 py-3"}>
-          <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>
+          <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-slate-400" : "text-xs font-semibold uppercase tracking-wide text-slate-500"}>
             Current step
           </p>
           <p className={isDark ? "mt-1 text-sm font-black text-white" : "mt-1 text-sm font-black text-slate-950"}>
@@ -122,7 +122,7 @@ export default function BusinessWorkflowRail({
                     <Icon className="h-4 w-4" />
                   </span>
                   <span className="min-w-0">
-                    <span className={isActive ? "block text-[10px] font-black uppercase tracking-wide text-blue-100" : isDark ? "block text-[10px] font-black uppercase tracking-wide text-slate-500" : "block text-[10px] font-black uppercase tracking-wide text-slate-400"}>
+                    <span className={isActive ? "block text-[10px] font-semibold uppercase tracking-wide text-blue-100" : isDark ? "block text-[10px] font-semibold uppercase tracking-wide text-slate-500" : "block text-[10px] font-semibold uppercase tracking-wide text-slate-400"}>
                       {index + 1}. {index === 0 ? "Starting point" : `After ${step.dependsOn}`}
                     </span>
                     <span className="block truncate text-sm font-black">{step.label}</span>

@@ -109,8 +109,8 @@ function EvidenceBox({ isDark, title, items, emptyText = "No data available yet.
     ? "rounded-xl border border-white/10 bg-white/5 p-3"
     : "rounded-xl border border-slate-200 bg-slate-50 p-3";
   const labelClass = isDark
-    ? "text-xs font-black uppercase tracking-wide text-slate-400"
-    : "text-xs font-black uppercase tracking-wide text-slate-500";
+    ? "text-xs font-semibold uppercase tracking-wide text-slate-400"
+    : "text-xs font-semibold uppercase tracking-wide text-slate-500";
   const itemClass = isDark
     ? "text-xs font-bold leading-5 text-slate-300"
     : "text-xs font-bold leading-5 text-slate-600";
@@ -719,7 +719,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
       <div data-tour="ask-header" className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-black uppercase tracking-wide text-white">AI Assistant</span>
+            <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">AI Assistant</span>
             <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
               Claims, teams, profit, receipts, contracts
             </span>
@@ -736,8 +736,8 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
               <Sparkles className="h-5 w-5" />
             </span>
             <div>
-              <p className={isDark ? "text-xs font-black uppercase tracking-wide text-blue-200" : "text-xs font-black uppercase tracking-wide text-blue-700"}>Daily AI Briefing</p>
-              <h2 className={`mt-1 text-xl font-black ${titleText}`}>{dailyBriefing.title}</h2>
+              <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-blue-200" : "text-xs font-semibold uppercase tracking-wide text-blue-700"}>Daily AI Briefing</p>
+              <h2 className={`mt-1 text-xl font-bold ${titleText}`}>{dailyBriefing.title}</h2>
               <p className={`mt-1 text-sm font-semibold leading-6 ${mutedText}`}>{dailyBriefing.summary}</p>
             </div>
           </div>
@@ -761,7 +761,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
                 <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white">
                   <Icon className="h-5 w-5" />
                 </span>
-                <span className={isDark ? "rounded-full bg-white/10 px-2 py-1 text-[10px] font-black uppercase text-slate-300" : "rounded-full bg-white px-2 py-1 text-[10px] font-black uppercase text-slate-500"}>
+                <span className={isDark ? "rounded-full bg-white/10 px-2 py-1 text-[10px] font-semibold uppercase text-slate-300" : "rounded-full bg-white px-2 py-1 text-[10px] font-semibold uppercase text-slate-500"}>
                   Analyze
                 </span>
               </div>
@@ -781,7 +781,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 className={`text-xl font-black ${titleText}`}>{latest.title}</h2>
+                  <h2 className={`text-xl font-bold ${titleText}`}>{latest.title}</h2>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <span className="inline-flex rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700">
                       {latest.source || "Business data"}
@@ -806,7 +806,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
               </div>
               {latest.details?.length > 0 && (
                 <div className={isDark ? "mt-4 rounded-xl border border-white/10 bg-white/5 p-3" : "mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3"}>
-                  <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Why this answer</p>
+                  <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Why this answer</p>
                   <div className="mt-2 grid gap-2 sm:grid-cols-2">
                     {latest.details.map((detail) => (
                       <p key={detail} className={`text-xs font-bold leading-5 ${mutedText}`}>{detail}</p>
@@ -832,7 +832,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
         <div data-tour="ask-question-box" className={cardClass}>
           <div className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-blue-600" />
-            <h2 className={`text-lg font-black ${titleText}`}>Ask a Question</h2>
+            <h2 className={`text-lg font-bold ${titleText}`}>Ask a Question</h2>
           </div>
           <textarea
             value={question}
@@ -850,7 +850,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
           </button>
           {aiStatus && <p className={`mt-2 text-xs font-bold ${mutedText}`}>{aiStatus}</p>}
           <div className={isDark ? "mt-4 rounded-2xl border border-white/10 bg-white/5 p-3" : "mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3"}>
-            <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Try asking</p>
+            <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Try asking</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {suggestedModes.slice(0, 4).map((item) => (
                 <button
@@ -869,7 +869,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
 
       {conversation.length > 0 && (
         <div data-tour="ask-recent-questions" className={cardClass}>
-          <h2 className={`text-lg font-black ${titleText}`}>Recent Questions</h2>
+          <h2 className={`text-lg font-bold ${titleText}`}>Recent Questions</h2>
           <div className="mt-4 space-y-3">
             {conversation.map((item) => (
               <button

@@ -22,8 +22,8 @@ export default function DataHealthChecklist({ isDark, status, onAction, compact 
   return (
     <section className={cardClass}>
       <div className="mb-4">
-        <p className="text-xs font-black uppercase tracking-wide text-blue-600">Data readiness</p>
-        <h2 className={`mt-1 text-xl font-black ${titleText}`}>What Ask, Reports, and Dashboard can see</h2>
+        <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Data readiness</p>
+        <h2 className={`mt-1 text-xl font-bold ${titleText}`}>What Ask, Reports, and Dashboard can see</h2>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">

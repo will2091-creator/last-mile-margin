@@ -805,8 +805,8 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       <div className={cardClass}>
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-wide text-blue-600">Claims Intelligence</p>
-            <h2 className={`mt-1 text-xl font-black leading-tight sm:text-2xl ${titleText}`}>Reduce claim loss before it becomes margin loss</h2>
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Claims Intelligence</p>
+            <h2 className={`mt-1 text-xl font-bold leading-tight sm:text-2xl ${titleText}`}>Reduce claim loss before it becomes margin loss</h2>
             <p className={`mt-2 max-w-3xl text-sm leading-6 ${mutedText}`}>
               Filter claims by team, driver, type, preventability, status, and risk. The intelligence below updates to show where losses are coming from.
             </p>
@@ -822,7 +822,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
 
             return (
               <div key={label} className={isDark ? "min-h-[116px] rounded-xl border border-white/10 bg-slate-950/40 p-3" : "min-h-[116px] rounded-xl border border-slate-200 bg-slate-50/80 p-3"}>
-                <p className={`text-[10px] font-black uppercase leading-4 tracking-wide ${mutedText}`}>{label}</p>
+                <p className={`text-[10px] font-semibold uppercase leading-4 tracking-wide ${mutedText}`}>{label}</p>
                 <p
                   className={`${isTextValue ? "mt-2 line-clamp-2 text-xl leading-6" : "safe-number mt-2 text-xl"} font-black ${valueClass}`}
                   title={String(value)}
@@ -869,7 +869,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
               ["risk", "Risk", ["Low", "Medium", "High"]],
             ].map(([field, label, options]) => (
               <label key={field} className="block">
-                <span className={`mb-1 block text-[10px] font-black uppercase tracking-wide ${mutedText}`}>{label}</span>
+                <span className={`mb-1 block text-[10px] font-semibold uppercase tracking-wide ${mutedText}`}>{label}</span>
                 <select value={claimFilters[field]} onChange={(event) => updateClaimFilter(field, event.target.value)} className={`${inputClass} h-10`}>
                   <option value="All">All</option>
                   {options.map((option) => (
@@ -907,8 +907,8 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       )}
 
       <div className={isDark ? "rounded-xl border border-white/10 bg-slate-900/80 px-5 py-4 text-center" : "rounded-xl border border-slate-300 bg-slate-200 px-5 py-4 text-center"}>
-        <p className="text-xs font-black uppercase tracking-wide text-blue-600">Claim Workflow Board</p>
-        <h2 className={`mt-1 text-xl font-black ${titleText}`}>Drag claims between columns to update status</h2>
+        <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Claim Workflow Board</p>
+        <h2 className={`mt-1 text-xl font-bold ${titleText}`}>Drag claims between columns to update status</h2>
         <p className={`mx-auto mt-2 max-w-3xl text-sm leading-6 ${mutedText}`}>
           Use Needs Review, In Progress, and Resolved to keep claim ownership, evidence collection, and dispute decisions moving.
         </p>
@@ -935,7 +935,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                 <div>
                   <div className="flex items-center gap-2">
                     <span className={`h-2.5 w-2.5 rounded-full ${tone.dot}`} />
-                    <h2 className={`text-lg font-black ${titleText}`}>{bucket.title}</h2>
+                    <h2 className={`text-lg font-bold ${titleText}`}>{bucket.title}</h2>
                   </div>
                   <p className={`mt-1 text-sm ${mutedText}`}>{bucket.subtitle}</p>
                 </div>
@@ -972,11 +972,11 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
 
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <p className={`text-[11px] font-black uppercase tracking-wide ${mutedText}`}>Amount</p>
+                        <p className={`text-[11px] font-semibold uppercase tracking-wide ${mutedText}`}>Amount</p>
                         <p className="font-black text-red-600">{currency.format(Number(claim.amount || 0))}</p>
                       </div>
                       <div>
-                        <p className={`text-[11px] font-black uppercase tracking-wide ${mutedText}`}>Driver</p>
+                        <p className={`text-[11px] font-semibold uppercase tracking-wide ${mutedText}`}>Driver</p>
                         <p className={`truncate font-bold ${titleText}`}>{claim.driver || getClaimDriver(claim) || "Unassigned"}</p>
                       </div>
                     </div>
@@ -1069,7 +1069,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
 
           <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
             <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-950/50 p-5" : "rounded-2xl border border-slate-200 bg-slate-50 p-5"}>
-              <h3 className={`text-sm font-black uppercase tracking-wide ${mutedText}`}>Claim Snapshot</h3>
+              <h3 className={`text-sm font-semibold uppercase tracking-wide ${mutedText}`}>Claim Snapshot</h3>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 {[
                   ["Amount", currency.format(Number(reviewClaim.claim.amount || 0)), "text-red-600"],
@@ -1078,14 +1078,14 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                   ["Preventable", reviewClaim.claim.preventable || "Unknown", titleText],
                 ].map(([label, value, valueClass]) => (
                   <div key={label}>
-                    <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</p>
-                    <p className={`mt-1 text-lg font-black ${valueClass}`}>{value}</p>
+                    <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{label}</p>
+                    <p className={`mt-1 text-lg font-bold ${valueClass}`}>{value}</p>
                   </div>
                 ))}
               </div>
 
               <div className={isDark ? "mt-5 rounded-xl border border-white/10 bg-slate-900/70 p-4" : "mt-5 rounded-xl border border-slate-200 bg-white p-4"}>
-                <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Next Best Action</p>
+                <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Next Best Action</p>
                 <p className={`mt-2 text-sm font-semibold ${titleText}`}>
                   {reviewClaim.source === "queue"
                     ? "Review the imported draft. Save it to the log when the driver, amount, and type look right."
@@ -1099,14 +1099,14 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
 
               {reviewClaim.sourceText && (
                 <div className={isDark ? "mt-4 rounded-xl border border-white/10 bg-slate-900/70 p-4" : "mt-4 rounded-xl border border-slate-200 bg-white p-4"}>
-                  <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Imported Text</p>
+                  <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Imported Text</p>
                   <p className={`mt-2 max-h-28 overflow-y-auto text-sm leading-6 ${mutedText}`}>{reviewClaim.sourceText}</p>
                 </div>
               )}
             </div>
 
             <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-950/50 p-5" : "rounded-2xl border border-slate-200 bg-slate-50 p-5"}>
-              <h3 className={`text-sm font-black uppercase tracking-wide ${mutedText}`}>Quick Actions</h3>
+              <h3 className={`text-sm font-semibold uppercase tracking-wide ${mutedText}`}>Quick Actions</h3>
               <div className="mt-4 grid gap-2">
                 <button
                   onClick={() => setDisputePacketClaim(reviewClaim.claim)}
@@ -1181,7 +1181,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
         <div className={cardClass}>
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h2 className={`text-lg font-black ${titleText}`}>Import Claim Email</h2>
+              <h2 className={`text-lg font-bold ${titleText}`}>Import Claim Email</h2>
               <p className={`text-sm ${mutedText}`}>Paste or drop the email, review what was found, then send it to the review queue.</p>
             </div>
             <button
@@ -1377,7 +1377,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       <div className={cardClass}>
         <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className={`text-xl font-black ${titleText}`}>Email Claims Needing Review</h2>
+            <h2 className={`text-xl font-bold ${titleText}`}>Email Claims Needing Review</h2>
             <p className={`text-sm ${mutedText}`}>Imported email claims wait here until you save, edit, or ignore them.</p>
           </div>
           <span className={isDark ? "w-fit rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-200" : "w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
@@ -1412,15 +1412,15 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
 
                   <div className="grid gap-2 text-sm sm:grid-cols-3 xl:grid-cols-1">
                     <div>
-                      <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Amount</p>
+                      <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Amount</p>
                       <p className="font-black text-red-600">{currency.format(Number(item.claim.amount || 0))}</p>
                     </div>
                     <div>
-                      <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Driver</p>
+                      <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Driver</p>
                       <p className={`font-bold ${titleText}`}>{item.claim.driver || "Unassigned"}</p>
                     </div>
                     <div>
-                      <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Route</p>
+                      <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Route</p>
                       <p className={`font-bold ${titleText}`}>{item.claim.route || "No route"}</p>
                     </div>
                   </div>
@@ -1450,7 +1450,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
         <div className={cardClass}>
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className={`text-lg font-black ${titleText}`}>{editingId ? "Edit Claim" : "Add Claim"}</h2>
+              <h2 className={`text-lg font-bold ${titleText}`}>{editingId ? "Edit Claim" : "Add Claim"}</h2>
               <p className={`text-sm ${mutedText}`}>Assign claims to drivers so exposure follows the person responsible.</p>
             </div>
             <button onClick={() => setShowForm(false)} className={isDark ? "rounded-lg bg-white/10 px-3 py-1 text-xs font-bold hover:bg-white/15" : "rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50"}>
@@ -1625,7 +1625,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       <div className={cardClass}>
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className={`text-xl font-black ${titleText}`}>Claims Log</h2>
+            <h2 className={`text-xl font-bold ${titleText}`}>Claims Log</h2>
             <p className={`text-sm ${mutedText}`}>
               Historical record for search, audit, exports, and deeper edits. {claims.length} total claim{claims.length === 1 ? "" : "s"}.
             </p>
@@ -1745,7 +1745,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
           <div className={isDark ? "max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/50" : "max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20"}>
             <div className={isDark ? "flex flex-col gap-4 border-b border-white/10 p-5 lg:flex-row lg:items-start lg:justify-between" : "flex flex-col gap-4 border-b border-slate-200 p-5 lg:flex-row lg:items-start lg:justify-between"}>
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-blue-600">Generated Dispute Packet</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Generated Dispute Packet</p>
                 <h2 className={`mt-1 text-2xl font-black ${titleText}`}>{disputePacketClaim.id} · {disputePacketClaim.type}</h2>
                 <p className={`mt-2 text-sm ${mutedText}`}>Mock packet summary for claims review. This does not create a real PDF yet.</p>
               </div>
@@ -1773,7 +1773,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
               <div className="grid gap-5 lg:grid-cols-[1fr_1.1fr]">
                 <div className="space-y-5">
                   <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5" : "rounded-2xl border border-slate-200 bg-slate-50 p-5"}>
-                    <h3 className={`text-lg font-black ${titleText}`}>Claim Summary</h3>
+                    <h3 className={`text-lg font-bold ${titleText}`}>Claim Summary</h3>
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       {[
                         ["Claim ID", disputePacketClaim.id],
@@ -1784,7 +1784,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                         ["Preventability", disputePacketClaim.preventable || "Unknown"],
                       ].map(([label, value]) => (
                         <div key={label} className={isDark ? "rounded-xl border border-white/10 bg-slate-950/60 p-4" : "rounded-xl border border-slate-200 bg-white p-4"}>
-                          <p className={`text-[11px] font-black uppercase tracking-wide ${mutedText}`}>{label}</p>
+                          <p className={`text-[11px] font-semibold uppercase tracking-wide ${mutedText}`}>{label}</p>
                           <p className={`mt-1 text-sm font-black ${label === "Claim amount" ? "text-red-600" : titleText}`}>{value}</p>
                         </div>
                       ))}
@@ -1792,7 +1792,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                   </div>
 
                   <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5" : "rounded-2xl border border-slate-200 bg-slate-50 p-5"}>
-                    <h3 className={`text-lg font-black ${titleText}`}>Evidence Checklist</h3>
+                    <h3 className={`text-lg font-bold ${titleText}`}>Evidence Checklist</h3>
                     {/* TODO: connect uploaded evidence files to these checklist items when backend file storage is connected. */}
                     <div className="mt-4 space-y-2">
                       {getEvidenceChecklist(disputePacketClaim).map((item) => (
@@ -1809,7 +1809,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
 
                 <div className="space-y-5">
                   <div className={isDark ? "rounded-2xl border border-red-500/20 bg-red-500/10 p-5" : "rounded-2xl border border-red-100 bg-red-50 p-5"}>
-                    <h3 className={`text-lg font-black ${titleText}`}>Missing Evidence</h3>
+                    <h3 className={`text-lg font-bold ${titleText}`}>Missing Evidence</h3>
                     {getMissingEvidence(disputePacketClaim).length ? (
                       <ul className="mt-3 space-y-2">
                         {getMissingEvidence(disputePacketClaim).map((item) => (
@@ -1822,19 +1822,19 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                   </div>
 
                   <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5" : "rounded-2xl border border-slate-200 bg-slate-50 p-5"}>
-                    <h3 className={`text-lg font-black ${titleText}`}>Recommended Dispute Angle</h3>
+                    <h3 className={`text-lg font-bold ${titleText}`}>Recommended Dispute Angle</h3>
                     <p className={`mt-3 text-sm font-semibold leading-6 ${mutedText}`}>{getRecommendedDisputeAngle(disputePacketClaim)}</p>
                   </div>
 
                   <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5" : "rounded-2xl border border-slate-200 bg-slate-50 p-5"}>
-                    <h3 className={`text-lg font-black ${titleText}`}>Notes</h3>
+                    <h3 className={`text-lg font-bold ${titleText}`}>Notes</h3>
                     <p className={`mt-3 text-sm font-semibold leading-6 ${mutedText}`}>
                       Review claim amount, driver assignment, route timing, and retailer claim language before accepting this as a loss.
                     </p>
                   </div>
 
                   <div className={isDark ? "rounded-2xl border border-blue-500/20 bg-blue-500/10 p-5" : "rounded-2xl border border-blue-100 bg-blue-50 p-5"}>
-                    <h3 className={`text-lg font-black ${titleText}`}>Next Action</h3>
+                    <h3 className={`text-lg font-bold ${titleText}`}>Next Action</h3>
                     <p className={isDark ? "mt-3 text-sm font-black leading-6 text-blue-100" : "mt-3 text-sm font-black leading-6 text-blue-800"}>{getDisputeNextAction(disputePacketClaim)}</p>
                   </div>
                 </div>
@@ -1847,7 +1847,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       {confirmAction && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className={isDark ? "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950 p-5 shadow-2xl shadow-black/50" : "w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-950/20"}>
-            <p className="text-xs font-black uppercase tracking-wide text-red-600">Confirm Action</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Confirm Action</p>
             <h2 className={`mt-2 text-2xl font-black ${titleText}`}>{confirmAction.title}</h2>
             <p className={`mt-3 text-sm leading-6 ${mutedText}`}>{confirmAction.message}</p>
             <div className="mt-5 flex flex-wrap justify-end gap-3">

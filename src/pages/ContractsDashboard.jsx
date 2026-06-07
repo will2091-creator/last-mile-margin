@@ -605,7 +605,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
     }
 
     return (
-      <div className={`flex h-16 w-32 shrink-0 items-center justify-center rounded-2xl text-xl font-black ${logoClass(contract.logo)}`}>
+      <div className={`flex h-16 w-32 shrink-0 items-center justify-center rounded-2xl text-xl font-bold ${logoClass(contract.logo)}`}>
         {contract.logo}
       </div>
     );
@@ -646,8 +646,8 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
           <div className={isDark ? "rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5" : "rounded-2xl border border-blue-200 bg-blue-50 p-5"}>
             <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-blue-600">AI Contract Draft Ready</p>
-                <h2 className={`mt-1 text-xl font-black ${titleText}`}>{contractImportDraft.customer || "New customer"} terms found</h2>
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">AI Contract Draft Ready</p>
+                <h2 className={`mt-1 text-xl font-bold ${titleText}`}>{contractImportDraft.customer || "New customer"} terms found</h2>
                 <p className={`mt-2 text-sm ${mutedText}`}>
                   Route pay {currency.format(Number(contractImportDraft.routePay || 0))} · Per stop {currency.format(Number(contractImportDraft.perStop || 0))} · Install {currency.format(Number(contractImportDraft.installPay || 0))}
                 </p>
@@ -744,8 +744,8 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
         <div className={isDark ? "rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5" : "rounded-2xl border border-blue-200 bg-blue-50 p-5"}>
           <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <p className="text-xs font-black uppercase tracking-wide text-blue-600">AI Contract Draft Ready</p>
-              <h2 className={`mt-1 text-xl font-black ${titleText}`}>{contractImportDraft.customer || "New customer"} terms found</h2>
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">AI Contract Draft Ready</p>
+              <h2 className={`mt-1 text-xl font-bold ${titleText}`}>{contractImportDraft.customer || "New customer"} terms found</h2>
               <p className={`mt-2 text-sm ${mutedText}`}>
                 Route pay {currency.format(Number(contractImportDraft.routePay || 0))} · Per stop {currency.format(Number(contractImportDraft.perStop || 0))} · Install {currency.format(Number(contractImportDraft.installPay || 0))}
               </p>
@@ -790,21 +790,21 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                 {isViewingAllContracts ? "ALL" : selectedContract.logo}
               </div>
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-blue-600">Viewing Contract</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Viewing Contract</p>
                 <h2 className={`mt-1 text-2xl font-black leading-tight ${titleText}`}>{isViewingAllContracts ? "All Contracts" : selectedContract.name}</h2>
                 <p className={`mt-1 text-sm ${mutedText}`}>{isViewingAllContracts ? `${contracts.length} contracts shown together` : `${selectedContract.customer} · ${selectedContract.location}`}</p>
               </div>
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-wide text-blue-600">Change Contract</label>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-blue-600">Change Contract</label>
               <select
                 value={isViewingAllContracts ? "ALL" : selectedContract.id}
                 onChange={(event) => selectContract(event.target.value)}
                 className={
                   isDark
-                    ? "w-full rounded-2xl border-2 border-blue-400/60 bg-slate-950 px-5 py-4 text-lg font-black text-white shadow-lg shadow-black/20 outline-none focus:border-blue-300"
-                    : "w-full rounded-2xl border-2 border-blue-300 bg-white px-5 py-4 text-lg font-black text-slate-950 shadow-sm outline-none focus:border-blue-600"
+                    ? "w-full rounded-2xl border-2 border-blue-400/60 bg-slate-950 px-5 py-4 text-lg font-bold text-white shadow-lg shadow-black/20 outline-none focus:border-blue-300"
+                    : "w-full rounded-2xl border-2 border-blue-300 bg-white px-5 py-4 text-lg font-bold text-slate-950 shadow-sm outline-none focus:border-blue-600"
                 }
               >
                 <option value="ALL">View All Contracts</option>
@@ -820,25 +820,25 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
 
           <div className={`mt-5 grid gap-3 border-t pt-4 md:grid-cols-4 ${rowBorder}`}>
             <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-950/60 p-4" : "rounded-2xl border border-blue-100 bg-white p-4"}>
-              <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Risk Status</p>
+              <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Risk Status</p>
               <span className={`mt-2 inline-flex rounded-full px-3 py-1.5 text-sm font-black ${isViewingAllContracts ? riskClass(atRiskContracts > 0 ? "Watch" : "Low") : riskClass(selectedContract.risk)}`}>
                 {isViewingAllContracts ? allContractsRisk : selectedContract.risk}
               </span>
             </div>
             <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-950/60 p-4" : "rounded-2xl border border-blue-100 bg-white p-4"}>
-              <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Claims Exposure</p>
-              <p className={selectedExposure > 1000 ? "mt-2 text-xl font-black text-red-600" : selectedExposure > 0 ? "mt-2 text-xl font-black text-orange-600" : "mt-2 text-xl font-black text-emerald-700"}>
+              <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Claims Exposure</p>
+              <p className={selectedExposure > 1000 ? "mt-2 text-xl font-bold text-red-600" : selectedExposure > 0 ? "mt-2 text-xl font-bold text-orange-600" : "mt-2 text-xl font-bold text-emerald-700"}>
                 {currency.format(selectedExposure)}
               </p>
             </div>
             <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-950/60 p-4" : "rounded-2xl border border-blue-100 bg-white p-4"}>
-              <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Margin</p>
-              <p className={(isViewingAllContracts ? averageMargin : selectedContract.margin) >= 25 ? "mt-2 text-xl font-black text-emerald-700" : (isViewingAllContracts ? averageMargin : selectedContract.margin) >= 20 ? "mt-2 text-xl font-black text-orange-600" : "mt-2 text-xl font-black text-red-600"}>
+              <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Margin</p>
+              <p className={(isViewingAllContracts ? averageMargin : selectedContract.margin) >= 25 ? "mt-2 text-xl font-bold text-emerald-700" : (isViewingAllContracts ? averageMargin : selectedContract.margin) >= 20 ? "mt-2 text-xl font-bold text-orange-600" : "mt-2 text-xl font-bold text-red-600"}>
                 {number.format(isViewingAllContracts ? averageMargin : selectedContract.margin)}%
               </p>
             </div>
             <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-950/60 p-4" : "rounded-2xl border border-blue-100 bg-white p-4"}>
-              <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Contract Status</p>
+              <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Contract Status</p>
               <span className={`mt-2 inline-flex rounded-full px-3 py-1.5 text-sm font-black ${isViewingAllContracts ? statusClass("Active") : statusClass(selectedContract.status)}`}>
                 {isViewingAllContracts ? `${contracts.length} Active` : selectedContract.status}
               </span>
@@ -850,7 +850,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
           <div className={`${cardClass} min-w-0 overflow-hidden`}>
             <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h2 className={`text-xl font-black ${titleText}`}>All Contracts</h2>
+                <h2 className={`text-xl font-bold ${titleText}`}>All Contracts</h2>
                 <p className={`text-sm ${mutedText}`}>Review every contract together, then choose one from the dropdown when you need details.</p>
               </div>
               <p className={`text-sm font-bold ${mutedText}`}>{contracts.length} total contracts</p>
@@ -913,31 +913,31 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
               </div>
 
               <div className={isDark ? "min-w-0 border-t border-white/10 pt-4 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0" : "min-w-0 border-t border-slate-200 pt-4 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0"}>
-                <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Customer</p>
-                <h2 className={`mt-2 break-words text-xl font-black leading-tight ${titleText}`}>{selectedContract.name}</h2>
+                <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Customer</p>
+                <h2 className={`mt-2 break-words text-xl font-bold leading-tight ${titleText}`}>{selectedContract.name}</h2>
                 <p className={`mt-3 text-sm font-semibold ${mutedText}`}>⌖ {selectedContract.location}</p>
               </div>
 
               <div className={isDark ? "min-w-0 border-t border-white/10 pt-4 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0" : "min-w-0 border-t border-slate-200 pt-4 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0"}>
-                <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Customer Short Name</p>
-                <p className={`mt-2 break-words text-lg font-black ${titleText}`}>{selectedContract.customer}</p>
+                <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Customer Short Name</p>
+                <p className={`mt-2 break-words text-lg font-bold ${titleText}`}>{selectedContract.customer}</p>
               </div>
 
               <div className={isDark ? "min-w-0 border-t border-white/10 pt-4 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0" : "min-w-0 border-t border-slate-200 pt-4 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0"}>
-                <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Commodity</p>
-                <p className={`mt-2 break-words text-lg font-black ${titleText}`}>{selectedContract.type}</p>
+                <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Commodity</p>
+                <p className={`mt-2 break-words text-lg font-bold ${titleText}`}>{selectedContract.type}</p>
               </div>
             </div>
 
             <div className={isDark ? "mt-5 grid gap-4 border-t border-white/10 pt-4 md:grid-cols-[1fr_1fr_auto]" : "mt-5 grid gap-4 border-t border-slate-200 pt-4 md:grid-cols-[1fr_1fr_auto]"}>
               <div>
-                <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Route</p>
-                <p className={`mt-2 text-xl font-black ${titleText}`}>{selectedContract.routePay || selectedContract.perStop || 0}</p>
+                <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Route</p>
+                <p className={`mt-2 text-xl font-bold ${titleText}`}>{selectedContract.routePay || selectedContract.perStop || 0}</p>
               </div>
 
               <div>
-                <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Rate Type</p>
-                <p className={`mt-2 text-lg font-black ${titleText}`}>{selectedContract.payType}</p>
+                <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Rate Type</p>
+                <p className={`mt-2 text-lg font-bold ${titleText}`}>{selectedContract.payType}</p>
               </div>
 
               <div className="flex items-end justify-start md:justify-end">
@@ -975,7 +975,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
             <div className={isDark ? "mb-5 rounded-2xl border border-blue-500/20 bg-blue-500/10 p-5" : "mb-5 rounded-2xl border border-blue-200 bg-blue-50 p-5"}>
               <div className="mb-5 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <h3 className={`text-lg font-black ${titleText}`}>Edit Contract Details</h3>
+                  <h3 className={`text-lg font-bold ${titleText}`}>Edit Contract Details</h3>
                   <p className={`text-sm ${mutedText}`}>Update the contract name, pay structure, rates, schedule, and notes.</p>
                 </div>
                 <button
@@ -1007,7 +1007,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                   ["Logo Text", "logo", "text"],
                 ].map(([label, key, type]) => (
                   <div key={key}>
-                    <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</label>
+                    <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{label}</label>
                     <input
                       type={type}
                       value={selectedContract[key]}
@@ -1018,7 +1018,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                 ))}
 
                 <div>
-                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Pay Type</label>
+                  <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Pay Type</label>
                   <select
                     value={selectedContract.payType}
                     onChange={(event) => updateContractField("payType", event.target.value)}
@@ -1031,7 +1031,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                 </div>
 
                 <div>
-                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Status</label>
+                  <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Status</label>
                   <select
                     value={selectedContract.status}
                     onChange={(event) => updateContractField("status", event.target.value)}
@@ -1044,7 +1044,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                 </div>
 
                 <div>
-                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Risk</label>
+                  <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Risk</label>
                   <select
                     value={selectedContract.risk}
                     onChange={(event) => updateContractField("risk", event.target.value)}
@@ -1059,7 +1059,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
 
               <div className="mt-4 grid gap-4 xl:grid-cols-2">
                 <div>
-                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Overview</label>
+                  <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Overview</label>
                   <textarea
                     value={selectedContract.overview}
                     onChange={(event) => updateContractField("overview", event.target.value)}
@@ -1068,7 +1068,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                 </div>
 
                 <div>
-                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Notes</label>
+                  <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Notes</label>
                   <textarea
                     value={selectedContract.notes}
                     onChange={(event) => updateContractField("notes", event.target.value)}
@@ -1085,8 +1085,8 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                 <div>
                   <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-wide text-blue-600">Contract Rate Card</p>
-                      <h3 className={`mt-1 text-xl font-black ${titleText}`}>Charges allowed for {selectedContract.name}</h3>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Contract Rate Card</p>
+                      <h3 className={`mt-1 text-xl font-bold ${titleText}`}>Charges allowed for {selectedContract.name}</h3>
                       <p className={`mt-2 max-w-3xl text-sm ${mutedText}`}>
                         Turn on only the charges this contract pays for. Route Profit Check will hide anything turned off.
                       </p>
@@ -1249,7 +1249,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                       )}
 
                       <div className={isDark ? "mt-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4" : "mt-5 rounded-2xl border border-emerald-100 bg-emerald-50 p-4"}>
-                        <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Custom Charge Total</p>
+                        <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Custom Charge Total</p>
                         <p className="mt-1 text-2xl font-black text-emerald-700">{currency.format(enabledCustomChargeTotal)}</p>
                       </div>
                     </div>
@@ -1259,7 +1259,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
 
               {selectedContractTab === "Requirements" && (
                 <div>
-                  <h3 className={`text-lg font-black ${titleText}`}>Operating Requirements</h3>
+                  <h3 className={`text-lg font-bold ${titleText}`}>Operating Requirements</h3>
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     {[
                       ["Coverage", selectedContract.schedule],
@@ -1280,7 +1280,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
 
               {selectedContractTab === "Performance" && (
                 <div>
-                  <h3 className={`text-lg font-black ${titleText}`}>Performance</h3>
+                  <h3 className={`text-lg font-bold ${titleText}`}>Performance</h3>
                   <div className="mt-4 grid gap-3 md:grid-cols-3">
                     {[
                       ["Monthly Revenue", currency.format(selectedContract.monthlyRevenue), "text-emerald-700"],
@@ -1298,7 +1298,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
 
               {selectedContractTab === "Compliance" && (
                 <div>
-                  <h3 className={`text-lg font-black ${titleText}`}>Compliance</h3>
+                  <h3 className={`text-lg font-bold ${titleText}`}>Compliance</h3>
                   <div className="mt-4 space-y-3">
                     {[
                       ["Insurance on file", "Complete", "green"],
@@ -1319,7 +1319,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
 
               {selectedContractTab === "Notes" && (
                 <div>
-                  <h3 className={`text-lg font-black ${titleText}`}>Notes</h3>
+                  <h3 className={`text-lg font-bold ${titleText}`}>Notes</h3>
                   <p className={`mt-3 text-sm leading-relaxed ${mutedText}`}>{selectedContract.notes}</p>
                   <div className={isDark ? "mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4" : "mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4"}>
                     <p className="font-black text-amber-700">Recommended Actions</p>
@@ -1341,7 +1341,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                   <FileText className="h-7 w-7" />
                 </div>
                 <div>
-                  <p className={`text-lg font-black ${titleText}`}>Contract Overview</p>
+                  <p className={`text-lg font-bold ${titleText}`}>Contract Overview</p>
                   <p className={`mt-2 text-sm leading-relaxed ${mutedText}`}>{selectedContract.overview}</p>
                 </div>
               </div>
@@ -1355,7 +1355,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                       <DollarSign className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className={`text-lg font-black ${titleText}`}>Pay Structure</p>
+                      <p className={`text-lg font-bold ${titleText}`}>Pay Structure</p>
                       <p className={`text-xs font-semibold ${mutedText}`}>{enabledChargeCount} active charges</p>
                     </div>
                   </div>
@@ -1396,19 +1396,19 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700">
                     <BarChart3 className="h-5 w-5" />
                   </div>
-                  <p className={`text-lg font-black ${titleText}`}>Financials</p>
+                  <p className={`text-lg font-bold ${titleText}`}>Financials</p>
                 </div>
 
                 <div className="grid gap-4 2xl:grid-cols-2">
                   <div className={isDark ? "min-w-0 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4" : "min-w-0 rounded-xl border border-emerald-100 bg-emerald-50 p-4"}>
-                    <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Monthly Revenue</p>
-                    <p className={`mt-2 truncate text-xl font-black tracking-tight ${titleText}`}>{currency.format(selectedContract.monthlyRevenue)}</p>
+                    <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Monthly Revenue</p>
+                    <p className={`mt-2 truncate text-xl font-bold tracking-tight ${titleText}`}>{currency.format(selectedContract.monthlyRevenue)}</p>
                     <p className="mt-2 text-xs font-bold leading-tight text-emerald-700">↗ 8.3% vs prior 30 days</p>
                   </div>
 
                   <div className={isDark ? "min-w-0 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4" : "min-w-0 rounded-xl border border-emerald-100 bg-emerald-50 p-4"}>
-                    <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Margin</p>
-                    <p className={`mt-2 truncate text-xl font-black tracking-tight ${titleText}`}>{selectedContract.margin}%</p>
+                    <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Margin</p>
+                    <p className={`mt-2 truncate text-xl font-bold tracking-tight ${titleText}`}>{selectedContract.margin}%</p>
                     <p className="mt-2 text-xs font-bold leading-tight text-emerald-700">↗ Healthy</p>
                   </div>
                 </div>
@@ -1419,7 +1419,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600">
                     <Truck className="h-5 w-5" />
                   </div>
-                  <p className={`text-lg font-black ${titleText}`}>Schedule</p>
+                  <p className={`text-lg font-bold ${titleText}`}>Schedule</p>
                 </div>
 
                 <div className={`divide-y ${isDark ? "divide-white/10" : "divide-slate-200"}`}>
@@ -1439,19 +1439,19 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-600">
                     <ShieldCheck className="h-5 w-5" />
                   </div>
-                  <p className={`text-lg font-black ${titleText}`}>Claims Exposure</p>
+                  <p className={`text-lg font-bold ${titleText}`}>Claims Exposure</p>
                 </div>
 
                 <div className="grid gap-4 2xl:grid-cols-2">
                   <div className={isDark ? "min-w-0 rounded-xl border border-red-500/20 bg-red-500/10 p-4" : "min-w-0 rounded-xl border border-red-100 bg-red-50 p-4"}>
-                    <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Open Claims</p>
-                    <p className={`mt-2 text-xl font-black ${titleText}`}>{selectedClaims.length}</p>
+                    <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Open Claims</p>
+                    <p className={`mt-2 text-xl font-bold ${titleText}`}>{selectedClaims.length}</p>
                     <button onClick={() => navigateToTab?.("Claims")} className="mt-3 text-xs font-bold text-blue-600">View Claims →</button>
                   </div>
 
                   <div className={isDark ? "min-w-0 rounded-xl border border-red-500/20 bg-red-500/10 p-4" : "min-w-0 rounded-xl border border-red-100 bg-red-50 p-4"}>
-                    <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Total Exposure</p>
-                    <p className="mt-2 truncate text-xl font-black tracking-tight text-red-600">{currency.format(selectedExposure)}</p>
+                    <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Total Exposure</p>
+                    <p className="mt-2 truncate text-xl font-bold tracking-tight text-red-600">{currency.format(selectedExposure)}</p>
                     <p className="mt-2 text-xs font-bold leading-tight text-red-600">↗ 15.2% vs prior 30 days</p>
                   </div>
                 </div>
@@ -1462,7 +1462,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-700">
                     <Users className="h-5 w-5" />
                   </div>
-                  <p className={`text-lg font-black ${titleText}`}>Teams Assigned</p>
+                  <p className={`text-lg font-bold ${titleText}`}>Teams Assigned</p>
                 </div>
 
                 <p className="inline-flex rounded-full bg-blue-500/10 px-3 py-1 text-sm font-bold text-blue-600">{selectedContract.team}</p>
@@ -1477,7 +1477,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600">
                     <ClipboardCheck className="h-5 w-5" />
                   </div>
-                  <p className={`text-lg font-black ${titleText}`}>Contract Dates</p>
+                  <p className={`text-lg font-bold ${titleText}`}>Contract Dates</p>
                 </div>
 
                 <div className={`divide-y ${isDark ? "divide-white/10" : "divide-slate-200"}`}>
@@ -1502,7 +1502,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                 <div>
                   <div className="flex items-center gap-3">
                     <AlertTriangle className={selectedContract.risk === "Low" ? "h-6 w-6 text-emerald-700" : "h-6 w-6 text-amber-700"} />
-                    <p className={`text-lg font-black ${titleText}`}>Risk Status</p>
+                    <p className={`text-lg font-bold ${titleText}`}>Risk Status</p>
                     <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${riskClass(selectedContract.risk)}`}>{selectedContract.risk}</span>
                   </div>
 
@@ -1534,7 +1534,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
 
       <div className="grid gap-6 xl:grid-cols-2">
         <div className={cardClass}>
-          <h2 className={`text-lg font-black ${titleText}`}>Contracts at a Glance</h2>
+          <h2 className={`text-lg font-bold ${titleText}`}>Contracts at a Glance</h2>
           <p className={`text-sm ${mutedText}`}>By monthly revenue.</p>
 
           <div className="mt-5 grid gap-5 lg:grid-cols-2">
@@ -1574,7 +1574,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
         <div className={cardClass}>
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <h2 className={`text-lg font-black ${titleText}`}>Upcoming Renewals</h2>
+              <h2 className={`text-lg font-bold ${titleText}`}>Upcoming Renewals</h2>
               <p className={`text-sm ${mutedText}`}>Contracts nearing renewal dates.</p>
             </div>
             <button type="button" onClick={() => selectContract("ALL")} className="text-sm font-bold text-blue-600">View All</button>

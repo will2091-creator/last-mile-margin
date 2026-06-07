@@ -28,7 +28,7 @@ export default function ExpenseModal({
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-wide text-blue-600">Expense setup</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Expense setup</p>
             <h2 className={`mt-1 text-2xl font-black ${titleText}`}>Set basic route costs</h2>
             <p className={`mt-2 max-w-xl text-sm leading-6 ${mutedText}`}>
               These estimates attach to {quickContracts[0]?.contract || "your first contract"} so the dashboard can calculate real margin.
@@ -64,7 +64,7 @@ export default function ExpenseModal({
             ["Other Costs / Route", "other", "Tolls, parking, misc."],
           ].map(([label, key, placeholder]) => (
             <label key={key} className={key === "other" ? "md:col-span-2" : ""}>
-              <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</span>
+              <span className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{label}</span>
               <div className="relative">
                 <span className={`absolute left-3 top-2.5 text-sm font-black ${mutedText}`}>$</span>
                 <input

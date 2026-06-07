@@ -30,7 +30,7 @@ export default function ContractModal({
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-wide text-blue-600">New contract</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">New contract</p>
             <h2 className={`mt-1 text-2xl font-black ${titleText}`}>Add contract info</h2>
             <p className={`mt-2 max-w-xl text-sm leading-6 ${mutedText}`}>
               Start with the basics. These numbers save into Finance &gt; Profitability so your dashboard can stop being empty.
@@ -47,7 +47,7 @@ export default function ContractModal({
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <label>
-            <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Contract Name</span>
+            <span className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Contract Name</span>
             <input
               name="contract"
               value={contractDraft.contract}
@@ -59,7 +59,7 @@ export default function ContractModal({
           </label>
 
           <label>
-            <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Routes / Week</span>
+            <span className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Routes / Week</span>
             <input
               name="routes"
               type="number"
@@ -81,7 +81,7 @@ export default function ContractModal({
             ["Other Costs / Route", "other", "Tolls, parking, misc.", "$"],
           ].map(([label, key, placeholder, prefix]) => (
             <label key={key}>
-              <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</span>
+              <span className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{label}</span>
               <div className="relative">
                 {prefix && <span className={`absolute left-3 top-2.5 text-sm font-black ${mutedText}`}>{prefix}</span>}
                 <input

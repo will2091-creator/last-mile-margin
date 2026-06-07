@@ -1156,7 +1156,7 @@ function ProfitabilityDashboard({
 
             {profitabilityView === "Route Profit Check" && (
               <div className="flex flex-wrap items-center gap-3">
-                <label className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Contract Name</label>
+                <label className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Contract Name</label>
                 {!isNewRouteContract && rowsWithTotals.length > 0 ? (
                   <select
                     value={selectedRouteContract?.id || ""}
@@ -1255,7 +1255,7 @@ function ProfitabilityDashboard({
                   <Icon className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</p>
+                  <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{label}</p>
                   <p className={`mt-1 text-3xl font-black ${tone}`}>
                     {suffix === "%" ? `${value.toFixed(2)}%` : currency.format(value)}
                   </p>
@@ -1269,7 +1269,7 @@ function ProfitabilityDashboard({
           <div className={cardClass}>
             <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h2 className={`text-xl font-black ${titleText}`}>Route Inputs</h2>
+                <h2 className={`text-xl font-bold ${titleText}`}>Route Inputs</h2>
                 <p className={`text-sm ${mutedText}`}>Click any section to edit the numbers behind this route.</p>
               </div>
               <span className={isDark ? "rounded-full bg-blue-500/15 px-3 py-1 text-xs font-black text-blue-200" : "rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700"}>
@@ -1308,7 +1308,7 @@ function ProfitabilityDashboard({
 
           <div className={cardClass}>
             <div className="mb-5">
-              <h2 className={`text-xl font-black ${titleText}`}>Live Route Summary</h2>
+              <h2 className={`text-xl font-bold ${titleText}`}>Live Route Summary</h2>
               <p className={`text-sm ${mutedText}`}>Profitability updates as section numbers change.</p>
             </div>
 
@@ -1320,7 +1320,7 @@ function ProfitabilityDashboard({
               ].filter(([, , , visible]) => visible).map(([label, value, tone]) => (
                 <div key={label} className={`flex items-center justify-between gap-4 border-b pb-3 ${rowBorder}`}>
                   <p className={`font-bold ${mutedText}`}>{label}</p>
-                  <p className={`safe-number text-right text-xl font-black ${tone}`}>{currency.format(value)}</p>
+                  <p className={`safe-number text-right text-xl font-bold ${tone}`}>{currency.format(value)}</p>
                 </div>
               ))}
 
@@ -1337,8 +1337,8 @@ function ProfitabilityDashboard({
                 <div className={`grid gap-3 border-t pt-4 sm:grid-cols-2 ${rowBorder}`}>
                   {efficiencyCards.map(([label, value]) => (
                     <div key={label} className={isDark ? "rounded-xl bg-white/5 p-3" : "rounded-xl bg-slate-50 p-3"}>
-                      <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</p>
-                      <p className={`safe-number mt-1 text-lg font-black ${value >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                      <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{label}</p>
+                      <p className={`safe-number mt-1 text-lg font-bold ${value >= 0 ? "text-emerald-700" : "text-red-600"}`}>
                         {currency.format(value)}
                       </p>
                     </div>
@@ -1352,7 +1352,7 @@ function ProfitabilityDashboard({
         <div className={cardClass}>
           <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 className={`text-xl font-black ${titleText}`}>Scenario Buttons</h2>
+              <h2 className={`text-xl font-bold ${titleText}`}>Scenario Buttons</h2>
               <p className={`text-sm ${mutedText}`}>Quickly test common final-mile route changes.</p>
             </div>
           </div>
@@ -1396,8 +1396,8 @@ function ProfitabilityDashboard({
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Edit Route Section</p>
-                      <span className={isDark ? "rounded-full bg-blue-500/15 px-2.5 py-1 text-[11px] font-black text-blue-200" : "rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700"}>
+                      <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Edit Route Section</p>
+                      <span className={isDark ? "rounded-full bg-blue-500/15 px-2.5 py-1 text-[11px] font-bold text-blue-200" : "rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700"}>
                         Live update
                       </span>
                     </div>
@@ -1416,7 +1416,7 @@ function ProfitabilityDashboard({
               <div className="grid gap-3 sm:grid-cols-2">
                 {editingRouteSectionData.fields.map(([label, key, help]) => (
                   <div key={key}>
-                    <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</label>
+                    <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{label}</label>
                     <input
                       type="number"
                       value={form[key]}
@@ -1470,15 +1470,15 @@ function ProfitabilityDashboard({
               <div className={isDark ? "mt-5 rounded-2xl border border-white/10 bg-slate-950/70 p-5" : "mt-5 rounded-2xl border border-emerald-100 bg-emerald-50 p-5"}>
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div>
-                    <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Section Total</p>
+                    <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Section Total</p>
                     <p className={`safe-number mt-1 text-2xl font-black ${titleText}`}>{currency.format(editingRouteSectionData.value)}</p>
                   </div>
                   <div>
-                    <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Net Profit</p>
+                    <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Net Profit</p>
                     <p className={`safe-number mt-1 text-2xl font-black ${signedNumberClass(routeNetProfit)}`}>{currency.format(routeNetProfit)}</p>
                   </div>
                   <div>
-                    <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Margin</p>
+                    <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Margin</p>
                     <p className={`mt-1 text-2xl font-black ${signedNumberClass(routeMargin)}`}>{routeMargin.toFixed(2)}%</p>
                   </div>
                 </div>
@@ -1578,7 +1578,7 @@ function ProfitabilityDashboard({
                   <Icon className="h-7 w-7" />
                 </div>
                 <div className="min-w-0">
-                  <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>{card.title}</p>
+                  <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{card.title}</p>
                   <p
                     className={`mt-2 truncate text-2xl font-black ${card.tone === "green"
                         ? "text-emerald-700"
@@ -1597,7 +1597,7 @@ function ProfitabilityDashboard({
                 {breakdown.map((item) => (
                   <div key={item.label}>
                     <div className="mb-1 flex items-center justify-between gap-3">
-                      <p className={`truncate text-[11px] font-black uppercase tracking-wide ${mutedText}`}>{item.label}</p>
+                      <p className={`truncate text-[11px] font-semibold uppercase tracking-wide ${mutedText}`}>{item.label}</p>
                       <p className={`safe-number text-right text-xs font-black ${titleText}`} title={item.value}>{item.value}</p>
                     </div>
                     <div className={isDark ? "h-2 overflow-hidden rounded-full bg-white/10" : "h-2 overflow-hidden rounded-full bg-slate-200"}>
@@ -1617,21 +1617,21 @@ function ProfitabilityDashboard({
                 <Truck className="h-7 w-7" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className={isDark ? "text-xs font-black uppercase tracking-wide text-amber-300" : "text-xs font-black uppercase tracking-wide text-amber-800"}>Margin Range</p>
+                <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-amber-300" : "text-xs font-semibold uppercase tracking-wide text-amber-800"}>Margin Range</p>
 
                 <div className="mt-4 space-y-4">
                   <div>
                     <div className="mb-1 min-w-0">
-                      <p className="text-xs font-black uppercase leading-tight text-emerald-700">Strongest Margin</p>
-                      <p className="mt-1 break-words text-lg font-black leading-tight text-emerald-700">{bestContract?.margin.toFixed(2)}%</p>
+                      <p className="text-xs font-semibold uppercase leading-tight text-emerald-700">Strongest Margin</p>
+                      <p className="mt-1 break-words text-lg font-bold leading-tight text-emerald-700">{bestContract?.margin.toFixed(2)}%</p>
                     </div>
                     <p className={isDark ? "break-words text-sm font-black leading-snug text-white" : "break-words text-sm font-black leading-snug text-slate-950"}>{bestContract?.contract}</p>
                   </div>
 
                   <div className={isDark ? "border-t border-white/10 pt-4" : "border-t border-amber-200 pt-4"}>
                     <div className="mb-1 min-w-0">
-                      <p className="text-xs font-black uppercase leading-tight text-red-600">Needs Review</p>
-                      <p className="mt-1 break-words text-lg font-black leading-tight text-red-600">{worstContract?.margin.toFixed(2)}%</p>
+                      <p className="text-xs font-semibold uppercase leading-tight text-red-600">Needs Review</p>
+                      <p className="mt-1 break-words text-lg font-bold leading-tight text-red-600">{worstContract?.margin.toFixed(2)}%</p>
                     </div>
                     <p className={isDark ? "break-words text-sm font-black leading-snug text-white" : "break-words text-sm font-black leading-snug text-slate-950"}>{worstContract?.contract}</p>
                   </div>
@@ -1647,7 +1647,7 @@ function ProfitabilityDashboard({
           <div className={`${cardClass} xl:col-span-4`}>
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <h2 className={`text-lg font-black ${titleText}`}>Net Profit by Contract</h2>
+              <h2 className={`text-lg font-bold ${titleText}`}>Net Profit by Contract</h2>
               <p className={`mt-1 text-xs ${mutedText}`}>Ranked from strongest to weakest.</p>
             </div>
             <button
@@ -1688,7 +1688,7 @@ function ProfitabilityDashboard({
         <div className={`${cardClass} xl:col-span-4`}>
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <h2 className={`text-lg font-black ${titleText}`}>Cost Breakdown (Totals)</h2>
+              <h2 className={`text-lg font-bold ${titleText}`}>Cost Breakdown (Totals)</h2>
               <p className={`mt-1 text-xs ${mutedText}`}>Clean dollar view by category.</p>
             </div>
             <button
@@ -1723,7 +1723,7 @@ function ProfitabilityDashboard({
         {enabledFactor("metrics", "netProfit") && (
           <div className={`${cardClass} xl:col-span-4`}>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className={`text-lg font-black ${titleText}`}>Profitability Trend (8 Weeks)</h2>
+            <h2 className={`text-lg font-bold ${titleText}`}>Profitability Trend (8 Weeks)</h2>
             {hasTrendData && (
               <button
                 type="button"
@@ -1766,7 +1766,7 @@ function ProfitabilityDashboard({
           ) : (
             <div className={isDark ? "flex min-h-56 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center" : "flex min-h-56 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center"}>
               <BarChart3 className={isDark ? "mb-3 h-9 w-9 text-slate-500" : "mb-3 h-9 w-9 text-slate-400"} />
-              <p className={`text-lg font-black ${titleText}`}>No profit history yet</p>
+              <p className={`text-lg font-bold ${titleText}`}>No profit history yet</p>
               <p className={`mt-2 max-w-sm text-sm leading-relaxed ${mutedText}`}>
                 Save your first contract or daily route result to start building an 8-week profitability trend.
               </p>
@@ -1786,7 +1786,7 @@ function ProfitabilityDashboard({
       <div className={cardClass}>
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className={`text-xl font-black ${titleText}`}>Contracts Roll-Up</h2>
+            <h2 className={`text-xl font-bold ${titleText}`}>Contracts Roll-Up</h2>
             <p className={`text-sm ${mutedText}`}>
               Click any contract row to open the detail popup and update the numbers.
             </p>
@@ -1924,8 +1924,8 @@ function ProfitabilityDashboard({
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Chart View</p>
-                <h3 className={`mt-1 text-xl font-black ${titleText}`}>
+                <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Chart View</p>
+                <h3 className={`mt-1 text-xl font-bold ${titleText}`}>
                   {activeChartKey === "profit" && "Net Profit by Contract"}
                   {activeChartKey === "costs" && "Cost Breakdown"}
                   {activeChartKey === "trend" && "Profitability Trend"}
@@ -2006,7 +2006,7 @@ function ProfitabilityDashboard({
                 </div>
               ) : (
                 <div className={isDark ? "rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center" : "rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center"}>
-                  <p className={`text-lg font-black ${titleText}`}>No trend data yet</p>
+                  <p className={`text-lg font-bold ${titleText}`}>No trend data yet</p>
                   <p className={`mt-2 text-sm ${mutedText}`}>Profit history will appear after real contracts or route results are saved.</p>
                 </div>
               )

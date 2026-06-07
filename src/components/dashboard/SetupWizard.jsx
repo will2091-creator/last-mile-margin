@@ -37,7 +37,7 @@ export default function SetupWizard({
               <BriefcaseBusiness className="h-7 w-7" />
             </span>
             <div className="min-w-0">
-              <p className={isDark ? "text-xs font-black uppercase tracking-wide text-blue-200" : "text-xs font-black uppercase tracking-wide text-blue-700"}>Business Launch Center</p>
+              <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-blue-200" : "text-xs font-semibold uppercase tracking-wide text-blue-700"}>Business Launch Center</p>
               <h2 className={`mt-1 max-w-3xl text-2xl font-black leading-tight sm:text-3xl ${titleText}`}>Build your first margin command center</h2>
               <p className={`mt-3 max-w-3xl text-sm font-semibold leading-6 ${mutedText}`}>
                 Start with the business facts that make the app useful: contracts, teams, costs, claims, receipts, and history. Every saved step feeds the Dashboard, Operations, Finance, Reports, and Ask.
@@ -69,7 +69,7 @@ export default function SetupWizard({
           <div className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-4" : "rounded-2xl border border-blue-100 bg-white/80 p-4 shadow-sm"}>
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-300" : "text-xs font-black uppercase tracking-wide text-slate-500"}>Setup progress</p>
+                <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-slate-300" : "text-xs font-semibold uppercase tracking-wide text-slate-500"}>Setup progress</p>
                 <p className={`mt-1 text-2xl font-black ${titleText}`}>{setupCompleteCount} of {setupSteps.length} complete</p>
                 {setupSkippedCount > 0 && (
                   <p className="mt-1 text-xs font-black text-amber-700">{setupSkippedCount} skipped item{setupSkippedCount === 1 ? "" : "s"} still in the checklist</p>
@@ -131,11 +131,11 @@ export default function SetupWizard({
               <span className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${toneIcon(tone)}`}>
                 <Icon className="h-6 w-6" />
               </span>
-              <span className={complete ? "rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-black text-white" : skipped ? "rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-black text-amber-700" : isDark ? "rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-black text-slate-300" : "rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500"}>
+              <span className={complete ? "rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white" : skipped ? "rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-bold text-amber-700" : isDark ? "rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-bold text-slate-300" : "rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-500"}>
                 {complete ? "Done" : skipped ? "Skipped" : `Step ${index + 1}`}
               </span>
             </div>
-            <h3 className={`mt-5 text-lg font-black ${titleText}`}>{title}</h3>
+            <h3 className={`mt-5 text-lg font-bold ${titleText}`}>{title}</h3>
             <p className={`mt-2 text-sm font-semibold leading-6 sm:min-h-[96px] ${mutedText}`}>{detail}</p>
             <div className="mt-5 flex flex-wrap gap-2">
               <button
@@ -162,7 +162,7 @@ export default function SetupWizard({
       <section className={cardClass}>
         <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-wide text-blue-600">Finish setup checklist</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Finish setup checklist</p>
             <h2 className={`mt-1 text-2xl font-black ${titleText}`}>Skipped items stay visible until they are finished</h2>
           </div>
           <p className={`max-w-xl text-sm font-semibold leading-6 ${mutedText}`}>
@@ -177,7 +177,7 @@ export default function SetupWizard({
                 <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${toneIcon(tone)}`}>
                   <Icon className="h-5 w-5" />
                 </span>
-                <span className={isDark ? "rounded-full bg-white/5 px-3 py-1 text-[11px] font-black text-slate-300" : "rounded-full bg-white px-3 py-1 text-[11px] font-black text-slate-500"}>
+                <span className={isDark ? "rounded-full bg-white/5 px-3 py-1 text-[11px] font-bold text-slate-300" : "rounded-full bg-white px-3 py-1 text-[11px] font-bold text-slate-500"}>
                   {status}
                 </span>
               </div>

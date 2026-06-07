@@ -232,8 +232,8 @@ export function DocumentVaultTable({ documents, isDark }) {
     <div className={styles.baseCard}>
       <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-wide text-blue-600">Document Vault</p>
-          <h2 className={`mt-1 text-xl font-black ${styles.title}`}>Business and compliance documents</h2>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Document Vault</p>
+          <h2 className={`mt-1 text-xl font-bold ${styles.title}`}>Business and compliance documents</h2>
           <p className={`mt-2 text-sm ${styles.muted}`}>Upload files here, then use the Category dropdown to organize each document.</p>
         </div>
         <div className="flex shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center">
@@ -396,7 +396,7 @@ export function DocumentVaultTable({ documents, isDark }) {
                   <FileText className="h-6 w-6" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-black uppercase tracking-wide text-blue-600">Document Preview</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Document Preview</p>
                   <h3 className={`mt-1 truncate text-2xl font-black ${styles.title}`}>{selectedDocument.name}</h3>
                   <p className={`mt-1 text-sm ${styles.muted}`}>{selectedDocument.owner} · {selectedDocument.category}</p>
                 </div>
@@ -415,7 +415,7 @@ export function DocumentVaultTable({ documents, isDark }) {
                 <div className="space-y-3">
                   {selectedMockDocument.details.map(([label, value]) => (
                     <div key={label} className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-4" : "rounded-2xl border border-slate-200 bg-white p-4"}>
-                      <p className={`text-[11px] font-black uppercase tracking-wide ${styles.muted}`}>{label}</p>
+                      <p className={`text-[11px] font-semibold uppercase tracking-wide ${styles.muted}`}>{label}</p>
                       <p className={`mt-1 text-sm font-black ${styles.title}`}>{value}</p>
                     </div>
                   ))}
@@ -426,7 +426,7 @@ export function DocumentVaultTable({ documents, isDark }) {
                 <div className="mx-auto min-h-[680px] max-w-2xl rounded-2xl bg-white p-8 text-slate-950 shadow-xl">
                   <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-6">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-[0.25em] text-blue-700">Final Mile Margin</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-700">Final Mile Margin</p>
                       <h4 className="mt-3 text-3xl font-black leading-tight">{selectedDocument.name}</h4>
                       <p className="mt-2 text-sm font-semibold text-slate-500">Mock stored document preview</p>
                     </div>
@@ -443,7 +443,7 @@ export function DocumentVaultTable({ documents, isDark }) {
                       ["Expiration", selectedDocument.expiration],
                     ].map(([label, value]) => (
                       <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                        <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">{label}</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
                         <p className="mt-1 text-sm font-black">{value}</p>
                       </div>
                     ))}
@@ -464,10 +464,10 @@ export function DocumentVaultTable({ documents, isDark }) {
 
                   <div className="mt-10 flex items-end justify-between border-t border-slate-200 pt-6">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-wide text-slate-400">Verified By</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Verified By</p>
                       <p className="mt-2 font-black">Will's Fleet Admin</p>
                     </div>
-                    <div className="rounded-xl border-2 border-emerald-600 px-4 py-2 text-sm font-black uppercase tracking-wide text-emerald-700">
+                    <div className="rounded-xl border-2 border-emerald-600 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-emerald-700">
                       Mock File
                     </div>
                   </div>
@@ -502,8 +502,8 @@ export function ComplianceRiskPanel({ documents, risks, isDark }) {
     <div className={styles.baseCard}>
       <div className="mb-5 flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-wide text-blue-600">Compliance Risk Panel</p>
-          <h2 className={`mt-1 text-xl font-black ${styles.title}`}>Document-driven compliance</h2>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Compliance Risk Panel</p>
+          <h2 className={`mt-1 text-xl font-bold ${styles.title}`}>Document-driven compliance</h2>
           <p className={`mt-2 text-sm ${styles.muted}`}>Score is mocked from document status and team readiness.</p>
         </div>
         <div className="text-right">
@@ -519,7 +519,7 @@ export function ComplianceRiskPanel({ documents, risks, isDark }) {
           ["Critical risks", risks.filter((risk) => risk.severity === "Critical").length],
         ].map(([label, value]) => (
           <div key={label} className={styles.softCard}>
-            <p className={`text-xs font-black uppercase tracking-wide ${styles.muted}`}>{label}</p>
+            <p className={`text-xs font-semibold uppercase tracking-wide ${styles.muted}`}>{label}</p>
             <p className={`mt-1 text-2xl font-black ${styles.title}`}>{value}</p>
           </div>
         ))}

@@ -27,7 +27,7 @@ export default function TeamModal({
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-wide text-blue-600">New team</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">New team</p>
             <h2 className={`mt-1 text-2xl font-black ${titleText}`}>Add team info</h2>
             <p className={`mt-2 max-w-xl text-sm leading-6 ${mutedText}`}>
               Add the first crew, truck, and route assignment. This updates the dashboard and Operations team readiness.
@@ -51,7 +51,7 @@ export default function TeamModal({
             ["Route", "route", "Route or contract"],
           ].map(([label, key, placeholder]) => (
             <label key={key} className={key === "route" ? "md:col-span-2" : ""}>
-              <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</span>
+              <span className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{label}</span>
               <input
                 value={teamDraft[key]}
                 onChange={(event) => updateTeamDraft(key, event.target.value)}

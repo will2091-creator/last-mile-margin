@@ -48,7 +48,7 @@ export default function EmptyState({
             <Icon className="h-6 w-6" />
           </span>
           <div className="min-w-0">
-            <p className={isDark ? "text-xs font-black uppercase tracking-wide text-blue-200" : "text-xs font-black uppercase tracking-wide text-blue-700"}>{eyebrow}</p>
+            <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-blue-200" : "text-xs font-semibold uppercase tracking-wide text-blue-700"}>{eyebrow}</p>
             <h2 className={`${compact ? "text-xl" : "text-2xl"} mt-1 font-black leading-tight ${titleText}`}>{title}</h2>
             {description && <p className={`mt-2 max-w-3xl text-sm font-semibold leading-6 ${mutedText}`}>{description}</p>}
             {children && <div className="mt-4">{children}</div>}

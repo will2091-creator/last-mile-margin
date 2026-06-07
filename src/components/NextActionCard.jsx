@@ -18,8 +18,8 @@ export default function NextActionCard({ isDark, status, action, onAction, title
             {status?.isComplete ? <CheckCircle2 className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
           </span>
           <div>
-            <p className={isDark ? "text-xs font-black uppercase tracking-wide text-blue-200" : "text-xs font-black uppercase tracking-wide text-blue-700"}>{title}</p>
-            <h3 className={`mt-1 text-lg font-black ${titleText}`}>{status?.isComplete ? "Setup is ready for daily use" : currentAction.title}</h3>
+            <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-blue-200" : "text-xs font-semibold uppercase tracking-wide text-blue-700"}>{title}</p>
+            <h3 className={`mt-1 text-lg font-bold ${titleText}`}>{status?.isComplete ? "Setup is ready for daily use" : currentAction.title}</h3>
             <p className={`mt-1 text-sm font-semibold leading-6 ${mutedText}`}>
               {status?.isComplete ? "Keep saving snapshots and reviewing claims, receipts, and teams as work comes in." : currentAction.detail}
             </p>

@@ -11,7 +11,7 @@ export default function DemoBanner({ isDark, isDemoBannerDismissed, setIsDemoBan
           <LayoutDashboard className="h-3.5 w-3.5" />
         </span>
         <p className={isDark ? "min-w-0 flex-1 text-xs font-bold text-blue-200" : "min-w-0 flex-1 text-xs font-bold text-blue-800"}>
-          <span className="font-black uppercase tracking-wide">Demo Workspace</span> — sample data is isolated from your real workspace
+          <span className="font-semibold uppercase tracking-wide">Demo Workspace</span> — sample data is isolated from your real workspace
         </p>
         <button type="button" onClick={() => setIsDemoBannerDismissed(true)} className={isDark ? "shrink-0 rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white" : "shrink-0 rounded-lg p-1 text-slate-400 hover:bg-blue-100 hover:text-slate-700"} aria-label="Dismiss demo banner">
           ✕

@@ -26,7 +26,7 @@ export default function PageIntro({
           </span>
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              {eyebrow && <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-black uppercase tracking-wide text-white">{eyebrow}</span>}
+              {eyebrow && <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">{eyebrow}</span>}
               {chips.map((chip) => (
                 <span key={chip} className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
                   {chip}

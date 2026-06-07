@@ -18,15 +18,15 @@ export default function LaunchQAChecklist({ isDark, checks = [] }) {
             <ClipboardCheck className="h-5 w-5" />
           </span>
           <div>
-            <p className="text-xs font-black uppercase tracking-wide text-blue-600">Launch QA</p>
-            <h2 className={`mt-1 text-xl font-black ${titleText}`}>{completeCount} of {checks.length} production checks ready</h2>
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Launch QA</p>
+            <h2 className={`mt-1 text-xl font-bold ${titleText}`}>{completeCount} of {checks.length} production checks ready</h2>
             <p className={`mt-2 max-w-3xl text-sm font-semibold leading-6 ${mutedText}`}>
               Use this as the SaaS hardening board before relying on the workspace for real operations.
             </p>
           </div>
         </div>
         <div className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-4 lg:w-72" : "rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:w-72"}>
-          <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Readiness</p>
+          <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Readiness</p>
           <p className={`mt-1 text-3xl font-black ${titleText}`}>{percent}%</p>
           <div className={isDark ? "mt-3 h-2 overflow-hidden rounded-full bg-slate-950/70" : "mt-3 h-2 overflow-hidden rounded-full bg-slate-200"}>
             <div className="h-full rounded-full bg-blue-600" style={{ width: `${percent}%` }} />

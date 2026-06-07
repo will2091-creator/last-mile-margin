@@ -857,7 +857,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/60 p-6 text-left shadow-xl shadow-black/20 transition hover:border-blue-300/40" : "rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-blue-300"}
         >
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-black uppercase tracking-wide text-blue-600">Net Profit Today</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Net Profit Today</p>
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white">
               <DollarSign className="h-5 w-5" />
             </span>
@@ -893,7 +893,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
         <div data-tour="dashboard-needs-attention" className={cardClass}>
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-xs font-black uppercase tracking-wide text-red-600">Needs Attention</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Needs Attention</p>
             {needsAttention.length > 0 && (
               <button onClick={() => setActiveTab("Operations")} className="text-sm font-bold text-blue-600">View all</button>
             )}
@@ -934,7 +934,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           <span className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ${toneIcon("blue")}`}>
             <DollarSign className="h-6 w-6" />
           </span>
-          <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Revenue Today</p>
+          <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Revenue Today</p>
           <p className="safe-number mt-2 text-3xl font-black text-blue-600" title={currency.format(dashboardRevenue)}>{currency.format(dashboardRevenue)}</p>
         </button>
 
@@ -942,7 +942,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           <span className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ${toneIcon("amber")}`}>
             <Calculator className="h-6 w-6" />
           </span>
-          <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Costs Today</p>
+          <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Costs Today</p>
           <p className="safe-number mt-2 text-3xl font-black text-amber-700" title={currency.format(dashboardCosts)}>{currency.format(dashboardCosts)}</p>
         </button>
 
@@ -950,7 +950,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           <span className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ${toneIcon(margin >= 0 ? "green" : "red")}`}>
             <BarChart3 className="h-6 w-6" />
           </span>
-          <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Margin</p>
+          <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Margin</p>
           <p className={`safe-number mt-2 text-3xl font-black ${margin >= 0 ? "text-emerald-700" : "text-red-600"}`} title={`${number.format(margin)}%`}>{number.format(margin)}%</p>
         </button>
 
@@ -958,7 +958,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           <span className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ${toneIcon("blue")}`}>
             <Users className="h-6 w-6" />
           </span>
-          <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Team Readiness</p>
+          <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Team Readiness</p>
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
             <p className={`safe-number text-3xl font-black ${titleText}`}>{currentReadiness}%</p>
             {renderTrendChip(readinessTrendDelta, { suffix: " pts", goodIsUp: true })}
@@ -1028,7 +1028,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
         <div className="grid gap-4 xl:grid-cols-2">
           <div data-tour="dashboard-contract-performance" className={cardClass}>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className={`text-lg font-black ${titleText}`}>Contract Performance</h2>
+              <h2 className={`text-lg font-bold ${titleText}`}>Contract Performance</h2>
               <button onClick={() => setActiveTab("Finance")} className="text-sm font-bold text-blue-600">View all</button>
             </div>
             {quickContractCards.length === 0 ? (
@@ -1063,7 +1063,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
           <div data-tour="dashboard-recent-claims" className={cardClass}>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className={`text-lg font-black ${titleText}`}>Recent Claims</h2>
+              <h2 className={`text-lg font-bold ${titleText}`}>Recent Claims</h2>
               <button onClick={() => setActiveTab("Claims")} className="text-sm font-bold text-blue-600">View all</button>
             </div>
             {recentClaims.length === 0 ? (
@@ -1182,7 +1182,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           <div className={isDark ? "w-full max-w-5xl rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl shadow-black/40" : "w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-950/20"}>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-blue-600">Dashboard preview</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Dashboard preview</p>
                 <h2 className={`mt-1 text-2xl font-black ${titleText}`}>Your first command center snapshot</h2>
                 <p className={`mt-2 max-w-2xl text-sm leading-6 ${mutedText}`}>
                   This is what the dashboard can now use. Any skipped setup item stays in the checklist so it does not disappear.
@@ -1210,7 +1210,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600">
                       <Icon className="h-5 w-5" />
                     </span>
-                    <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</p>
+                    <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{label}</p>
                   </div>
                   <p className={`safe-number mt-4 text-2xl font-black ${tone}`} title={value}>{value}</p>
                 </div>
@@ -1219,8 +1219,8 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
             <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_360px]">
               <div className={isDark ? "rounded-2xl border border-blue-400/20 bg-blue-500/10 p-5" : "rounded-2xl border border-blue-100 bg-blue-50 p-5"}>
-                <p className="text-xs font-black uppercase tracking-wide text-blue-600">Next recommended action</p>
-                <h3 className={`mt-2 text-xl font-black ${titleText}`}>{previewNextAction}</h3>
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Next recommended action</p>
+                <h3 className={`mt-2 text-xl font-bold ${titleText}`}>{previewNextAction}</h3>
                 <p className={`mt-2 text-sm font-semibold leading-6 ${mutedText}`}>
                   Ask will use these setup gaps when it answers questions, so it will not pretend there is margin data before contracts and costs exist.
                 </p>

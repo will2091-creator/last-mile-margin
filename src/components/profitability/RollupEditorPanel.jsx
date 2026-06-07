@@ -38,15 +38,15 @@ export default function RollupEditorPanel({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Edit Contract</p>
-                <span className={isDark ? "rounded-full bg-blue-500/15 px-2.5 py-1 text-[11px] font-black text-blue-200" : "rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700"}>
+                <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Edit Contract</p>
+                <span className={isDark ? "rounded-full bg-blue-500/15 px-2.5 py-1 text-[11px] font-bold text-blue-200" : "rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700"}>
                   Draft totals
                 </span>
               </div>
               <input
                 value={editingRollupRow.contract}
                 onChange={(event) => updateRollupDraft("contract", event.target.value)}
-                className={isDark ? "mt-1 w-full min-w-0 rounded-xl border border-white/10 bg-slate-900/80 px-3 py-2 text-lg font-black text-white outline-none focus:border-blue-500" : "mt-1 w-full min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-lg font-black text-slate-950 outline-none focus:border-blue-500"}
+                className={isDark ? "mt-1 w-full min-w-0 rounded-xl border border-white/10 bg-slate-900/80 px-3 py-2 text-lg font-bold text-white outline-none focus:border-blue-500" : "mt-1 w-full min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-lg font-bold text-slate-950 outline-none focus:border-blue-500"}
               />
             </div>
           </div>
@@ -72,7 +72,7 @@ export default function RollupEditorPanel({
               ["Stops / Week", "stops"],
             ].map(([label, key]) => (
               <div key={key}>
-                <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</label>
+                <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{label}</label>
                 <input
                   type="number"
                   value={editingRollupRow[key]}

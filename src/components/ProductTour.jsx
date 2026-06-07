@@ -181,7 +181,7 @@ export default function ProductTour({ isOpen, isDark = false, initialStepIndex =
           </button>
         </div>
 
-        <h2 className="text-xl font-black leading-tight">{step.title}</h2>
+        <h2 className="text-xl font-bold leading-tight">{step.title}</h2>
         <p className={isDark ? "mt-3 text-sm font-semibold leading-6 text-slate-300" : "mt-3 text-sm font-semibold leading-6 text-slate-600"}>
           {targetRect || !step.fallback ? step.description : step.fallback}
         </p>

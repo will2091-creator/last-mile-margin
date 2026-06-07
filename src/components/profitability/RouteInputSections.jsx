@@ -32,7 +32,7 @@ export default function RouteInputSections({
                   <p className={`mt-1 line-clamp-2 text-xs font-semibold ${mutedText}`}>{section.subtitle}</p>
                 </div>
               </div>
-              <span className="shrink-0 rounded-full bg-blue-600 px-2.5 py-1 text-[11px] font-black text-white opacity-0 transition group-hover:opacity-100">
+              <span className="shrink-0 rounded-full bg-blue-600 px-2.5 py-1 text-[11px] font-bold text-white opacity-0 transition group-hover:opacity-100">
                 Open
               </span>
             </div>

@@ -205,7 +205,7 @@ export default function AppToolbar({
 
             <div className="grid grid-cols-7 gap-1">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((weekday) => (
-                <div key={weekday} className={isDark ? "pb-1 text-center text-[10px] font-black uppercase text-slate-500" : "pb-1 text-center text-[10px] font-black uppercase text-slate-400"}>
+                <div key={weekday} className={isDark ? "pb-1 text-center text-[10px] font-semibold uppercase text-slate-500" : "pb-1 text-center text-[10px] font-semibold uppercase text-slate-400"}>
                   {weekday}
                 </div>
               ))}
@@ -272,7 +272,7 @@ export default function AppToolbar({
                   ["End", globalDateRange.end],
                 ].map(([label, value]) => (
                   <label key={label} className="block">
-                    <span className={isDark ? "mb-1 block text-[10px] font-black uppercase tracking-wide text-slate-500" : "mb-1 block text-[10px] font-black uppercase tracking-wide text-slate-400"}>{label}</span>
+                    <span className={isDark ? "mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-500" : "mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-400"}>{label}</span>
                     <input
                       type="date"
                       value={value}

@@ -145,7 +145,7 @@ export default function OperationsDashboard({
           })}
         </div>
         <div className={isDark ? "mt-2 rounded-xl bg-slate-950/60 px-4 py-3" : "mt-2 rounded-xl bg-slate-50 px-4 py-3"}>
-          <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>
+          <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-slate-400" : "text-xs font-semibold uppercase tracking-wide text-slate-500"}>
             Current workflow
           </p>
           <p className={`mt-1 text-sm font-bold ${mutedText}`}>
@@ -226,8 +226,8 @@ export default function OperationsDashboard({
               {complianceBlockers.length || highRiskClaims.length ? <AlertTriangle className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
             </div>
             <div>
-              <p className={isDark ? "text-sm font-black uppercase tracking-wide text-blue-200" : "text-sm font-black uppercase tracking-wide text-blue-700"}>Next operations move</p>
-              <p className={`mt-1 text-lg font-black ${titleText}`}>{nextMove}</p>
+              <p className={isDark ? "text-sm font-semibold uppercase tracking-wide text-blue-200" : "text-sm font-semibold uppercase tracking-wide text-blue-700"}>Next operations move</p>
+              <p className={`mt-1 text-lg font-bold ${titleText}`}>{nextMove}</p>
               <p className={`mt-1 text-sm font-semibold ${mutedText}`}>Use the section buttons below to jump into the workflow that owns the issue.</p>
             </div>
           </div>
@@ -288,7 +288,7 @@ function DispatchBoard({ teams, claims, isDark, setActiveSection }) {
     <section className={cardClass}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-wide text-blue-600">Daily Dispatch</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Daily Dispatch</p>
           <h2 className={`mt-1 text-2xl font-black ${titleText}`}>Today’s Teams</h2>
           <p className={`mt-2 max-w-2xl text-sm font-semibold ${mutedText}`}>
             Use this board to see who is ready, who needs photo proof, and which teams have active claims tied to today’s work.
@@ -320,7 +320,7 @@ function DispatchBoard({ teams, claims, isDark, setActiveSection }) {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <Truck className="h-4 w-4 text-blue-600" />
-                  <p className={`truncate text-lg font-black ${titleText}`}>{team.name}</p>
+                  <p className={`truncate text-lg font-bold ${titleText}`}>{team.name}</p>
                 </div>
                 <p className={`mt-1 text-sm font-bold ${mutedText}`}>{team.lead || "No lead"} · {team.helper || "No helper"} · Truck {team.truck || "Unassigned"}</p>
               </div>
@@ -350,7 +350,7 @@ function DispatchBoard({ teams, claims, isDark, setActiveSection }) {
 function DispatchStat({ isDark, label, value }) {
   return (
     <div className={isDark ? "rounded-xl bg-slate-950/60 px-3 py-2" : "rounded-xl bg-white/70 px-3 py-2"}>
-      <p className={isDark ? "text-[10px] font-black uppercase tracking-wide text-slate-400" : "text-[10px] font-black uppercase tracking-wide text-slate-500"}>{label}</p>
+      <p className={isDark ? "text-[10px] font-semibold uppercase tracking-wide text-slate-400" : "text-[10px] font-semibold uppercase tracking-wide text-slate-500"}>{label}</p>
       <p className={isDark ? "mt-1 truncate text-sm font-black text-white" : "mt-1 truncate text-sm font-black text-slate-950"}>{value}</p>
     </div>
   );
@@ -373,7 +373,7 @@ function OperationMetric({ isDark, icon: Icon, label, value, note, tone, onClick
         <div className={`rounded-2xl p-3 ${toneClasses[tone]}`}>
           <Icon className="h-5 w-5" />
         </div>
-        <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>{label}</p>
+        <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-slate-400" : "text-xs font-semibold uppercase tracking-wide text-slate-500"}>{label}</p>
       </div>
       <p className={isDark ? "mt-4 truncate text-3xl font-black text-white" : "mt-4 truncate text-3xl font-black text-slate-950"}>{value}</p>
       <p className={isDark ? "mt-1 truncate text-sm font-bold text-slate-400" : "mt-1 truncate text-sm font-bold text-slate-500"}>{note}</p>

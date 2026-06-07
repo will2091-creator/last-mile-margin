@@ -546,7 +546,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
             {selectedReport.previewRows.map(([label, value]) => (
               <div key={label} className={isDark ? "rounded-xl bg-white/5 p-4" : "rounded-xl bg-slate-50 p-4"}>
                 <p className={`text-xs font-bold ${mutedText}`}>{label}</p>
-                <p className={`mt-2 text-lg font-black ${label.toLowerCase().includes("claim") || label.toLowerCase().includes("risk") ? "text-red-600" : titleText}`}>
+                <p className={`mt-2 text-lg font-bold ${label.toLowerCase().includes("claim") || label.toLowerCase().includes("risk") ? "text-red-600" : titleText}`}>
                   {value}
                 </p>
               </div>
@@ -556,7 +556,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
       )}
 
       <div data-tour="reports-center" className={cardClass}>
-        <h2 className={`text-xl font-black ${titleText}`}>Report Center</h2>
+        <h2 className={`text-xl font-bold ${titleText}`}>Report Center</h2>
 
         <div className="mt-5 grid gap-5 xl:grid-cols-3">
           {visibleReports.map((report) => {
@@ -579,7 +579,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
                     <p className={`mt-3 text-sm font-bold ${tone.text}`}>Best for: {report.bestFor}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {requirements.map((requirement) => (
-                        <span key={requirement.label} className={requirement.complete ? "rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-black text-emerald-700" : requirement.optional ? "rounded-full bg-slate-500/10 px-2.5 py-1 text-[10px] font-black text-slate-500" : "rounded-full bg-amber-500/10 px-2.5 py-1 text-[10px] font-black text-amber-700"}>
+                        <span key={requirement.label} className={requirement.complete ? "rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold text-emerald-700" : requirement.optional ? "rounded-full bg-slate-500/10 px-2.5 py-1 text-[10px] font-bold text-slate-500" : "rounded-full bg-amber-500/10 px-2.5 py-1 text-[10px] font-bold text-amber-700"}>
                           {requirement.complete ? "Ready" : requirement.optional ? "Optional" : "Needed"} · {requirement.label}
                         </span>
                       ))}
@@ -619,7 +619,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
 
       <div className="grid gap-6 xl:grid-cols-12">
         <div data-tour="reports-filters" className={`${cardClass} xl:col-span-3`}>
-          <h2 className={`text-lg font-black ${titleText}`}>Filters</h2>
+          <h2 className={`text-lg font-bold ${titleText}`}>Filters</h2>
 
           <div className="mt-5 space-y-4">
             <div>
@@ -678,7 +678,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
         <div data-tour="reports-recent-exports" className={`${cardClass} xl:col-span-6`}>
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <h2 className={`text-lg font-black ${titleText}`}>Recent Exports</h2>
+              <h2 className={`text-lg font-bold ${titleText}`}>Recent Exports</h2>
               <p className={`text-sm ${mutedText}`}>Recently generated report files.</p>
             </div>
             <button onClick={clearFilters} className="text-sm font-bold text-blue-600">View All Exports</button>
@@ -729,7 +729,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
         </div>
 
         <div data-tour="reports-insights" className={`${cardClass} xl:col-span-3`}>
-          <h2 className={`text-lg font-black ${titleText}`}>Report Insights</h2>
+          <h2 className={`text-lg font-bold ${titleText}`}>Report Insights</h2>
           <p className={`text-sm ${mutedText}`}>Key metrics from this period.</p>
 
           <div className="mt-5 space-y-5">
@@ -743,7 +743,7 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
                   </div>
                   <div>
                     <p className={`text-sm font-semibold ${mutedText}`}>{item.label}</p>
-                    <p className={`mt-1 text-lg font-black ${item.tone === "red" ? "text-red-600" : titleText}`}>{item.value}</p>
+                    <p className={`mt-1 text-lg font-bold ${item.tone === "red" ? "text-red-600" : titleText}`}>{item.value}</p>
                     <p className={`mt-1 text-xs ${mutedText}`}>{item.delta}</p>
                   </div>
                 </div>

@@ -88,7 +88,7 @@ export default function AppSidebar({
                   </span>
                   <span className="mt-3 flex flex-wrap gap-1.5">
                     {preview.metrics.map((metric) => (
-                      <span key={metric} className={isDark ? "rounded-full bg-blue-500/15 px-2 py-1 text-[10px] font-black text-blue-100" : "rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700"}>
+                      <span key={metric} className={isDark ? "rounded-full bg-blue-500/15 px-2 py-1 text-[10px] font-bold text-blue-100" : "rounded-full bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700"}>
                         {metric}
                       </span>
                     ))}
@@ -144,7 +144,7 @@ export default function AppSidebar({
       <div className="mt-6 text-sm text-slate-500">
         <p>{appSettings.companyName}</p>
         <p>{isDemoMode ? "Demo Workspace" : isDemoWorkspace ? "demo123" : authUser?.email || "Owner Account"}</p>
-        <p className="mt-1 text-xs font-black uppercase tracking-wide">{roleLabel || currentUserRole}</p>
+        <p className="mt-1 text-xs font-semibold uppercase tracking-wide">{roleLabel || currentUserRole}</p>
           <button onClick={signOut} className="mt-3 rounded-lg px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-500/10">Sign Out</button>
       </div>
     </aside>

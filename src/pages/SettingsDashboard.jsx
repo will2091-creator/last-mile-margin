@@ -478,7 +478,7 @@ function SettingsDashboard({
               <card.icon className="h-6 w-6" />
             </div>
             <div>
-              <h3 className={`text-lg font-black ${titleText}`}>{card.title}</h3>
+              <h3 className={`text-lg font-bold ${titleText}`}>{card.title}</h3>
               <p className={`text-sm ${mutedText}`}>{card.subtitle}</p>
             </div>
           </div>
@@ -546,7 +546,7 @@ function SettingsDashboard({
               <CheckCircle2 className="h-5 w-5" />
             </div>
             <div>
-              <h2 className={`text-lg font-black ${titleText}`}>Backend Sync</h2>
+              <h2 className={`text-lg font-bold ${titleText}`}>Backend Sync</h2>
               <p className={`text-sm ${mutedText}`}>Claims, settings, teams, saved days, and scenarios are prepared for Supabase.</p>
             </div>
           </div>
@@ -569,8 +569,8 @@ function SettingsDashboard({
               <BriefcaseBusiness className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-black uppercase tracking-wide text-blue-600">Demo Workspace</p>
-              <h2 className={`mt-1 text-lg font-black ${titleText}`}>{isDemoMode ? "Viewing Demo Workspace" : "Demo Mode is off"}</h2>
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Demo Workspace</p>
+              <h2 className={`mt-1 text-lg font-bold ${titleText}`}>{isDemoMode ? "Viewing Demo Workspace" : "Demo Mode is off"}</h2>
               <p className={`mt-1 max-w-3xl text-sm font-semibold leading-6 ${mutedText}`}>
                 Demo data is stored separately from real workspace data. Use it to show contracts, claims, teams, receipts, reports, trend history, and Ask responses without touching live information.
               </p>
@@ -622,8 +622,8 @@ function SettingsDashboard({
         <div className={cardClass}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-wide text-blue-600">Onboarding controls</p>
-              <h2 className={`mt-1 text-xl font-black ${titleText}`}>Setup guidance stays recoverable</h2>
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Onboarding controls</p>
+              <h2 className={`mt-1 text-xl font-bold ${titleText}`}>Setup guidance stays recoverable</h2>
               <p className={`mt-2 max-w-3xl text-sm font-semibold leading-6 ${mutedText}`}>
                 Reset the checklist, restore setup prompts, or use dashboard presets when you want the app to guide a new owner through setup again.
               </p>
@@ -640,8 +640,8 @@ function SettingsDashboard({
         </div>
 
         <div className={cardClass}>
-          <p className="text-xs font-black uppercase tracking-wide text-blue-600">Company profile</p>
-          <h2 className={`mt-1 text-lg font-black ${titleText}`}>{companyCompletenessCount} of {companyCompleteness.length} complete</h2>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Company profile</p>
+          <h2 className={`mt-1 text-lg font-bold ${titleText}`}>{companyCompletenessCount} of {companyCompleteness.length} complete</h2>
           <div className={isDark ? "mt-3 h-2 overflow-hidden rounded-full bg-slate-950/70" : "mt-3 h-2 overflow-hidden rounded-full bg-slate-100"}>
             <div className="h-full rounded-full bg-emerald-600" style={{ width: `${(companyCompletenessCount / companyCompleteness.length) * 100}%` }} />
           </div>
@@ -687,7 +687,7 @@ function SettingsDashboard({
               <Settings className="h-6 w-6" />
             </div>
             <div>
-              <h2 className={`text-xl font-black ${titleText}`}>{activeSettingsTab}</h2>
+              <h2 className={`text-xl font-bold ${titleText}`}>{activeSettingsTab}</h2>
               <p className={`text-sm ${mutedText}`}>
                 {activeSettingsTab === "Company" && "Business identity, theme, and accent settings."}
                 {activeSettingsTab === "Team Access" && "Invite users and control what each role can access."}
@@ -704,7 +704,7 @@ function SettingsDashboard({
           {activeSettingsTab === "Company" && (
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               <div>
-                <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Company Name</label>
+                <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Company Name</label>
                 <input
                   value={appSettings?.companyName || "Final Mile Delivery"}
                   onChange={(event) => updateSetting("companyName", event.target.value)}
@@ -712,7 +712,7 @@ function SettingsDashboard({
                 />
               </div>
               <div>
-                <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Theme Mode</label>
+                <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Theme Mode</label>
                 <select
                   value={appSettings?.themeMode || "light"}
                   onChange={(event) => updateSetting("themeMode", event.target.value)}
@@ -723,7 +723,7 @@ function SettingsDashboard({
                 </select>
               </div>
               <div>
-                <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Accent Color</label>
+                <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Accent Color</label>
                 <select
                   value={appSettings?.accentColor || "blue"}
                   onChange={(event) => updateSetting("accentColor", event.target.value)}
@@ -754,12 +754,12 @@ function SettingsDashboard({
                 <div className={softCard}>
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                      <h3 className={`text-lg font-black ${titleText}`}>Business Users</h3>
+                      <h3 className={`text-lg font-bold ${titleText}`}>Business Users</h3>
                       <p className={`mt-1 text-sm leading-6 ${mutedText}`}>
                         Your account is the owner. Add people here first, then they can be connected to Supabase Auth when the invite email flow is turned on.
                       </p>
                     </div>
-                    <span className={isDark ? "w-fit rounded-full bg-blue-500/10 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-200" : "w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700"}>
+                    <span className={isDark ? "w-fit rounded-full bg-blue-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-200" : "w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700"}>
                       You are {roleLabelByValue[currentUserRole] || currentUserRole}
                     </span>
                   </div>
@@ -770,10 +770,10 @@ function SettingsDashboard({
                 </div>
 
                 <form onSubmit={submitInvite} className={softCard}>
-                  <h3 className={`text-lg font-black ${titleText}`}>Add Team Member</h3>
+                  <h3 className={`text-lg font-bold ${titleText}`}>Add Team Member</h3>
                   <div className="mt-4 space-y-3">
                     <div>
-                      <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Email</label>
+                      <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Email</label>
                       <input
                         type="email"
                         value={inviteDraft.email}
@@ -784,7 +784,7 @@ function SettingsDashboard({
                       />
                     </div>
                     <div>
-                      <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Role</label>
+                      <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Role</label>
                       <select
                         value={inviteDraft.role}
                         disabled={!canManageTeamAccess}
@@ -813,13 +813,13 @@ function SettingsDashboard({
               <div className={cardClass}>
                 <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <h3 className={`text-lg font-black ${titleText}`}>Members and Roles</h3>
+                    <h3 className={`text-lg font-bold ${titleText}`}>Members and Roles</h3>
                     <p className={`text-sm ${mutedText}`}>{teamMembers.length} user{teamMembers.length === 1 ? "" : "s"} connected to this business workspace.</p>
                   </div>
                 </div>
 
                 <div className={`overflow-hidden rounded-2xl border ${rowBorder}`}>
-                  <div className={isDark ? "grid grid-cols-[1.3fr_160px_140px] gap-3 bg-slate-950/70 px-4 py-3 text-xs font-black uppercase tracking-wide text-slate-400" : "grid grid-cols-[1.3fr_160px_140px] gap-3 bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-wide text-slate-500"}>
+                  <div className={isDark ? "grid grid-cols-[1.3fr_160px_140px] gap-3 bg-slate-950/70 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400" : "grid grid-cols-[1.3fr_160px_140px] gap-3 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500"}>
                     <span>User</span>
                     <span>Role</span>
                     <span>Status</span>
@@ -868,7 +868,7 @@ function SettingsDashboard({
             <div className="mt-6 grid gap-5 xl:grid-cols-[1fr_360px]">
               <div className="grid gap-4 md:grid-cols-3">
                 <div>
-                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Target Margin</label>
+                  <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Target Margin</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -884,7 +884,7 @@ function SettingsDashboard({
                 </div>
 
                 <div>
-                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Claims Reserve Target</label>
+                  <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Claims Reserve Target</label>
                   <div className="relative">
                     <span className={`absolute left-3 top-2.5 text-sm font-black ${mutedText}`}>$</span>
                     <input
@@ -899,7 +899,7 @@ function SettingsDashboard({
                 </div>
 
                 <div>
-                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Review Line Margin</label>
+                  <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Review Line Margin</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -949,7 +949,7 @@ function SettingsDashboard({
             <div className="mt-6 grid gap-5 xl:grid-cols-[1fr_360px]">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Medium Risk Starts At</label>
+                  <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Medium Risk Starts At</label>
                   <div className="relative">
                     <span className={`absolute left-3 top-2.5 text-sm font-black ${mutedText}`}>$</span>
                     <input
@@ -962,7 +962,7 @@ function SettingsDashboard({
                   </div>
                 </div>
                 <div>
-                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>High Risk Starts At</label>
+                  <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>High Risk Starts At</label>
                   <div className="relative">
                     <span className={`absolute left-3 top-2.5 text-sm font-black ${mutedText}`}>$</span>
                     <input
@@ -1010,7 +1010,7 @@ function SettingsDashboard({
                 ["redelivery", "Redelivery", "$"],
               ].map(([key, label, prefix]) => (
                 <div key={key}>
-                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</label>
+                  <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{label}</label>
                   <div className="relative">
                     <span className={`absolute left-3 top-2.5 text-sm font-black ${mutedText}`}>{prefix}</span>
                     <input
@@ -1036,7 +1036,7 @@ function SettingsDashboard({
                 ["margin", "Margin"],
               ].map(([key, fallback]) => (
                 <div key={key}>
-                  <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{fallback} Label</label>
+                  <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{fallback} Label</label>
                   <input
                     value={labelSettings[key]}
                     onChange={(event) => updateNestedSetting("labels", key, event.target.value)}
@@ -1095,7 +1095,7 @@ function SettingsDashboard({
           <div className={cardClass}>
             <div className="grid gap-5 xl:grid-cols-[280px_1fr_360px]">
               <div>
-                <h2 className={`text-lg font-black ${titleText}`}>Margin Profile</h2>
+                <h2 className={`text-lg font-bold ${titleText}`}>Margin Profile</h2>
                 <select
                   value={marginFactors.profile}
                   onChange={(event) => applyProfile(event.target.value)}
@@ -1112,7 +1112,7 @@ function SettingsDashboard({
 
               <div className={softCard}>
                 <div className="mb-4 flex items-center gap-2">
-                  <h2 className={`text-lg font-black ${titleText}`}>Margin Formula Preview</h2>
+                  <h2 className={`text-lg font-bold ${titleText}`}>Margin Formula Preview</h2>
                   <span className={`flex h-5 w-5 items-center justify-center rounded-full border text-xs ${mutedText}`}>i</span>
                 </div>
 
@@ -1121,12 +1121,12 @@ function SettingsDashboard({
                     <p className="text-sm font-black">Revenue</p>
                     <p className="mt-1 text-xs">{selectedCounts.revenue} factors</p>
                   </div>
-                  <p className={`hidden text-center text-xl font-black md:block ${mutedText}`}>−</p>
+                  <p className={`hidden text-center text-xl font-bold md:block ${mutedText}`}>−</p>
                   <div className={toneStyles.red + " rounded-2xl p-4 text-center"}>
                     <p className="text-sm font-black">Costs</p>
                     <p className="mt-1 text-xs">{selectedCounts.costs} factors</p>
                   </div>
-                  <p className={`hidden text-center text-xl font-black md:block ${mutedText}`}>=</p>
+                  <p className={`hidden text-center text-xl font-bold md:block ${mutedText}`}>=</p>
                   <div className={toneStyles.blue + " rounded-2xl p-4 text-center"}>
                     <p className="text-sm font-black">Net Profit</p>
                     <p className="mt-1 text-xs">Margin %</p>
@@ -1144,7 +1144,7 @@ function SettingsDashboard({
               </div>
 
               <div>
-                <h2 className={`text-lg font-black ${titleText}`}>Formula Description</h2>
+                <h2 className={`text-lg font-bold ${titleText}`}>Formula Description</h2>
                 <p className={`mt-4 text-sm leading-6 ${mutedText}`}>
                   Your margin is calculated as:
                 </p>
@@ -1169,7 +1169,7 @@ function SettingsDashboard({
                   <FileText className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className={`text-lg font-black ${titleText}`}>Preview Impact</h2>
+                  <h2 className={`text-lg font-bold ${titleText}`}>Preview Impact</h2>
                   <p className={`text-sm ${mutedText}`}>See how your selected factors appear in the app.</p>
                 </div>
               </div>
@@ -1196,7 +1196,7 @@ function SettingsDashboard({
                   <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className={`text-lg font-black ${titleText}`}>Advanced Options</h2>
+                  <h2 className={`text-lg font-bold ${titleText}`}>Advanced Options</h2>
                   <p className={`text-sm ${mutedText}`}>Customize deeper margin controls.</p>
                 </div>
               </div>

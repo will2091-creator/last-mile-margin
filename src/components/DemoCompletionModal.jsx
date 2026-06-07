@@ -43,7 +43,7 @@ export default function DemoCompletionModal({ isOpen, isDark = false, onClose, o
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-600 text-white">
                 <CheckCircle2 className="h-6 w-6" />
               </span>
-              <span className={isDark ? "rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-black uppercase tracking-wide text-emerald-100" : "rounded-full bg-emerald-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-emerald-700"}>
+              <span className={isDark ? "rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-100" : "rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700"}>
                 Walkthrough Complete
               </span>
             </div>
@@ -74,7 +74,7 @@ export default function DemoCompletionModal({ isOpen, isDark = false, onClose, o
         </div>
 
         <div className={isDark ? "mt-6 rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4" : "mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-4"}>
-          <p className={isDark ? "text-xs font-black uppercase tracking-wide text-blue-100" : "text-xs font-black uppercase tracking-wide text-blue-700"}>Business Journey Map</p>
+          <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-blue-100" : "text-xs font-semibold uppercase tracking-wide text-blue-700"}>Business Journey Map</p>
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {journey.map(([title, detail, Icon], index) => (
               <div key={title} className={cardClass}>

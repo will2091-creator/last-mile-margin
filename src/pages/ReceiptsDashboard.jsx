@@ -100,7 +100,7 @@ export default function ReceiptsDashboard({ isDark, isBlankDemo = false, isDemoM
       <section className={cardClass}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-wide text-blue-600">Expense Receipts</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Expense Receipts</p>
             <h1 className={`mt-2 text-4xl font-black tracking-tight ${titleText}`}>Receipts</h1>
             <p className={`mt-2 max-w-3xl text-sm font-semibold ${mutedText}`}>
               Gas, tools, maintenance, parking, and toll receipts uploaded from the mobile app show here.
@@ -138,7 +138,7 @@ export default function ReceiptsDashboard({ isDark, isBlankDemo = false, isDemoM
       <section className={cardClass}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className={`text-xl font-black ${titleText}`}>Receipt Inbox</h2>
+            <h2 className={`text-xl font-bold ${titleText}`}>Receipt Inbox</h2>
             <p className={`mt-1 text-sm font-semibold ${mutedText}`}>Review what came from the phone before it affects route profit.</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -165,7 +165,7 @@ export default function ReceiptsDashboard({ isDark, isBlankDemo = false, isDemoM
             <div key={receipt.id} className={`${softPanel} p-4`}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className={`text-lg font-black ${titleText}`}>{receipt.vendor}</p>
+                  <p className={`text-lg font-bold ${titleText}`}>{receipt.vendor}</p>
                   <p className={`mt-1 text-sm font-bold ${mutedText}`}>
                     {receipt.type} · {receipt.uploadedAt ? receipt.uploadedAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Uploaded"}
                   </p>
@@ -199,7 +199,7 @@ function MetricCard({ isDark, icon: Icon, label, value, note }) {
         <div className={isDark ? "rounded-2xl bg-blue-500/10 p-3 text-blue-300" : "rounded-2xl bg-blue-50 p-3 text-blue-600"}>
           <Icon className="h-5 w-5" />
         </div>
-        <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-400" : "text-xs font-black uppercase tracking-wide text-slate-500"}>{label}</p>
+        <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-slate-400" : "text-xs font-semibold uppercase tracking-wide text-slate-500"}>{label}</p>
       </div>
       <p className={isDark ? "mt-4 text-3xl font-black text-white" : "mt-4 text-3xl font-black text-slate-950"}>{value}</p>
       <p className={isDark ? "mt-1 text-sm font-bold text-slate-400" : "mt-1 text-sm font-bold text-slate-500"}>{note}</p>

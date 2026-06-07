@@ -28,7 +28,7 @@ export default function ImportModal({
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-wide text-blue-600">Import data</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Import data</p>
             <h2 className={`mt-1 text-2xl font-black ${titleText}`}>What are you importing?</h2>
             <p className={`mt-2 max-w-xl text-sm leading-6 ${mutedText}`}>
               Start a contract document, claim email, or receipt intake from the dashboard. Claims saved here immediately update open-claim metrics.
@@ -68,7 +68,7 @@ export default function ImportModal({
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <label>
-            <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>
+            <span className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>
               {importDraft.type === "Receipt" ? "Vendor / Receipt Name" : importDraft.type === "Claim Email" ? "Claim Summary" : "Document Name"}
             </span>
             <input
@@ -81,7 +81,7 @@ export default function ImportModal({
           </label>
 
           <label>
-            <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>
+            <span className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>
               {importDraft.type === "Claim Email" ? "Claim Amount" : importDraft.type === "Receipt" ? "Receipt Amount" : "Estimated Value"}
             </span>
             <div className="relative">
@@ -99,7 +99,7 @@ export default function ImportModal({
           </label>
 
           <label className="md:col-span-2">
-            <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Notes</span>
+            <span className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Notes</span>
             <textarea
               value={importDraft.notes}
               onChange={(event) => updateImportDraft("notes", event.target.value)}

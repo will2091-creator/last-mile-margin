@@ -44,7 +44,7 @@ export default function SyncConfidencePanel({
             <Icon className="h-5 w-5" />
           </span>
           <div>
-            <p className={isDark ? "text-xs font-black uppercase tracking-wide text-blue-200" : "text-xs font-black uppercase tracking-wide text-blue-700"}>Save and Sync Confidence</p>
+            <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-blue-200" : "text-xs font-semibold uppercase tracking-wide text-blue-700"}>Save and Sync Confidence</p>
             <h2 className={`mt-0.5 text-sm font-black ${titleText}`}>
               {overallTone === "amber" ? "Some data is local-only right now" : isDemoMode || isDemoWorkspace ? "Demo data is isolated" : "Workspace changes are trackable"}
             </h2>
@@ -56,8 +56,8 @@ export default function SyncConfidencePanel({
             return (
               <div key={label} className={isDark ? "rounded-xl bg-slate-950/60 px-3 py-2" : "rounded-xl bg-slate-50 px-3 py-2"}>
                 <div className="flex items-center justify-between gap-2">
-                  <p className={`text-[10px] font-black uppercase tracking-wide ${mutedText}`}>{label}</p>
-                  <span className={tone === "amber" ? "text-[10px] font-black text-amber-700" : tone === "green" ? "text-[10px] font-black text-emerald-700" : "text-[10px] font-black text-blue-600"}>
+                  <p className={`text-[10px] font-semibold uppercase tracking-wide ${mutedText}`}>{label}</p>
+                  <span className={tone === "amber" ? "text-[10px] font-bold text-amber-700" : tone === "green" ? "text-[10px] font-bold text-emerald-700" : "text-[10px] font-bold text-blue-600"}>
                     {tone === "amber" ? "Local" : tone === "green" ? "Ready" : "Info"}
                   </span>
                 </div>
