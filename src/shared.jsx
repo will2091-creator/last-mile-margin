@@ -448,6 +448,46 @@ export function Skeleton({ className = "" }) {
   return <span aria-hidden="true" className={`skeleton block ${className}`} />;
 }
 
+// Shared button primitive. Encapsulates the primary/secondary/ghost/danger
+// styles that were previously re-implemented inline across every page, so they
+// stay consistent (and tactile — the base layer animates transform/shadow).
+const BUTTON_BASE =
+  "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-60";
+
+export function Button({ variant = "primary", isDark = false, className = "", type = "button", children, ...props }) {
+  const variants = {
+    primary: "bg-blue-600 text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500",
+    danger: "bg-red-600 text-white shadow-sm shadow-red-600/20 hover:bg-red-500",
+    secondary: isDark
+      ? "border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
+      : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+    ghost: isDark
+      ? "text-slate-300 hover:bg-white/5"
+      : "text-slate-600 hover:bg-slate-100",
+  };
+  return (
+    <button type={type} className={`${BUTTON_BASE} ${variants[variant] || variants.primary} ${className}`} {...props}>
+      {children}
+    </button>
+  );
+}
+
+// Shared status/label pill. `tone` maps to the app's semantic color language.
+export function Badge({ tone = "neutral", isDark = false, className = "", children }) {
+  const tones = {
+    good: "bg-emerald-500/10 text-emerald-700",
+    warn: "bg-amber-500/10 text-amber-700",
+    danger: "bg-red-500/10 text-red-700",
+    info: "bg-blue-500/10 text-blue-700",
+    neutral: isDark ? "bg-white/10 text-slate-300" : "bg-slate-100 text-slate-600",
+  };
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black ${tones[tone] || tones.neutral} ${className}`}>
+      {children}
+    </span>
+  );
+}
+
 export function TextField({ label, value, onChange, placeholder, type = "text" }) {
   return (
     <div>

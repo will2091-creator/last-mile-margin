@@ -1,5 +1,5 @@
 import React from "react";
-import { BriefcaseBusiness, CheckCircle2, ClipboardCheck } from "../../shared";
+import { BriefcaseBusiness, Button, CheckCircle2, ClipboardCheck } from "../../shared";
 import NextActionCard from "../NextActionCard";
 
 export default function SetupWizard({
@@ -40,12 +40,12 @@ export default function SetupWizard({
                 Start with the business facts that make the app useful: contracts, teams, costs, claims, receipts, and history. Every saved step feeds the Dashboard, Operations, Finance, Reports, and Ask.
               </p>
               <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                <button onClick={setupNextStep.onClick} className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500 sm:w-auto">
+                <Button onClick={setupNextStep.onClick} className="w-full sm:w-auto">
                   Continue Setup
-                </button>
-                <button onClick={() => openPreviewModal("preview")} className={isDark ? "w-full rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/5 sm:w-auto" : "w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50 sm:w-auto"}>
+                </Button>
+                <Button variant="secondary" isDark={isDark} onClick={() => openPreviewModal("preview")} className="w-full sm:w-auto">
                   Preview Dashboard
-                </button>
+                </Button>
                 <span className={isDark ? "rounded-full bg-white/5 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500"}>
                   Next: {sharedNextAction.title}
                 </span>
