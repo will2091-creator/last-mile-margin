@@ -20,7 +20,7 @@ export default function RouteInputSections({
             type="button"
             data-route-editor-trigger="true"
             onClick={(event) => openRouteSectionEditor(section.id, event)}
-            className={isDark ? "group rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-left transition hover:border-blue-400/50 hover:bg-slate-950/80" : "group rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-blue-300 hover:bg-white hover:shadow-md"}
+            className={isDark ? "group rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-left transition hover:-translate-y-0.5 hover:border-blue-400/50 hover:bg-slate-950/80 hover:shadow-card-hover" : "group rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-white hover:shadow-md"}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex min-w-0 gap-3">

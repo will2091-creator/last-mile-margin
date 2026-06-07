@@ -30,7 +30,7 @@ export default function SetupWizard({
 
   return (
     <div className="space-y-5">
-      <section data-tour="setup-progress" className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 p-4 shadow-xl shadow-black/20 sm:p-6" : "rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-emerald-50 p-4 shadow-sm sm:p-6"}>
+      <section data-tour="setup-progress" className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 p-4 shadow-card sm:p-6" : "rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-emerald-50 p-4 shadow-sm sm:p-6"}>
         <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
           <div className="flex min-w-0 items-start gap-4">
             <span className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 sm:flex">
@@ -116,14 +116,14 @@ export default function SetupWizard({
             className={
               complete
                 ? isDark
-                  ? "rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-5 shadow-xl shadow-black/20"
+                  ? "rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-5 shadow-card"
                   : "rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm"
                 : skipped
                   ? isDark
-                    ? "rounded-2xl border border-amber-500/20 bg-amber-500/10 p-5 shadow-xl shadow-black/20"
+                    ? "rounded-2xl border border-amber-500/20 bg-amber-500/10 p-5 shadow-card"
                     : "rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm"
                   : isDark
-                    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+                    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
                     : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
             }
           >

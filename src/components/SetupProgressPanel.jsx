@@ -7,7 +7,7 @@ export default function SetupProgressPanel({ isDark, status, onAction, onTakeTou
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
   const cardClass = isDark
-    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
     : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
   const nextAction = getNextBestSetupAction(status);
   const visibleItems = compact ? status.items.slice(0, 5) : status.items;

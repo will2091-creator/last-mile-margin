@@ -1498,14 +1498,14 @@ export default function App() {
         .theme-light .app-card {
           background: #ffffff !important;
           border: 1px solid #e2e8f0 !important;
-          box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06) !important;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -6px rgba(15, 23, 42, 0.08) !important;
           color: #0f172a !important;
         }
 
         .theme-dark .app-card {
           background: rgba(15, 23, 42, 0.86) !important;
-          border: 1px solid rgba(255, 255, 255, 0.10) !important;
-          box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28) !important;
+          border: 1px solid rgba(255, 255, 255, 0.08) !important;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.20), 0 12px 32px -8px rgba(0, 0, 0, 0.28) !important;
           color: #ffffff !important;
         }
 

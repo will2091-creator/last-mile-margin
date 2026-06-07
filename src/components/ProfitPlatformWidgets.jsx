@@ -4,7 +4,7 @@ import { loadVaultDocumentsFromSupabase, uploadVaultDocument } from "../lib/docu
 
 const toneClasses = (isDark) => ({
   baseCard: isDark
-    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
     : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm",
   softCard: isDark
     ? "rounded-2xl border border-white/10 bg-slate-950/60 p-4"

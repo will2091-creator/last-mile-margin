@@ -14,7 +14,7 @@ export default function PageIntro({
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
   const shellClass = isDark
-    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
     : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
 
   return (

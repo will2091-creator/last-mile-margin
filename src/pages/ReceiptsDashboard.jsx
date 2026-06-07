@@ -89,7 +89,7 @@ export default function ReceiptsDashboard({ isDark, isBlankDemo = false, isDemoM
   const toolsTotal = receipts.filter((receipt) => receipt.type === "Tools").reduce((sum, receipt) => sum + Number(receipt.amount || 0), 0);
 
   const cardClass = isDark
-    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
     : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";

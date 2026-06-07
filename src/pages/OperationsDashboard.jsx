@@ -67,10 +67,10 @@ export default function OperationsDashboard({
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
   const shellClass = isDark
-    ? "mb-5 rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+    ? "mb-5 rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
     : "mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
   const subTabShellClass = isDark
-    ? "mb-5 rounded-2xl border border-white/10 bg-slate-900/80 p-2 shadow-xl shadow-black/20"
+    ? "mb-5 rounded-2xl border border-white/10 bg-slate-900/80 p-2 shadow-card"
     : "mb-5 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm";
   const actionClass = isDark
     ? "mb-5 rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4"
@@ -267,7 +267,7 @@ function DispatchBoard({ teams, claims, isDark, setActiveSection }) {
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
   const cardClass = isDark
-    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
     : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
   const rowClass = isDark
     ? "rounded-2xl border border-white/10 bg-white/5 p-4"
@@ -364,8 +364,8 @@ function OperationMetric({ isDark, icon: Icon, label, value, note, tone, onClick
     green: isDark ? "bg-emerald-400/10 text-emerald-200" : "bg-emerald-50 text-emerald-600",
   };
   const cardClass = isDark
-    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 text-left shadow-xl shadow-black/20 transition hover:bg-slate-900"
-    : "rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-blue-200 hover:shadow-md";
+    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:bg-slate-900 hover:shadow-card-hover"
+    : "rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md";
 
   return (
     <button type="button" onClick={onClick} className={cardClass}>

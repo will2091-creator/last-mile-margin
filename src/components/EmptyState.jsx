@@ -14,7 +14,7 @@ export default function EmptyState({
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
   const cardClass = isDark
-    ? "rounded-2xl border border-blue-400/20 bg-blue-500/10 p-5 shadow-xl shadow-black/20"
+    ? "rounded-2xl border border-blue-400/20 bg-blue-500/10 p-5 shadow-card"
     : "rounded-2xl border border-blue-100 bg-blue-50 p-5 shadow-sm";
 
   const renderAction = (action, index, primary = false) => {

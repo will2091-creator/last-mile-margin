@@ -525,7 +525,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
   const selectedExposure = isViewingAllContracts ? totalClaimsExposure : selectedClaims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
 
   const cardClass = isDark
-    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
     : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
@@ -783,7 +783,7 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
       </div>
 
       <div className="grid gap-6">
-        <div className={isDark ? "rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5 shadow-xl shadow-black/20" : "rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm"}>
+        <div className={isDark ? "rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5 shadow-card" : "rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm"}>
           <div className="grid gap-5 lg:grid-cols-[1fr_minmax(360px,620px)] lg:items-center">
             <div className="flex items-center gap-4">
               <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-base font-black ${isViewingAllContracts ? "bg-blue-600 text-white" : logoClass(selectedContract.logo)}`}>

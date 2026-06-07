@@ -709,7 +709,7 @@ function ProfitabilityDashboard({
 
   const pageClass = isDark ? "space-y-5 text-white" : "space-y-5 text-slate-950";
   const cardClass = isDark
-    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
     : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
@@ -1131,7 +1131,7 @@ function ProfitabilityDashboard({
           </div>
         </div>
 
-        <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-4 shadow-xl shadow-black/20" : "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"}>
+        <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-4 shadow-card" : "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"}>
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex flex-wrap items-center gap-3">
               <span className={`text-sm font-black ${titleText}`}>View:</span>
@@ -1509,7 +1509,7 @@ function ProfitabilityDashboard({
         </div>
       </div>
 
-      <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-4 shadow-xl shadow-black/20" : "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"}>
+      <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-4 shadow-card" : "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"}>
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap items-center gap-3">
             <span className={`text-sm font-black ${titleText}`}>View:</span>

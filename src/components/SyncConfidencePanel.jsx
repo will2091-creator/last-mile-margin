@@ -25,7 +25,7 @@ export default function SyncConfidencePanel({
   const overallTone = statuses.some(([, status]) => getTone(status) === "amber") ? "amber" : isDemoMode || isDemoWorkspace ? "blue" : "green";
   const Icon = overallTone === "amber" ? AlertTriangle : overallTone === "blue" ? ShieldCheck : CheckCircle2;
   const shellClass = isDark
-    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-3 shadow-xl shadow-black/20"
+    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-3 shadow-card"
     : "rounded-2xl border border-slate-200 bg-white p-3 shadow-sm";
   const iconClass =
     overallTone === "amber"

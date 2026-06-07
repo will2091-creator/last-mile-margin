@@ -196,7 +196,7 @@ function SettingsDashboard({
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
   const pageClass = isDark ? "space-y-5 text-white" : "space-y-5 text-slate-950";
   const cardClass = isDark
-    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
     : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
   const softCard = isDark
     ? "rounded-2xl border border-white/10 bg-slate-950/60 p-4"
@@ -562,7 +562,7 @@ function SettingsDashboard({
         </div>
       </div>
 
-      <div data-tour="settings-demo-workspace" className={isDemoMode ? (isDark ? "rounded-2xl border border-blue-400/30 bg-blue-500/15 p-5 shadow-xl shadow-black/20" : "rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm") : cardClass}>
+      <div data-tour="settings-demo-workspace" className={isDemoMode ? (isDark ? "rounded-2xl border border-blue-400/30 bg-blue-500/15 p-5 shadow-card" : "rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm") : cardClass}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
             <div className={toneStyles.blue + " flex h-11 w-11 items-center justify-center rounded-2xl"}>

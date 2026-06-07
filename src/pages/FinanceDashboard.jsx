@@ -32,7 +32,7 @@ export default function FinanceDashboard({
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
   const shellClass = isDark
-    ? "mb-5 rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+    ? "mb-5 rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
     : "mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
   const setupStatus = useMemo(
     () => getSetupStatus({ teams, claims, savedScenarios, appSettings, isBlankDemo, isDemoMode }),

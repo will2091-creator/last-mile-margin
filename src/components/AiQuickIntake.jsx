@@ -160,7 +160,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
   const cardClass = isDark
-    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
     : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
   const softCard = isDark
     ? "rounded-2xl border border-white/10 bg-slate-950/60 p-4"
@@ -967,7 +967,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
           {isClaimDraft && !saveConfirmation && (
             <button
               onClick={() => applyDraft(activeDraft, "claim")}
-              className={isDark ? "mt-4 w-full rounded-2xl border border-blue-500/40 bg-blue-600 p-4 text-left text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-500" : "mt-4 w-full rounded-2xl bg-blue-600 p-4 text-left text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500"}
+              className={isDark ? "mt-4 w-full rounded-2xl border border-blue-500/40 bg-blue-600 p-4 text-left text-white shadow-lg shadow-blue-950/30 transition hover:-translate-y-0.5 hover:bg-blue-500" : "mt-4 w-full rounded-2xl bg-blue-600 p-4 text-left text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-500"}
             >
               <span className="flex items-start gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15">

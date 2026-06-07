@@ -21,7 +21,7 @@ export default function BusinessWorkflowRail({
   const activeStep = businessWorkflowSteps.find((step) => step.id === activeStepId) || businessWorkflowSteps[0];
   const completeCount = businessWorkflowSteps.filter((step) => getWorkflowStepStatus(step.id, setupStatus)).length;
   const shellClass = isDark
-    ? "mx-auto mb-5 max-w-[1600px] rounded-2xl border border-white/10 bg-slate-900/80 p-3 shadow-xl shadow-black/20 sm:p-4"
+    ? "mx-auto mb-5 max-w-[1600px] rounded-2xl border border-white/10 bg-slate-900/80 p-3 shadow-card sm:p-4"
     : "mx-auto mb-5 max-w-[1600px] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
 
@@ -110,10 +110,10 @@ export default function BusinessWorkflowRail({
               onClick={() => onNavigate?.(step.tab)}
               className={
                 isActive
-                  ? "w-52 shrink-0 rounded-xl bg-blue-600 p-3 text-left text-white shadow-sm shadow-blue-600/20 md:w-auto"
+                  ? "w-52 shrink-0 rounded-xl bg-blue-600 p-3 text-left text-white shadow-sm shadow-blue-600/20 transition hover:-translate-y-0.5 md:w-auto"
                   : isDark
-                    ? "w-52 shrink-0 rounded-xl border border-white/10 bg-white/5 p-3 text-left text-slate-300 hover:bg-white/10 md:w-auto"
-                    : "w-52 shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left text-slate-700 hover:border-blue-200 hover:bg-blue-50 md:w-auto"
+                    ? "w-52 shrink-0 rounded-xl border border-white/10 bg-white/5 p-3 text-left text-slate-300 transition hover:-translate-y-0.5 hover:bg-white/10 hover:shadow-card-hover md:w-auto"
+                    : "w-52 shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left text-slate-700 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:shadow-md md:w-auto"
               }
             >
               <div className="flex items-center justify-between gap-3">

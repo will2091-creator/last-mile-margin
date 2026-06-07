@@ -340,7 +340,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
   const pageClass = isDark ? "space-y-6 text-white" : "space-y-6 text-slate-950";
   const cardClass = isDark
-    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
     : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
@@ -854,7 +854,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           type="button"
           data-tour="dashboard-net-profit"
           onClick={() => goToSource("Profitability")}
-          className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/60 p-6 text-left shadow-xl shadow-black/20 transition hover:border-blue-300/40" : "rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-blue-300"}
+          className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/60 p-6 text-left shadow-card transition hover:-translate-y-0.5 hover:border-blue-300/40 hover:shadow-card-hover" : "rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"}
         >
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Net Profit Today</p>

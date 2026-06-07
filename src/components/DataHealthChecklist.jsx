@@ -15,7 +15,7 @@ export default function DataHealthChecklist({ isDark, status, onAction, compact 
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
   const cardClass = isDark
-    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+    ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
     : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
   const keys = compact ? ["contract", "team", "expenses", "claims"] : Object.keys(healthLabels);
 
@@ -36,7 +36,7 @@ export default function DataHealthChecklist({ isDark, status, onAction, compact 
               key={key}
               type="button"
               onClick={() => !complete && onAction?.(item)}
-              className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-blue-500/50" : "rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-blue-300 hover:bg-white"}
+              className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:-translate-y-0.5 hover:border-blue-500/50 hover:shadow-card-hover" : "rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-white hover:shadow-md"}
             >
               <div className="flex items-start gap-3">
                 <span className={complete ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700" : "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700"}>
