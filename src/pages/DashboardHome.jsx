@@ -57,6 +57,11 @@ import NextActionCard from "../components/NextActionCard";
 import SaaSReadinessCommand from "../components/SaaSReadinessCommand";
 import { guidedDemoSteps } from "../components/guidedDemoContent";
 import { getNextBestSetupAction, getSetupStatus } from "../lib/onboarding";
+import ContractModal from "../components/dashboard/ContractModal";
+import TeamModal from "../components/dashboard/TeamModal";
+import ExpenseModal from "../components/dashboard/ExpenseModal";
+import ImportModal from "../components/dashboard/ImportModal";
+import SetupWizard from "../components/dashboard/SetupWizard";
 
 function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDark, appSettings, savedDaySnapshot, savedDays = [], isBlankDemo = false, isDemoMode = false, onStartTour, onStartGuidedDemo, onLaunchDemo, onSaveSnapshot, productTourStatus }) {
   const widgets = {
@@ -1486,167 +1491,30 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
         onLaunchDemo={showDemoActions ? onLaunchDemo : null}
       />
 
-      {showGuidedSetup && (
-        <div className="space-y-5">
-          <section data-tour="setup-progress" className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 p-4 shadow-xl shadow-black/20 sm:p-6" : "rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-emerald-50 p-4 shadow-sm sm:p-6"}>
-            <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-              <div className="flex min-w-0 items-start gap-4">
-                <span className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 sm:flex">
-                  <BriefcaseBusiness className="h-7 w-7" />
-                </span>
-                <div className="min-w-0">
-                  <p className={isDark ? "text-xs font-black uppercase tracking-wide text-blue-200" : "text-xs font-black uppercase tracking-wide text-blue-700"}>Business Launch Center</p>
-                  <h2 className={`mt-1 max-w-3xl text-2xl font-black leading-tight sm:text-3xl ${titleText}`}>Build your first margin command center</h2>
-                  <p className={`mt-3 max-w-3xl text-sm font-semibold leading-6 ${mutedText}`}>
-                    Start with the business facts that make the app useful: contracts, teams, costs, claims, receipts, and history. Every saved step feeds the Dashboard, Operations, Finance, Reports, and Ask.
-                  </p>
-                  <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                    <button onClick={setupNextStep.onClick} className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500 sm:w-auto">
-                      Continue Setup
-                    </button>
-                    {showDemoActions && !isDemoMode && onLaunchDemo && (
-                      <button onClick={() => onLaunchDemo({ reset: false })} className={isDark ? "w-full rounded-xl bg-emerald-500/15 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/20 sm:w-auto" : "w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 sm:w-auto"}>
-                        Launch Demo Workspace
-                      </button>
-                    )}
-                    {showDemoActions && onStartGuidedDemo && (
-                      <button onClick={onStartGuidedDemo} className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500 sm:w-auto">
-                        Interactive Demo
-                      </button>
-                    )}
-                    <button onClick={() => openPreviewModal("preview")} className={isDark ? "w-full rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/5 sm:w-auto" : "w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50 sm:w-auto"}>
-                      Preview Dashboard
-                    </button>
-                    <span className={isDark ? "rounded-full bg-white/5 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500"}>
-                      Next: {sharedNextAction.title}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-4" : "rounded-2xl border border-blue-100 bg-white/80 p-4 shadow-sm"}>
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className={isDark ? "text-xs font-black uppercase tracking-wide text-slate-300" : "text-xs font-black uppercase tracking-wide text-slate-500"}>Setup progress</p>
-                    <p className={`mt-1 text-2xl font-black ${titleText}`}>{setupCompleteCount} of {setupSteps.length} complete</p>
-                    {setupSkippedCount > 0 && (
-                      <p className="mt-1 text-xs font-black text-amber-700">{setupSkippedCount} skipped item{setupSkippedCount === 1 ? "" : "s"} still in the checklist</p>
-                    )}
-                  </div>
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-700">
-                    <ClipboardCheck className="h-6 w-6" />
-                  </span>
-                </div>
-                <div className={isDark ? "mt-4 h-3 overflow-hidden rounded-full bg-slate-950/70" : "mt-4 h-3 overflow-hidden rounded-full bg-slate-100"}>
-                  <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${setupPercent}%` }} />
-                </div>
-                <div className="mt-4 grid gap-2">
-                  {setupSteps.map((step, index) => (
-                    <div key={step.id} className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <span className={step.complete ? "flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white" : step.skipped ? "flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/15 text-amber-700" : isDark ? "flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-white/5 text-slate-400" : "flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-400"}>
-                          {step.complete ? <CheckCircle2 className="h-4 w-4" /> : <span className="text-xs font-black">{index + 1}</span>}
-                        </span>
-                        <p className={`truncate text-sm font-black ${titleText}`}>{step.shortLabel}</p>
-                      </div>
-                      <p className={step.complete ? "text-xs font-black text-emerald-700" : step.skipped ? "text-xs font-black text-amber-700" : `text-xs font-black ${mutedText}`}>
-                        {step.complete ? "Done" : step.skipped ? "Skipped" : "Needed"}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <NextActionCard
-            isDark={isDark}
-            status={setupStatus}
-            action={sharedNextAction}
-            onAction={handleSetupStatusAction}
-          />
-
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-            {setupSteps.map(({ id, title, detail, cta, Icon, onClick, tone, complete, skipped }, index) => (
-              <div
-                key={id}
-                data-tour={setupTourTargets[id]}
-                className={
-                  complete
-                    ? isDark
-                      ? "rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-5 shadow-xl shadow-black/20"
-                      : "rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm"
-                    : skipped
-                      ? isDark
-                        ? "rounded-2xl border border-amber-500/20 bg-amber-500/10 p-5 shadow-xl shadow-black/20"
-                        : "rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm"
-                      : isDark
-                        ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
-                        : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-                }
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <span className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${toneIcon(tone)}`}>
-                    <Icon className="h-6 w-6" />
-                  </span>
-                  <span className={complete ? "rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-black text-white" : skipped ? "rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-black text-amber-700" : isDark ? "rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-black text-slate-300" : "rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500"}>
-                    {complete ? "Done" : skipped ? "Skipped" : `Step ${index + 1}`}
-                  </span>
-                </div>
-                <h3 className={`mt-5 text-lg font-black ${titleText}`}>{title}</h3>
-                <p className={`mt-2 text-sm font-semibold leading-6 sm:min-h-[96px] ${mutedText}`}>{detail}</p>
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={onClick}
-                    className={complete ? "rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-50" : "rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500"}
-                  >
-                    {complete ? "Review" : skipped ? "Finish" : cta}
-                  </button>
-                  {!complete && ["contract", "team", "expenses", "data"].includes(id) && (
-                    <button
-                      type="button"
-                      onClick={() => skipSetupStep(id)}
-                      className={isDark ? "rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-slate-300 hover:bg-white/5" : "rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 hover:bg-slate-50"}
-                    >
-                      Skip
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </section>
-
-          <section className={cardClass}>
-            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-blue-600">Finish setup checklist</p>
-                <h2 className={`mt-1 text-2xl font-black ${titleText}`}>Skipped items stay visible until they are finished</h2>
-              </div>
-              <p className={`max-w-xl text-sm font-semibold leading-6 ${mutedText}`}>
-                The dashboard can start working before every step is done, but Ask and Reports get smarter as each item is completed.
-              </p>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {setupPreviewCards.map(({ title, detail, Icon, status, tone }) => (
-                <div key={title} className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-4" : "rounded-2xl border border-slate-200 bg-slate-50 p-4"}>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${toneIcon(tone)}`}>
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <span className={isDark ? "rounded-full bg-white/5 px-3 py-1 text-[11px] font-black text-slate-300" : "rounded-full bg-white px-3 py-1 text-[11px] font-black text-slate-500"}>
-                      {status}
-                    </span>
-                  </div>
-                  <h3 className={`mt-4 text-base font-black ${titleText}`}>{title}</h3>
-                  <p className={`mt-2 text-sm font-semibold leading-6 ${mutedText}`}>{detail}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-      )}
+      <SetupWizard
+        isDark={isDark}
+        showGuidedSetup={showGuidedSetup}
+        isDemoMode={isDemoMode}
+        onLaunchDemo={onLaunchDemo}
+        onStartGuidedDemo={onStartGuidedDemo}
+        showDemoActions={showDemoActions}
+        setupNextStep={setupNextStep}
+        sharedNextAction={sharedNextAction}
+        setupCompleteCount={setupCompleteCount}
+        setupSteps={setupSteps}
+        setupSkippedCount={setupSkippedCount}
+        setupPercent={setupPercent}
+        setupTourTargets={setupTourTargets}
+        setupPreviewCards={setupPreviewCards}
+        handleSetupStatusAction={handleSetupStatusAction}
+        setupStatus={setupStatus}
+        skipSetupStep={skipSetupStep}
+        openPreviewModal={openPreviewModal}
+        toneIcon={toneIcon}
+        titleText={titleText}
+        mutedText={mutedText}
+        cardClass={cardClass}
+      />
 
       {!isCleanBlankWorkspace && (
         <section data-tour="dashboard-owner-decision-center" className={isDark ? "rounded-2xl border border-white/10 bg-slate-950/60 p-4 shadow-xl shadow-black/20" : "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"}>
@@ -2194,488 +2062,77 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
         </>
       )}
 
-      {isContractModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <form
-            onSubmit={saveQuickContract}
-            className={isDark ? "w-full max-w-3xl rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl shadow-black/40" : "w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-950/20"}
-          >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-blue-600">New contract</p>
-                <h2 className={`mt-1 text-2xl font-black ${titleText}`}>Add contract info</h2>
-                <p className={`mt-2 max-w-xl text-sm leading-6 ${mutedText}`}>
-                  Start with the basics. These numbers save into Finance &gt; Profitability so your dashboard can stop being empty.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsContractModalOpen(false)}
-                className={isDark ? "rounded-xl border border-white/10 px-3 py-2 text-sm font-black text-slate-200 hover:bg-white/10" : "rounded-xl border border-slate-200 px-3 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <label>
-                <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Contract Name</span>
-                <input
-                  name="contract"
-                  value={contractDraft.contract}
-                  onChange={(event) => updateContractDraft("contract", event.target.value)}
-                  placeholder="Example: Will's Delivery"
-                  className={modalInputClass}
-                  autoFocus
-                />
-              </label>
-
-              <label>
-                <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Routes / Week</span>
-                <input
-                  name="routes"
-                  type="number"
-                  min="1"
-                  value={contractDraft.routes}
-                  onChange={(event) => updateContractDraft("routes", event.target.value)}
-                  className={modalInputClass}
-                />
-              </label>
-
-              {[
-                ["Route Pay", "routePay", "Revenue per route", "$"],
-                ["Stops / Route", "stops", "Expected stops per route", ""],
-                ["Labor / Route", "labor", "Driver and helper cost", "$"],
-                ["Fuel / Route", "fuel", "Fuel estimate", "$"],
-                ["Truck + Insurance / Route", "truckInsurance", "Truck, insurance, software", "$"],
-                ["Maintenance / Route", "maintenance", "Maintenance reserve", "$"],
-                ["Claims Reserve / Week", "claims", "Weekly claim reserve", "$"],
-                ["Other Costs / Route", "other", "Tolls, parking, misc.", "$"],
-              ].map(([label, key, placeholder, prefix]) => (
-                <label key={key}>
-                  <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</span>
-                  <div className="relative">
-                    {prefix && <span className={`absolute left-3 top-2.5 text-sm font-black ${mutedText}`}>{prefix}</span>}
-                    <input
-                      name={key}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={contractDraft[key]}
-                      onChange={(event) => updateContractDraft(key, event.target.value)}
-                      placeholder={placeholder}
-                      className={`${modalInputClass} ${prefix ? "pl-7" : ""}`}
-                    />
-                  </div>
-                </label>
-              ))}
-            </div>
-
-            <div className={`mt-6 flex flex-col gap-3 border-t pt-5 ${rowBorder} sm:flex-row sm:items-center sm:justify-between`}>
-              <div>
-                {contractSaveStatus ? (
-                  <p className={contractSaveStatus.includes("saved") ? "text-sm font-black text-emerald-700" : "text-sm font-black text-red-600"}>{contractSaveStatus}</p>
-                ) : (
-                  <p className={`text-sm font-semibold ${mutedText}`}>Save this contract here, then add another or open Profitability.</p>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {contractSaveStatus.includes("saved") && (
-                  <>
-                    {activeSetupStep === "contract" && (
-                      <button
-                        type="button"
-                        onClick={() => openNextSetupStep("contract")}
-                        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500"
-                      >
-                        Next: Add Team
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setContractDraft(emptyContractDraft);
-                        setContractSaveStatus("");
-                      }}
-                      className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/10" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
-                    >
-                      Clear for Another
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsContractModalOpen(false);
-                        setActiveTab("Finance");
-                      }}
-                      className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/10" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
-                    >
-                      Open Profitability
-                    </button>
-                  </>
-                )}
-                {activeSetupStep === "contract" && !contractSaveStatus.includes("saved") && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsContractModalOpen(false);
-                      skipSetupStep("contract");
-                    }}
-                    className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/10" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
-                  >
-                    Skip For Now
-                  </button>
-                )}
-                <button type="submit" className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500">
-                  Save Contract
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {isTeamModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <form
-            onSubmit={saveQuickTeam}
-            className={isDark ? "w-full max-w-2xl rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl shadow-black/40" : "w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-950/20"}
-          >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-blue-600">New team</p>
-                <h2 className={`mt-1 text-2xl font-black ${titleText}`}>Add team info</h2>
-                <p className={`mt-2 max-w-xl text-sm leading-6 ${mutedText}`}>
-                  Add the first crew, truck, and route assignment. This updates the dashboard and Operations team readiness.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsTeamModalOpen(false)}
-                className={isDark ? "rounded-xl border border-white/10 px-3 py-2 text-sm font-black text-slate-200 hover:bg-white/10" : "rounded-xl border border-slate-200 px-3 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              {[
-                ["Team Name", "name", "Team A"],
-                ["Driver / Lead", "lead", "Driver name"],
-                ["Helper", "helper", "Helper name"],
-                ["Truck", "truck", "Truck number"],
-                ["Route", "route", "Route or contract"],
-              ].map(([label, key, placeholder]) => (
-                <label key={key} className={key === "route" ? "md:col-span-2" : ""}>
-                  <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</span>
-                  <input
-                    value={teamDraft[key]}
-                    onChange={(event) => updateTeamDraft(key, event.target.value)}
-                    placeholder={placeholder}
-                    className={modalInputClass}
-                    autoFocus={key === "name"}
-                  />
-                </label>
-              ))}
-            </div>
-
-            <div className={`mt-6 flex flex-col gap-3 border-t pt-5 ${rowBorder} sm:flex-row sm:items-center sm:justify-between`}>
-              <div>
-                {teamSaveStatus ? (
-                  <p className={teamSaveStatus.includes("saved") ? "text-sm font-black text-emerald-700" : "text-sm font-black text-red-600"}>{teamSaveStatus}</p>
-                ) : (
-                  <p className={`text-sm font-semibold ${mutedText}`}>Teams start with missing photo proof until they upload from the field app.</p>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {teamSaveStatus.includes("saved") && (
-                  <>
-                    {activeSetupStep === "team" && (
-                      <button
-                        type="button"
-                        onClick={() => openNextSetupStep("team")}
-                        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500"
-                      >
-                        Next: Set Expenses
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsTeamModalOpen(false);
-                        setActiveTab("Operations");
-                      }}
-                      className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/10" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
-                    >
-                      Open Operations
-                    </button>
-                  </>
-                )}
-                {activeSetupStep === "team" && !teamSaveStatus.includes("saved") && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsTeamModalOpen(false);
-                      skipSetupStep("team");
-                    }}
-                    className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/10" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
-                  >
-                    Skip For Now
-                  </button>
-                )}
-                <button type="submit" className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500">
-                  Save Team
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {isExpenseModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <form
-            onSubmit={saveExpenseSetup}
-            className={isDark ? "w-full max-w-3xl rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl shadow-black/40" : "w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-950/20"}
-          >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-blue-600">Expense setup</p>
-                <h2 className={`mt-1 text-2xl font-black ${titleText}`}>Set basic route costs</h2>
-                <p className={`mt-2 max-w-xl text-sm leading-6 ${mutedText}`}>
-                  These estimates attach to {quickContracts[0]?.contract || "your first contract"} so the dashboard can calculate real margin.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsExpenseModalOpen(false)}
-                className={isDark ? "rounded-xl border border-white/10 px-3 py-2 text-sm font-black text-slate-200 hover:bg-white/10" : "rounded-xl border border-slate-200 px-3 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
-              >
-                Close
-              </button>
-            </div>
-
-            <div className={isDark ? "mt-5 rounded-2xl border border-white/10 bg-white/5 p-4" : "mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4"}>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className={`text-sm font-black ${titleText}`}>{quickContracts[0]?.contract || "First contract"}</p>
-                  <p className={`text-xs font-bold ${mutedText}`}>{quickContracts[0]?.routes || 1} route{Number(quickContracts[0]?.routes || 1) === 1 ? "" : "s"} per week</p>
-                </div>
-                <p className="text-sm font-black text-emerald-700">
-                  Revenue: {currency.format(Number(quickContracts[0]?.revenue || 0))}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              {[
-                ["Labor / Route", "labor", "Driver and helper cost"],
-                ["Fuel / Route", "fuel", "Fuel estimate"],
-                ["Truck + Insurance / Route", "truckInsurance", "Truck, insurance, software"],
-                ["Maintenance / Route", "maintenance", "Maintenance reserve"],
-                ["Other Costs / Route", "other", "Tolls, parking, misc."],
-              ].map(([label, key, placeholder]) => (
-                <label key={key} className={key === "other" ? "md:col-span-2" : ""}>
-                  <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</span>
-                  <div className="relative">
-                    <span className={`absolute left-3 top-2.5 text-sm font-black ${mutedText}`}>$</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={expenseDraft[key]}
-                      onChange={(event) => updateExpenseDraft(key, event.target.value)}
-                      placeholder={placeholder}
-                      className={`${modalInputClass} pl-7`}
-                    />
-                  </div>
-                </label>
-              ))}
-            </div>
-
-            <div className={`mt-6 flex flex-col gap-3 border-t pt-5 ${rowBorder} sm:flex-row sm:items-center sm:justify-between`}>
-              <div>
-                {expenseSaveStatus ? (
-                  <p className={expenseSaveStatus.includes("saved") ? "text-sm font-black text-emerald-700" : "text-sm font-black text-red-600"}>{expenseSaveStatus}</p>
-                ) : (
-                  <p className={`text-sm font-semibold ${mutedText}`}>You can refine these later in Finance. This just gets the first dashboard numbers moving.</p>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {expenseSaveStatus.includes("saved") && activeSetupStep === "expenses" && (
-                  <button
-                    type="button"
-                    onClick={() => openNextSetupStep("expenses")}
-                    className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500"
-                  >
-                    Next: Import Data
-                  </button>
-                )}
-                {activeSetupStep === "expenses" && !expenseSaveStatus.includes("saved") && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsExpenseModalOpen(false);
-                      skipSetupStep("expenses");
-                    }}
-                    className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/10" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
-                  >
-                    Skip For Now
-                  </button>
-                )}
-                <button type="submit" className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500">
-                  Save Expenses
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <form
-            onSubmit={saveQuickImport}
-            className={isDark ? "w-full max-w-3xl rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl shadow-black/40" : "w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-950/20"}
-          >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-blue-600">Import data</p>
-                <h2 className={`mt-1 text-2xl font-black ${titleText}`}>What are you importing?</h2>
-                <p className={`mt-2 max-w-xl text-sm leading-6 ${mutedText}`}>
-                  Start a contract document, claim email, or receipt intake from the dashboard. Claims saved here immediately update open-claim metrics.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsImportModalOpen(false)}
-                className={isDark ? "rounded-xl border border-white/10 px-3 py-2 text-sm font-black text-slate-200 hover:bg-white/10" : "rounded-xl border border-slate-200 px-3 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="mt-6 grid gap-3 md:grid-cols-3">
-              {[
-                ["Contract Document", FileText, "Rates, terms, or retailer docs"],
-                ["Claim Email", ShieldCheck, "Damage, penalty, or dispute email"],
-                ["Receipt", Upload, "Gas, tools, parking, or maintenance"],
-              ].map(([type, Icon, note]) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => updateImportDraft("type", type)}
-                  className={importDraft.type === type
-                    ? "rounded-2xl border border-blue-500 bg-blue-600 p-4 text-left text-white shadow-lg shadow-blue-600/20"
-                    : isDark
-                      ? "rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-slate-200 hover:bg-white/10"
-                      : "rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left text-slate-700 hover:bg-white"}
-                >
-                  <Icon className="h-6 w-6" />
-                  <p className="mt-3 text-sm font-black">{type}</p>
-                  <p className={importDraft.type === type ? "mt-1 text-xs font-semibold text-blue-100" : `mt-1 text-xs font-semibold ${mutedText}`}>{note}</p>
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <label>
-                <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>
-                  {importDraft.type === "Receipt" ? "Vendor / Receipt Name" : importDraft.type === "Claim Email" ? "Claim Summary" : "Document Name"}
-                </span>
-                <input
-                  value={importDraft.title}
-                  onChange={(event) => updateImportDraft("title", event.target.value)}
-                  placeholder={importDraft.type === "Receipt" ? "Shell, Home Depot, Lowe's..." : importDraft.type === "Claim Email" ? "Wall damage claim email" : "Retailer rate card"}
-                  className={modalInputClass}
-                  autoFocus
-                />
-              </label>
-
-              <label>
-                <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>
-                  {importDraft.type === "Claim Email" ? "Claim Amount" : importDraft.type === "Receipt" ? "Receipt Amount" : "Estimated Value"}
-                </span>
-                <div className="relative">
-                  <span className={`absolute left-3 top-2.5 text-sm font-black ${mutedText}`}>$</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={importDraft.amount}
-                    onChange={(event) => updateImportDraft("amount", event.target.value)}
-                    placeholder="0.00"
-                    className={`${modalInputClass} pl-7`}
-                  />
-                </div>
-              </label>
-
-              <label className="md:col-span-2">
-                <span className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>Notes</span>
-                <textarea
-                  value={importDraft.notes}
-                  onChange={(event) => updateImportDraft("notes", event.target.value)}
-                  placeholder="Paste details, email text, receipt notes, or what needs to be reviewed."
-                  className={`${modalInputClass} min-h-28 resize-none`}
-                />
-              </label>
-            </div>
-
-            <div className={`mt-6 flex flex-col gap-3 border-t pt-5 ${rowBorder} sm:flex-row sm:items-center sm:justify-between`}>
-              <div>
-                {importSaveStatus ? (
-                  <p className={importSaveStatus.includes("saved") ? "text-sm font-black text-emerald-700" : "text-sm font-black text-red-600"}>{importSaveStatus}</p>
-                ) : (
-                  <p className={`text-sm font-semibold ${mutedText}`}>Use this for quick setup. Full AI intake still lives in Intake.</p>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {importSaveStatus.includes("saved") && (
-                  <>
-                    {activeSetupStep === "data" && (
-                      <button
-                        type="button"
-                        onClick={() => openNextSetupStep("data")}
-                        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500"
-                      >
-                        Next: Preview
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsImportModalOpen(false);
-                        setActiveTab(importDraft.type === "Claim Email" ? "Operations" : importDraft.type === "Receipt" ? "Finance" : "Intake");
-                      }}
-                      className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/10" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
-                    >
-                      Open Full Intake
-                    </button>
-                  </>
-                )}
-                {activeSetupStep === "data" && !importSaveStatus.includes("saved") && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsImportModalOpen(false);
-                      skipSetupStep("data");
-                    }}
-                    className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/10" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
-                  >
-                    Skip For Now
-                  </button>
-                )}
-                <button type="submit" className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500">
-                  Save Import
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-      )}
+      <ContractModal
+        isDark={isDark}
+        isContractModalOpen={isContractModalOpen}
+        setIsContractModalOpen={setIsContractModalOpen}
+        contractDraft={contractDraft}
+        emptyContractDraft={emptyContractDraft}
+        setContractDraft={setContractDraft}
+        contractSaveStatus={contractSaveStatus}
+        setContractSaveStatus={setContractSaveStatus}
+        activeSetupStep={activeSetupStep}
+        openNextSetupStep={openNextSetupStep}
+        skipSetupStep={skipSetupStep}
+        saveQuickContract={saveQuickContract}
+        updateContractDraft={updateContractDraft}
+        titleText={titleText}
+        mutedText={mutedText}
+        rowBorder={rowBorder}
+        modalInputClass={modalInputClass}
+        setActiveTab={setActiveTab}
+      />
+      <TeamModal
+        isDark={isDark}
+        isTeamModalOpen={isTeamModalOpen}
+        setIsTeamModalOpen={setIsTeamModalOpen}
+        teamDraft={teamDraft}
+        teamSaveStatus={teamSaveStatus}
+        activeSetupStep={activeSetupStep}
+        openNextSetupStep={openNextSetupStep}
+        skipSetupStep={skipSetupStep}
+        saveQuickTeam={saveQuickTeam}
+        updateTeamDraft={updateTeamDraft}
+        titleText={titleText}
+        mutedText={mutedText}
+        rowBorder={rowBorder}
+        modalInputClass={modalInputClass}
+        setActiveTab={setActiveTab}
+      />
+      <ExpenseModal
+        isDark={isDark}
+        isExpenseModalOpen={isExpenseModalOpen}
+        setIsExpenseModalOpen={setIsExpenseModalOpen}
+        expenseDraft={expenseDraft}
+        expenseSaveStatus={expenseSaveStatus}
+        activeSetupStep={activeSetupStep}
+        openNextSetupStep={openNextSetupStep}
+        skipSetupStep={skipSetupStep}
+        saveExpenseSetup={saveExpenseSetup}
+        updateExpenseDraft={updateExpenseDraft}
+        quickContracts={quickContracts}
+        titleText={titleText}
+        mutedText={mutedText}
+        rowBorder={rowBorder}
+        modalInputClass={modalInputClass}
+      />
+      <ImportModal
+        isDark={isDark}
+        isImportModalOpen={isImportModalOpen}
+        setIsImportModalOpen={setIsImportModalOpen}
+        importDraft={importDraft}
+        importSaveStatus={importSaveStatus}
+        activeSetupStep={activeSetupStep}
+        openNextSetupStep={openNextSetupStep}
+        skipSetupStep={skipSetupStep}
+        saveQuickImport={saveQuickImport}
+        updateImportDraft={updateImportDraft}
+        titleText={titleText}
+        mutedText={mutedText}
+        rowBorder={rowBorder}
+        modalInputClass={modalInputClass}
+        setActiveTab={setActiveTab}
+      />
 
       {isPreviewModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">

@@ -19,6 +19,9 @@ import {
   YAxis,
 } from "../shared";
 import EmptyState from "../components/EmptyState";
+import ContractChargeRules from "../components/profitability/ContractChargeRules";
+import RouteInputSections from "../components/profitability/RouteInputSections";
+import RollupEditorPanel from "../components/profitability/RollupEditorPanel";
 
 const chargeOptions = [
   ["routePay", "Flat Route Pay", "Base route rate"],
@@ -1274,155 +1277,33 @@ function ProfitabilityDashboard({
               </span>
             </div>
 
-            <div className={isDark ? "mb-5 rounded-2xl border border-white/10 bg-slate-950/40 p-4" : "mb-5 rounded-2xl border border-blue-100 bg-blue-50/60 p-4"}>
-              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className={`text-sm font-black ${titleText}`}>Pay Types for {activeRouteContractName || "New Contract"}</p>
-                  <p className={`mt-1 text-xs font-semibold ${mutedText}`}>Check the charges this contract allows. Off items are hidden from Revenue.</p>
-                </div>
-                <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-white px-3 py-1 text-xs font-black text-blue-700"}>
-                  Contract rate card
-                </span>
-              </div>
+            <ContractChargeRules
+              isDark={isDark}
+              activeRouteContractName={activeRouteContractName}
+              activeRouteContractId={activeRouteContractId}
+              chargeOptions={chargeOptions}
+              chargeEnabled={chargeEnabled}
+              customCharges={customCharges}
+              customChargeDraft={customChargeDraft}
+              setCustomChargeDraft={setCustomChargeDraft}
+              updateContractChargeRule={updateContractChargeRule}
+              updateCustomContractCharge={updateCustomContractCharge}
+              deleteCustomContractCharge={deleteCustomContractCharge}
+              addCustomContractCharge={addCustomContractCharge}
+              inputClass={inputClass}
+              titleText={titleText}
+              mutedText={mutedText}
+            />
 
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {chargeOptions.map(([key, label, description]) => {
-                  const checked = chargeEnabled(key);
-                  return (
-                    <label
-                      key={key}
-                      className={isDark ? "flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3 hover:bg-white/10" : "flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 hover:border-blue-200"}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(event) => updateContractChargeRule(activeRouteContractId, key, event.target.checked)}
-                        className="mt-1 h-4 w-4 accent-blue-600"
-                      />
-                      <span className="min-w-0">
-                        <span className={`block text-sm font-black ${checked ? titleText : mutedText}`}>{label}</span>
-                        <span className={`mt-0.5 block text-xs leading-snug ${mutedText}`}>{description}</span>
-                      </span>
-                    </label>
-                  );
-                })}
-
-                {customCharges.map((charge) => (
-                  <div
-                    key={charge.id}
-                    className={isDark ? "rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3" : "rounded-xl border border-emerald-100 bg-emerald-50 p-3"}
-                  >
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <label className="flex min-w-0 items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={charge.enabled}
-                          onChange={(event) => updateCustomContractCharge(activeRouteContractId, charge.id, "enabled", event.target.checked)}
-                          className="h-4 w-4 accent-emerald-600"
-                        />
-                        <span className={charge.enabled ? "text-xs font-black uppercase tracking-wide text-emerald-700" : `text-xs font-black uppercase tracking-wide ${mutedText}`}>
-                          Custom
-                        </span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => deleteCustomContractCharge(activeRouteContractId, charge.id)}
-                        className={isDark ? "rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-red-300" : "rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-red-600"}
-                        title="Delete custom charge"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    <input
-                      value={charge.name}
-                      onChange={(event) => updateCustomContractCharge(activeRouteContractId, charge.id, "name", event.target.value)}
-                      className={isDark ? "w-full rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 text-sm font-black text-white outline-none focus:border-emerald-500" : "w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-black text-slate-950 outline-none focus:border-emerald-500"}
-                    />
-                    <div className="mt-2">
-                      <label className={`mb-1 block text-[11px] font-black uppercase tracking-wide ${mutedText}`}>Amount</label>
-                      <div className="relative">
-                        <span className={`absolute left-3 top-2 text-sm font-black ${mutedText}`}>$</span>
-                        <input
-                          type="number"
-                          value={charge.amount}
-                          onChange={(event) => updateCustomContractCharge(activeRouteContractId, charge.id, "amount", event.target.value)}
-                          className={isDark ? "w-full rounded-lg border border-white/10 bg-slate-950/60 py-2 pl-7 pr-3 text-sm font-black text-white outline-none focus:border-emerald-500" : "w-full rounded-lg border border-emerald-100 bg-white py-2 pl-7 pr-3 text-sm font-black text-slate-950 outline-none focus:border-emerald-500"}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className={isDark ? "mt-4 rounded-2xl border border-white/10 bg-slate-950/50 p-4" : "mt-4 rounded-2xl border border-slate-200 bg-white p-4"}>
-                <div className="mb-3">
-                  <p className={`text-sm font-black ${titleText}`}>Add Custom Charge</p>
-                  <p className={`mt-1 text-xs font-semibold ${mutedText}`}>Example: stairs fee, disposal, premium install, weekend delivery.</p>
-                </div>
-                <div className="grid gap-3 md:grid-cols-[1fr_150px_auto]">
-                  <input
-                    value={customChargeDraft.name}
-                    onChange={(event) => setCustomChargeDraft((current) => ({ ...current, name: event.target.value }))}
-                    placeholder="Charge name"
-                    className={inputClass}
-                  />
-                  <div className="relative">
-                    <span className={`absolute left-3 top-2.5 text-sm font-black ${mutedText}`}>$</span>
-                    <input
-                      type="number"
-                      value={customChargeDraft.amount}
-                      onChange={(event) => setCustomChargeDraft((current) => ({ ...current, amount: event.target.value }))}
-                      placeholder="0"
-                      className={isDark ? "w-full rounded-xl border border-white/10 bg-slate-950/70 py-2 pl-7 pr-3 text-sm font-bold text-white outline-none focus:border-blue-500" : "w-full rounded-xl border border-slate-200 bg-white py-2 pl-7 pr-3 text-sm font-bold text-slate-950 outline-none focus:border-blue-500"}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => addCustomContractCharge(activeRouteContractId)}
-                    className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500"
-                  >
-                    + Add Charge
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {routeInputSections.map((section) => {
-                const Icon = section.icon;
-                return (
-                  <button
-                    key={section.id}
-                    type="button"
-                    data-route-editor-trigger="true"
-                    onClick={(event) => openRouteSectionEditor(section.id, event)}
-                    className={isDark ? "group rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-left transition hover:border-blue-400/50 hover:bg-slate-950/80" : "group rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-blue-300 hover:bg-white hover:shadow-md"}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex min-w-0 gap-3">
-                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${routeToneClass[section.tone]}`}>
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className={`text-base font-black ${titleText}`}>{section.title}</p>
-                          <p className={`mt-1 line-clamp-2 text-xs font-semibold ${mutedText}`}>{section.subtitle}</p>
-                        </div>
-                      </div>
-                      <span className="shrink-0 rounded-full bg-blue-600 px-2.5 py-1 text-[11px] font-black text-white opacity-0 transition group-hover:opacity-100">
-                        Open
-                      </span>
-                    </div>
-                    <div className={`mt-5 border-t pt-4 ${rowBorder}`}>
-                      <p className={`safe-number text-2xl font-black ${section.value >= 0 ? titleText : "text-red-600"}`}>
-                        {currency.format(section.value)}
-                      </p>
-                      <p className={`mt-1 truncate text-xs font-bold ${mutedText}`}>{section.note}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            <RouteInputSections
+              isDark={isDark}
+              routeInputSections={routeInputSections}
+              routeToneClass={routeToneClass}
+              openRouteSectionEditor={openRouteSectionEditor}
+              titleText={titleText}
+              mutedText={mutedText}
+              rowBorder={rowBorder}
+            />
           </div>
 
           <div className={cardClass}>
@@ -2134,111 +2015,20 @@ function ProfitabilityDashboard({
         </div>
       )}
 
-      {editingRollupRow && (
-        <div
-          ref={rollupEditorRef}
-          className="fixed z-50 w-[min(720px,calc(100vw-2rem))]"
-          style={{
-            left: `${rollupEditorPosition?.left ?? 16}px`,
-            top: `${rollupEditorPosition?.top ?? 96}px`,
-            width: `${rollupEditorPosition?.width ?? 720}px`,
-          }}
-        >
-          <div
-            className={isDark ? "overflow-y-auto rounded-2xl border border-blue-500/25 bg-slate-950/95 p-4 shadow-2xl shadow-blue-950/40 backdrop-blur-xl" : "overflow-y-auto rounded-2xl border border-blue-200 bg-white/95 p-4 shadow-2xl shadow-slate-300/60 backdrop-blur-xl"}
-            style={{ maxHeight: `${rollupEditorPosition?.maxHeight ?? 640}px` }}
-          >
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-black ${editingRollupRow.logoClass}`}>
-                  {editingRollupRow.logo}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className={`text-xs font-black uppercase tracking-wide ${mutedText}`}>Edit Contract</p>
-                    <span className={isDark ? "rounded-full bg-blue-500/15 px-2.5 py-1 text-[11px] font-black text-blue-200" : "rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700"}>
-                      Draft totals
-                    </span>
-                  </div>
-                  <input
-                    value={editingRollupRow.contract}
-                    onChange={(event) => updateRollupDraft("contract", event.target.value)}
-                    className={isDark ? "mt-1 w-full min-w-0 rounded-xl border border-white/10 bg-slate-900/80 px-3 py-2 text-lg font-black text-white outline-none focus:border-blue-500" : "mt-1 w-full min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-lg font-black text-slate-950 outline-none focus:border-blue-500"}
-                  />
-                </div>
-              </div>
-              <button
-                onClick={closeRollupEditor}
-                className={isDark ? "rounded-full bg-white/10 px-3 py-2 text-xs font-black text-white hover:bg-white/15" : "rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"}
-              >
-                Cancel
-              </button>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-[1fr_220px]">
-              <div className="grid gap-3 sm:grid-cols-2">
-                {[
-                  ["Revenue", "revenue"],
-                  ["Labor", "labor"],
-                  ["Fuel", "fuel"],
-                  ["Truck / Insurance", "truckInsurance"],
-                  ["Maintenance", "maintenance"],
-                  ["Other Costs", "other"],
-                  ["Claims", "claims"],
-                  ["Routes / Week", "routes"],
-                  ["Stops / Week", "stops"],
-                ].map(([label, key]) => (
-                  <div key={key}>
-                    <label className={`mb-1 block text-xs font-black uppercase tracking-wide ${mutedText}`}>{label}</label>
-                    <input
-                      type="number"
-                      value={editingRollupRow[key]}
-                      onChange={(event) => updateRollupDraft(key, event.target.value)}
-                      className={isDark ? "w-full rounded-xl border border-white/10 bg-slate-900/80 px-3 py-2 text-sm font-black text-white outline-none focus:border-blue-500" : "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-black text-slate-950 outline-none focus:border-blue-500"}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className={draftTotalsPanelClass(editingRollupRow.netProfit)}>
-                <p className={`text-sm font-black ${mutedText}`}>Net Profit</p>
-                <p className={`mt-2 text-3xl font-black ${signedNumberClass(editingRollupRow.netProfit)}`}>{currency.format(editingRollupRow.netProfit)}</p>
-                <p className={`mt-5 text-sm font-black ${mutedText}`}>Margin %</p>
-                <p className={`mt-2 text-3xl font-black ${signedNumberClass(editingRollupRow.margin)}`}>
-                  {editingRollupRow.margin.toFixed(2)}%
-                </p>
-                <div className={`mt-5 border-t pt-4 text-sm ${draftTotalsBorderClass(editingRollupRow.netProfit)}`}>
-                  <p>Total costs: <span className="font-black">{currency.format(editingRollupRow.totalCosts)}</span></p>
-                  <p className="mt-2">Routes: <span className="font-black">{editingRollupRow.routes}</span></p>
-                  <p className="mt-2">Stops: <span className="font-black">{editingRollupRow.stops}</span></p>
-                </div>
-              </div>
-            </div>
-
-            <div className={`mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between ${rowBorder}`}>
-              <p className={`text-sm ${mutedText}`}>
-                Review the draft totals, then save to update the table.
-              </p>
-              <div className="flex flex-wrap gap-2 sm:justify-end">
-                <button
-                  type="button"
-                  onClick={closeRollupEditor}
-                  className={isDark ? "rounded-xl bg-white/10 px-5 py-2.5 text-sm font-black text-white hover:bg-white/15" : "rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-700 hover:bg-slate-50"}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={saveRollupDraft}
-                  className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <RollupEditorPanel
+        isDark={isDark}
+        editingRollupRow={editingRollupRow}
+        rollupEditorRef={rollupEditorRef}
+        rollupEditorPosition={rollupEditorPosition}
+        mutedText={mutedText}
+        rowBorder={rowBorder}
+        signedNumberClass={signedNumberClass}
+        draftTotalsPanelClass={draftTotalsPanelClass}
+        draftTotalsBorderClass={draftTotalsBorderClass}
+        closeRollupEditor={closeRollupEditor}
+        updateRollupDraft={updateRollupDraft}
+        saveRollupDraft={saveRollupDraft}
+      />
     </div>
   );
 }

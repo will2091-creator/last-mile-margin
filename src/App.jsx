@@ -16,6 +16,10 @@ import GuidedDemoTour from "./components/GuidedDemoTour";
 import ProductTour from "./components/ProductTour";
 import SyncConfidencePanel from "./components/SyncConfidencePanel";
 import { navPreviewContent } from "./components/guidedDemoContent";
+import AppSidebar from "./components/app/AppSidebar";
+import DemoBanner from "./components/app/DemoBanner";
+import AppToolbar from "./components/app/AppToolbar";
+import AppBottomNav from "./components/app/AppBottomNav";
 import { loadAppStateFromSupabase, saveAppStateToSupabase } from "./lib/appStateRepository";
 import { loadClaimsFromSupabase, syncClaimsToSupabase } from "./lib/claimsRepository";
 import {
@@ -1608,344 +1612,58 @@ export default function App() {
       `}</style>
 
       <div className="flex min-h-screen overflow-x-hidden">
-        <aside className={isDark ? "sticky top-0 hidden h-screen w-72 shrink-0 overflow-y-auto border-r border-white/10 bg-slate-950 p-5 lg:block" : "sticky top-0 hidden h-screen w-72 shrink-0 overflow-y-auto border-r border-slate-200 bg-white p-5 lg:block"}>
-          <div className="mb-6 flex justify-center">
-            <img
-              src={isDark ? lastMileMarginLogoDark : lastMileMarginLogo}
-              alt="Last Mile Margin"
-              className="h-24 w-40 object-contain"
-            />
-          </div>
-
-          <button
-            onClick={toggleThemeMode}
-            className={
-              isDark
-                ? "mb-6 flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white hover:bg-white/10"
-                : "mb-6 flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100"
-            }
-          >
-            <span className="flex items-center gap-3">
-              {isDark ? <Sun className="h-4 w-4 text-amber-300" /> : <Moon className="h-4 w-4 text-blue-600" />}
-              {isDark ? "Light Mode" : "Dark Mode"}
-            </span>
-            <span className={isDark ? "rounded-full bg-blue-500 px-2 py-0.5 text-xs text-white" : "rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-600"}>
-              {isDark ? "On" : "Off"}
-            </span>
-          </button>
-
-          <nav className="space-y-2">
-            {visibleNavItems.map((item) => {
-              const Icon = item.icon;
-              const preview = navPreviewContent[item.name];
-              return (
-                <button
-                  key={item.name}
-                  data-tour={item.name === "Ask" ? "ask-assistant" : item.name === "Reports" ? "reports" : item.name === "Dashboard" ? "dashboard-nav" : undefined}
-                  data-tour-nav={item.name.toLowerCase()}
-                  onClick={() => {
-                    navigateToTab(item.name);
-                  }}
-                  className={`group relative flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold ${
-                    activeTab === item.name
-                      ? `${activeAccent.button} text-white`
-                      : isDark
-                      ? "text-slate-400 hover:bg-white/5 hover:text-white"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.name}
-                  {preview && (
-                    <span
-                      role="tooltip"
-                      className={
-                        isDark
-                          ? "pointer-events-none absolute left-[calc(100%+14px)] top-1/2 z-[120] hidden w-80 -translate-y-1/2 rounded-2xl border border-white/10 bg-slate-950 p-4 text-left text-white opacity-0 shadow-2xl shadow-black/40 group-hover:block group-hover:opacity-100"
-                          : "pointer-events-none absolute left-[calc(100%+14px)] top-1/2 z-[120] hidden w-80 -translate-y-1/2 rounded-2xl border border-slate-200 bg-white p-4 text-left text-slate-950 opacity-0 shadow-2xl shadow-slate-950/20 group-hover:block group-hover:opacity-100"
-                      }
-                    >
-                      <span className="block text-sm font-black">{preview.title}</span>
-                      <span className={isDark ? "mt-2 block text-xs font-semibold leading-5 text-slate-300" : "mt-2 block text-xs font-semibold leading-5 text-slate-600"}>
-                        {preview.description}
-                      </span>
-                      <span className={isDark ? "mt-3 block rounded-xl bg-white/5 px-3 py-2 text-xs font-bold leading-5 text-slate-300" : "mt-3 block rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold leading-5 text-slate-600"}>
-                        Why it matters: {preview.matters}
-                      </span>
-                      <span className="mt-3 flex flex-wrap gap-1.5">
-                        {preview.metrics.map((metric) => (
-                          <span key={metric} className={isDark ? "rounded-full bg-blue-500/15 px-2 py-1 text-[10px] font-black text-blue-100" : "rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700"}>
-                            {metric}
-                          </span>
-                        ))}
-                      </span>
-                      <span className={isDark ? "mt-3 block text-xs font-black text-emerald-200" : "mt-3 block text-xs font-black text-emerald-700"}>
-                        Outcome: {preview.outcome}
-                      </span>
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-
-          <div className="mt-10 text-sm text-slate-500">
-            <p>{appSettings.companyName}</p>
-            <p>{isDemoMode ? "Demo Workspace" : isDemoWorkspace ? "demo123" : authUser?.email || "Owner Account"}</p>
-            <p className="mt-1 text-xs font-black uppercase tracking-wide">{roleLabels[currentUserRole] || currentUserRole}</p>
-              <button onClick={signOut} className="mt-3 rounded-lg px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-500/10">Sign Out</button>
-          </div>
-        </aside>
+        <AppSidebar
+          isDark={isDark}
+          activeAccent={activeAccent}
+          visibleNavItems={visibleNavItems}
+          activeTab={activeTab}
+          appSettings={appSettings}
+          isDemoMode={isDemoMode}
+          isDemoWorkspace={isDemoWorkspace}
+          authUser={authUser}
+          currentUserRole={currentUserRole}
+          roleLabel={roleLabels[currentUserRole]}
+          toggleThemeMode={toggleThemeMode}
+          navigateToTab={navigateToTab}
+          signOut={signOut}
+        />
 
         <main className="min-w-0 flex-1 p-4 pb-28 sm:p-6 sm:pb-28 lg:p-8">
-          {isDemoMode && !isDemoBannerDismissed && (
-            <div className="mx-auto mb-4 max-w-[1600px]">
-              <div className={isDark ? "flex items-center gap-3 rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2" : "flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2"}>
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
-                  <LayoutDashboard className="h-3.5 w-3.5" />
-                </span>
-                <p className={isDark ? "min-w-0 flex-1 text-xs font-bold text-blue-200" : "min-w-0 flex-1 text-xs font-bold text-blue-800"}>
-                  <span className="font-black uppercase tracking-wide">Demo Workspace</span> — sample data is isolated from your real workspace
-                </p>
-                <button type="button" onClick={() => setIsDemoBannerDismissed(true)} className={isDark ? "shrink-0 rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white" : "shrink-0 rounded-lg p-1 text-slate-400 hover:bg-blue-100 hover:text-slate-700"} aria-label="Dismiss demo banner">
-                  ✕
-                </button>
-              </div>
-            </div>
+          {isDemoMode && (
+            <DemoBanner
+              isDark={isDark}
+              isDemoBannerDismissed={isDemoBannerDismissed}
+              setIsDemoBannerDismissed={setIsDemoBannerDismissed}
+            />
           )}
-          <div className="mx-auto mb-3 grid max-w-[1600px] grid-cols-1 gap-2 sm:mb-5 sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
-            {showDemoTourOffControl && !isDemoMode && (
-              <button
-                type="button"
-                onClick={turnOffDemoAndTour}
-                className={
-                  isDark
-                    ? "flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-400 hover:bg-white/5 sm:w-auto"
-                    : "flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-500 shadow-sm hover:bg-slate-50 sm:w-auto"
-                }
-              >
-                Turn Off Tour
-              </button>
-            )}
-
-            {canManageBusiness && (
-              <button
-                data-tour="dashboard-save-snapshot"
-                onClick={saveCurrentDay}
-                className={
-                  savedDayFlash
-                    ? "flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-sm sm:w-auto"
-                    : isDark
-                      ? "flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/15 sm:w-auto"
-                      : "flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 shadow-sm hover:bg-emerald-100 sm:w-auto"
-                }
-              >
-                <Save className="h-4 w-4" />
-                {savedDayFlash ? "Snapshot Saved" : "Save Snapshot"}
-              </button>
-            )}
-
-            {canManageBusiness && <div className="relative w-full sm:w-auto">
-              <button
-                data-tour="dashboard-daily-history"
-                onClick={() => {
-                  setShowSavedDays((current) => !current);
-                  setShowDatePicker(false);
-                }}
-                className={
-                  isDark
-                    ? "flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-black text-white hover:bg-white/10 sm:w-auto"
-                    : "flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
-                }
-              >
-                <FileText className="h-4 w-4" />
-                Daily History
-                <span className={isDark ? "rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300" : "rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500"}>
-                  {savedDays.length}
-                </span>
-                <span className={isDark ? "text-slate-400" : "text-slate-500"}>▾</span>
-              </button>
-
-              {showSavedDays && (
-                <div className={isDark ? "absolute right-0 top-12 z-50 w-[calc(100vw-2rem)] rounded-2xl border border-white/10 bg-slate-900 p-4 shadow-2xl sm:w-96" : "absolute right-0 top-12 z-50 w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:w-96"}>
-                  <div className="mb-3 flex items-center justify-between">
-                    <p className={isDark ? "text-sm font-black text-white" : "text-sm font-black text-slate-950"}>Daily History</p>
-                    <p className={isDark ? "text-xs font-bold text-slate-400" : "text-xs font-bold text-slate-500"}>Open a previous workday</p>
-                  </div>
-
-                  {savedDays.length === 0 ? (
-                    <div className={isDark ? "rounded-xl border border-white/10 bg-white/5 p-4 text-sm font-semibold text-slate-400" : "rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-500"}>
-                      No daily history yet. Save a snapshot when you want an extra checkpoint for the current workday.
-                    </div>
-                  ) : (
-                    <div className="max-h-80 space-y-2 overflow-y-auto">
-                      {savedDays.map((day) => (
-                        <button
-                          key={day.id}
-                          onClick={() => loadSavedDay(day)}
-                          className={
-                            isDark
-                              ? "flex w-full items-center justify-between gap-4 rounded-xl border border-white/10 bg-slate-950/60 p-3 text-left hover:border-blue-500/50 hover:bg-white/5"
-                              : "flex w-full items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left hover:border-blue-300 hover:bg-blue-50"
-                          }
-                        >
-                          <span>
-                            <span className={isDark ? "block text-sm font-black text-white" : "block text-sm font-black text-slate-950"}>{day.label}</span>
-                            <span className={isDark ? "mt-1 block text-xs font-semibold text-slate-400" : "mt-1 block text-xs font-semibold text-slate-500"}>
-                              {currency.format(day.profit)} profit · {currency.format(day.claimsExposure)} claims
-                            </span>
-                          </span>
-                          <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${statusPillClass(day.status)}`}>
-                            {day.status}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>}
-
-            <div className="relative w-full sm:w-auto">
-              <button
-                data-tour="dashboard-date-range"
-                onClick={() => {
-                  setShowDatePicker((current) => !current);
-                  setShowSavedDays(false);
-                  const activeDate = new Date(`${globalDateRange.start}T00:00:00`);
-                  setCalendarMonth(new Date(activeDate.getFullYear(), activeDate.getMonth(), 1));
-                }}
-                className={
-                  isDark
-                    ? "flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-black text-white hover:bg-white/10 sm:w-auto"
-                    : "flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
-                }
-              >
-                <FileText className="h-4 w-4" />
-                {globalDateLabel}
-                <span className={isDark ? "text-slate-400" : "text-slate-500"}>▾</span>
-              </button>
-
-              {showDatePicker && (
-                <div className={isDark ? "absolute right-0 top-12 z-50 w-[19.5rem] rounded-2xl border border-white/10 bg-slate-900 p-3 shadow-2xl sm:w-[23rem]" : "absolute right-0 top-12 z-50 w-[19.5rem] rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl sm:w-[23rem]"}>
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <button
-                      type="button"
-                      onClick={() => moveCalendarMonth(-1)}
-                      className={isDark ? "flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-base font-black text-white hover:bg-white/10" : "flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-base font-black text-slate-700 hover:bg-slate-100"}
-                      aria-label="Previous month"
-                    >
-                      ‹
-                    </button>
-                    <div className="min-w-0 text-center">
-                      <p className={isDark ? "text-sm font-black text-white" : "text-sm font-black text-slate-950"}>{calendarMonthLabel}</p>
-                      <p className={isDark ? "mt-0.5 text-[11px] font-bold text-slate-400" : "mt-0.5 text-[11px] font-bold text-slate-500"}>{formatDateRangeLabel(globalDateRange)}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => moveCalendarMonth(1)}
-                      className={isDark ? "flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-base font-black text-white hover:bg-white/10" : "flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-base font-black text-slate-700 hover:bg-slate-100"}
-                      aria-label="Next month"
-                    >
-                      ›
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1">
-                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((weekday) => (
-                      <div key={weekday} className={isDark ? "pb-1 text-center text-[10px] font-black uppercase text-slate-500" : "pb-1 text-center text-[10px] font-black uppercase text-slate-400"}>
-                        {weekday}
-                      </div>
-                    ))}
-
-                    {calendarDays.map((day) => {
-                      const selectedEdge = day.isSelectedStart || day.isSelectedEnd;
-                      const dayClass = selectedEdge
-                        ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
-                        : day.isInSelectedRange
-                          ? isDark
-                            ? "bg-blue-500/15 text-blue-100"
-                            : "bg-blue-50 text-blue-700"
-                          : day.isCurrentMonth
-                            ? isDark
-                              ? "text-white hover:bg-white/10"
-                              : "text-slate-800 hover:bg-slate-100"
-                            : isDark
-                              ? "text-slate-600 hover:bg-white/5"
-                              : "text-slate-300 hover:bg-slate-50";
-
-                      return (
-                        <button
-                          key={day.dateKey}
-                          type="button"
-                          onClick={() => pickCalendarDate(day.dateKey)}
-                          className={`relative flex h-8 min-w-0 items-center justify-center rounded-lg text-xs font-black transition ${dayClass}`}
-                          title={formatDateLabel(day.dateKey)}
-                        >
-                          {day.dayNumber}
-                          {day.isToday && !selectedEdge && <span className="absolute bottom-1 h-1 w-1 rounded-full bg-blue-500" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className={isDark ? "mt-3 grid grid-cols-3 gap-2 border-t border-white/10 pt-3" : "mt-3 grid grid-cols-3 gap-2 border-t border-slate-200 pt-3"}>
-                    <button
-                      type="button"
-                      onClick={selectToday}
-                      className={isDark ? "rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs font-black text-white hover:bg-white/10" : "rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-100"}
-                    >
-                      Today
-                    </button>
-                    <button
-                      type="button"
-                      onClick={selectThisWeek}
-                      className={isDark ? "rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs font-black text-white hover:bg-white/10" : "rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-100"}
-                    >
-                      This Week
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowDatePicker(false)}
-                      className="rounded-lg bg-blue-600 px-2 py-1.5 text-xs font-black text-white hover:bg-blue-500"
-                    >
-                      Done
-                    </button>
-                  </div>
-
-                  <div className={isDark ? "mt-2 rounded-xl border border-white/10 bg-slate-950/60 p-2.5" : "mt-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5"}>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        ["Start", globalDateRange.start],
-                        ["End", globalDateRange.end],
-                      ].map(([label, value]) => (
-                        <label key={label} className="block">
-                          <span className={isDark ? "mb-1 block text-[10px] font-black uppercase tracking-wide text-slate-500" : "mb-1 block text-[10px] font-black uppercase tracking-wide text-slate-400"}>{label}</span>
-                          <input
-                            type="date"
-                            value={value}
-                            onChange={(event) => {
-                              setLoadedSavedDay(null);
-                              setGlobalDateRange((current) => {
-                                const next = label === "Start" ? { ...current, start: event.target.value } : { ...current, end: event.target.value };
-                                return next.start <= next.end ? next : { start: next.end, end: next.start };
-                              });
-                              const activeDate = new Date(`${event.target.value}T00:00:00`);
-                              setCalendarMonth(new Date(activeDate.getFullYear(), activeDate.getMonth(), 1));
-                            }}
-                            className={isDark ? "w-full rounded-lg border border-white/10 bg-slate-950/70 px-2 py-1 text-[11px] font-bold text-white outline-none focus:border-blue-500" : "w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-950 outline-none focus:border-blue-500"}
-                          />
-                        </label>
-                      ))}
-                    </div>
-                    <p className={isDark ? "mt-1.5 text-[11px] font-semibold text-slate-500" : "mt-1.5 text-[11px] font-semibold text-slate-500"}>
-                      Click once for a day. Click a second date to make a range.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <AppToolbar
+            isDark={isDark}
+            isDemoMode={isDemoMode}
+            canManageBusiness={canManageBusiness}
+            showDemoTourOffControl={showDemoTourOffControl}
+            savedDayFlash={savedDayFlash}
+            savedDays={savedDays}
+            showSavedDays={showSavedDays}
+            setShowSavedDays={setShowSavedDays}
+            showDatePicker={showDatePicker}
+            setShowDatePicker={setShowDatePicker}
+            globalDateLabel={globalDateLabel}
+            globalDateRange={globalDateRange}
+            setGlobalDateRange={setGlobalDateRange}
+            setLoadedSavedDay={setLoadedSavedDay}
+            setCalendarMonth={setCalendarMonth}
+            calendarDays={calendarDays}
+            calendarMonthLabel={calendarMonthLabel}
+            moveCalendarMonth={moveCalendarMonth}
+            pickCalendarDate={pickCalendarDate}
+            selectToday={selectToday}
+            selectThisWeek={selectThisWeek}
+            loadSavedDay={loadSavedDay}
+            saveCurrentDay={saveCurrentDay}
+            turnOffDemoAndTour={turnOffDemoAndTour}
+            formatDateLabel={formatDateLabel}
+            formatDateRangeLabel={formatDateRangeLabel}
+          />
           {!isDemoMode && (
             <div className="mx-auto mb-3 max-w-[1600px] sm:mb-5">
               <SyncConfidencePanel
@@ -2059,60 +1777,13 @@ export default function App() {
           </motion.div>
         </main>
 
-        <nav className={isDark ? "fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-white/10 bg-slate-950/95 p-2 shadow-2xl shadow-black/40 backdrop-blur lg:hidden" : "fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-2xl shadow-slate-950/15 backdrop-blur lg:hidden"}>
-          <div className="grid grid-cols-4 gap-1">
-            {visibleNavItems.slice(0, 4).map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.name;
-              return (
-                <button
-                  key={item.name}
-                  type="button"
-                  data-tour={item.name === "Ask" ? "ask-assistant" : item.name === "Reports" ? "reports" : item.name === "Dashboard" ? "dashboard-nav" : undefined}
-                  data-tour-nav={item.name.toLowerCase()}
-                  onClick={() => navigateToTab(item.name)}
-                  className={
-                    isActive
-                      ? `${activeAccent.button} flex min-h-14 flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-black text-white`
-                      : isDark
-                        ? "flex min-h-14 flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-black text-slate-400 hover:bg-white/5 hover:text-white"
-                        : "flex min-h-14 flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-black text-slate-600 hover:bg-slate-100 hover:text-slate-950"
-                  }
-                >
-                  <Icon className="mb-1 h-4 w-4" />
-                  <span className="max-w-full truncate">{item.name === "Operations" ? "Ops" : item.name}</span>
-                </button>
-              );
-            })}
-          </div>
-          {visibleNavItems.length > 4 && (
-            <div className="mt-1 grid grid-cols-3 gap-1">
-              {visibleNavItems.slice(4).map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.name;
-                return (
-                  <button
-                    key={item.name}
-                    type="button"
-                    data-tour={item.name === "Ask" ? "ask-assistant" : item.name === "Reports" ? "reports" : item.name === "Dashboard" ? "dashboard-nav" : undefined}
-                    data-tour-nav={item.name.toLowerCase()}
-                    onClick={() => navigateToTab(item.name)}
-                    className={
-                      isActive
-                        ? `${activeAccent.button} flex min-h-11 items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-black text-white`
-                        : isDark
-                          ? "flex min-h-11 items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-black text-slate-400 hover:bg-white/5 hover:text-white"
-                          : "flex min-h-11 items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-black text-slate-600 hover:bg-slate-100 hover:text-slate-950"
-                    }
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{item.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </nav>
+        <AppBottomNav
+          isDark={isDark}
+          activeAccent={activeAccent}
+          visibleNavItems={visibleNavItems}
+          activeTab={activeTab}
+          navigateToTab={navigateToTab}
+        />
 
         <ProductTour
           isOpen={isProductTourOpen}
