@@ -9,6 +9,7 @@ import {
   FileText,
   MessageCircle,
   ReceiptText,
+  Skeleton,
   Sparkles,
   Target,
   Users,
@@ -774,6 +775,29 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
 
       <div className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
         <div data-tour="ask-answer-panel" className={cardClass}>
+          {isAnswering ? (
+            <div className="flex items-start gap-4">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white">
+                <Brain className="h-6 w-6 animate-pulse" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <Skeleton className="h-6 w-1/2 rounded-lg" />
+                <div className="mt-3 flex gap-2">
+                  <Skeleton className="h-6 w-28 rounded-full" />
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                </div>
+                <div className="mt-5 space-y-2.5">
+                  <Skeleton className="h-4 w-full rounded" />
+                  <Skeleton className="h-4 w-11/12 rounded" />
+                  <Skeleton className="h-4 w-4/5 rounded" />
+                </div>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                </div>
+              </div>
+            </div>
+          ) : (
           <div className="flex items-start gap-4">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white">
               <Brain className="h-6 w-6" />
@@ -827,6 +851,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
               </button>
             </div>
           </div>
+          )}
         </div>
 
         <div data-tour="ask-question-box" className={cardClass}>

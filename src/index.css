@@ -133,6 +133,46 @@ button :where(.text-2xl, .text-3xl, .text-4xl, .text-5xl, .text-6xl).font-black 
   }
 }
 
+/*
+  Skeleton loading placeholders — a soft base block with a light shimmer
+  sweep. Premium alternative to spinners while data/AI responses load.
+*/
+@keyframes fmm-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.18);
+  border-radius: 0.5rem;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.45),
+    transparent
+  );
+  animation: fmm-shimmer 1.6s ease-in-out infinite;
+}
+.theme-dark .skeleton {
+  background: rgba(255, 255, 255, 0.07);
+}
+.theme-dark .skeleton::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.09),
+    transparent
+  );
+}
+
 /* Respect users who prefer less motion — keep state changes, drop the animation. */
 @media (prefers-reduced-motion: reduce) {
   *,

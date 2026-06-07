@@ -1462,9 +1462,10 @@ export default function App() {
   if (isAuthLoading) {
     return (
       <div className={isDark ? "flex min-h-screen items-center justify-center bg-slate-950 text-white" : "flex min-h-screen items-center justify-center bg-slate-100 text-slate-950"}>
-        <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900 p-6 text-center shadow-xl" : "rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl"}>
+        <div className={isDark ? "w-72 rounded-2xl border border-white/10 bg-slate-900 p-6 text-center shadow-card" : "w-72 rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-card"}>
           <img src={isDark ? lastMileMarginLogoDark : lastMileMarginLogo} alt="Last Mile Margin" className="mx-auto h-20 w-40 object-contain" />
           <p className="mt-4 text-sm font-black">Checking your session...</p>
+          <span aria-hidden="true" className="skeleton mx-auto mt-4 block h-1.5 w-40 rounded-full" />
         </div>
       </div>
     );

@@ -442,6 +442,12 @@ export function Card({ children, className = "" }) {
   );
 }
 
+// Shimmer placeholder for loading states. Compose several to mimic the shape
+// of the content that's about to appear (lines, chips, avatars).
+export function Skeleton({ className = "" }) {
+  return <span aria-hidden="true" className={`skeleton block ${className}`} />;
+}
+
 export function TextField({ label, value, onChange, placeholder, type = "text" }) {
   return (
     <div>
