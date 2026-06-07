@@ -1226,7 +1226,7 @@ export default function App() {
             activeOperationsTab={activeOperationsTab}
             activeFinanceTab={activeFinanceTab}
             onNavigate={navigateToTab}
-            collapsible={activeTab === "Dashboard"}
+            collapsible
           />
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1600px]">
             <ErrorBoundary key={activeTab} variant="page">
