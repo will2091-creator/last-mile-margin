@@ -476,8 +476,8 @@ function ReportsDashboard({ claims, teams, results, form, savedDays = [], savedS
     <div className={isDark ? "space-y-6 text-white" : "space-y-6 text-slate-950"}>
       <div data-tour="reports-header" className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className={`text-3xl font-black tracking-tight sm:text-4xl ${titleText}`}>Reports</h1>
-          <p className={`mt-2 text-sm sm:text-base ${mutedText}`}>
+          <h1 className={`text-3xl font-black leading-tight tracking-tight sm:text-4xl ${titleText}`}>Reports</h1>
+          <p className={`mt-2 text-sm font-semibold sm:text-base ${mutedText}`}>
             Generate, export, and review final mile performance reports.
           </p>
         </div>

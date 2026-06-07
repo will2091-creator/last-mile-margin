@@ -109,15 +109,10 @@ export default function OperationsDashboard({
   return (
     <div>
       <section data-tour="operations-header" className={shellClass}>
-        <p className="text-xs font-black uppercase tracking-wide text-blue-600">Operations</p>
-        <div className="mt-2">
-          <div>
-            <h1 className={`text-4xl font-black tracking-tight ${titleText}`}>Operations</h1>
-            <p className={`mt-2 max-w-3xl text-sm font-semibold ${mutedText}`}>
-              Daily dispatch, claims, team readiness, and compliance blockers live here. Dashboard only shows what needs attention.
-            </p>
-          </div>
-        </div>
+        <h1 className={`text-3xl font-black leading-tight tracking-tight sm:text-4xl ${titleText}`}>Operations</h1>
+        <p className={`mt-2 text-sm font-semibold sm:text-base ${mutedText}`}>
+          Dispatch, claims, team readiness, and compliance — what needs attention before the day starts.
+        </p>
       </section>
 
       <section data-tour="operations-sections" className={subTabShellClass}>

@@ -719,13 +719,13 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
       <div data-tour="ask-header" className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-black uppercase tracking-wide text-white">Ask My Business</span>
+            <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-black uppercase tracking-wide text-white">AI Assistant</span>
             <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
               Claims, teams, profit, receipts, contracts
             </span>
           </div>
-          <h1 className={`text-4xl font-black tracking-tight sm:text-5xl ${titleText}`}>Ask My Business</h1>
-          <p className={`mt-2 max-w-3xl text-base font-semibold ${mutedText}`}>AI action center for owner decisions, claim reviews, team coaching, receipts, and margin fixes.</p>
+          <h1 className={`text-3xl font-black leading-tight tracking-tight sm:text-4xl ${titleText}`}>Ask My Business</h1>
+          <p className={`mt-2 max-w-3xl text-sm font-semibold sm:text-base ${mutedText}`}>AI action center for owner decisions, claim reviews, team coaching, receipts, and margin fixes.</p>
         </div>
       </div>
 

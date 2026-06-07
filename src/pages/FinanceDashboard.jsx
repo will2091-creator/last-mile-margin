@@ -3,7 +3,6 @@ import ProfitabilityDashboard from "./ProfitabilityDashboard";
 import ContractsDashboard from "./ContractsDashboard";
 import ReceiptsDashboard from "./ReceiptsDashboard";
 import SetupProgressPanel from "../components/SetupProgressPanel";
-import { BriefcaseBusiness, Calculator, ReceiptText } from "../shared";
 import { getSetupStatus } from "../lib/onboarding";
 
 const financeTabs = ["Profitability", "Receipts", "Contracts"];
@@ -59,12 +58,11 @@ export default function FinanceDashboard({
   return (
     <div>
       <section data-tour="finance-header" className={shellClass}>
-        <p className="text-xs font-black uppercase tracking-wide text-blue-600">Finance</p>
-        <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className={`text-4xl font-black tracking-tight ${titleText}`}>Finance</h1>
-            <p className={`mt-2 max-w-3xl text-sm font-semibold ${mutedText}`}>
-              Profitability, receipts, contracts, and expense records are grouped together because they all affect margin.
+            <h1 className={`text-3xl font-black leading-tight tracking-tight sm:text-4xl ${titleText}`}>Finance</h1>
+            <p className={`mt-2 text-sm font-semibold sm:text-base ${mutedText}`}>
+              Revenue, costs, margin, receipts, and contracts — everything that affects your bottom line.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -92,25 +90,6 @@ export default function FinanceDashboard({
           <SetupProgressPanel isDark={isDark} status={setupStatus} compact onAction={goToAction} title="Finance setup health" />
         </div>
       )}
-
-      <section data-tour="finance-sections" className={isDark ? "mb-5 grid gap-3 rounded-2xl border border-white/10 bg-slate-900/80 p-4 shadow-xl shadow-black/20 md:grid-cols-3" : "mb-5 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-3"}>
-        {[
-          ["Profitability", "Route math", Calculator, "Revenue, costs, margin"],
-          ["Receipts", "Expense proof", ReceiptText, "Gas, tools, maintenance"],
-          ["Contracts", "Rate terms", BriefcaseBusiness, "Customer and claim rules"],
-        ].map(([tab, title, Icon, detail]) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => goToFinanceSection(tab)}
-            className={activeSection === tab ? "rounded-xl bg-blue-600 p-4 text-left text-white" : isDark ? "rounded-xl bg-white/5 p-4 text-left text-slate-300 hover:bg-white/10" : "rounded-xl bg-slate-50 p-4 text-left text-slate-700 hover:bg-blue-50"}
-          >
-            <Icon className="h-5 w-5" />
-            <p className="mt-2 text-sm font-black">{title}</p>
-            <p className={activeSection === tab ? "mt-1 text-xs font-bold text-blue-50" : "mt-1 text-xs font-bold text-slate-500"}>{detail}</p>
-          </button>
-        ))}
-      </section>
 
       {activeSection === "Receipts" ? (
         <div data-tour="finance-active-workflow">
