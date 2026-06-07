@@ -10,6 +10,7 @@ import {
   DollarSign,
   FileText,
   ShieldCheck,
+  Skeleton,
   Truck,
   Upload,
 } from "../shared";
@@ -824,6 +825,28 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
           {aiStatus && <p className={`mt-2 text-xs font-bold ${mutedText}`}>{aiStatus}</p>}
         </div>
       </div>
+
+      {isAnalyzingAi && (
+        <div className={cardClass}>
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white">
+              <ClipboardCheck className="h-5 w-5 animate-pulse" />
+            </span>
+            <div>
+              <p className={`text-sm font-black ${titleText}`}>Analyzing your intake…</p>
+              <p className={`mt-0.5 text-xs font-bold ${mutedText}`}>Extracting fields, amounts, and claim signals.</p>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-3 w-24 rounded" />
+                <Skeleton className="h-10 w-full rounded-xl" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-5 xl:grid-cols-[1.45fr_0.85fr]">
         <div data-tour="intake-review-draft" className={cardClass}>

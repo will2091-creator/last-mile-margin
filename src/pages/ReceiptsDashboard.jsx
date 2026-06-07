@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Camera, currency, DollarSign, FileText, Upload } from "../shared";
+import { Camera, currency, DollarSign, FileText, Skeleton, Upload } from "../shared";
 import { loadVaultDocumentsFromSupabase } from "../lib/documentRepository";
 import EmptyState from "../components/EmptyState";
 
@@ -24,9 +24,11 @@ export default function ReceiptsDashboard({ isDark, isBlankDemo = false, isDemoM
   const [receipts, setReceipts] = useState([]);
   const [status, setStatus] = useState("No uploaded receipts yet. Mobile uploads will appear here.");
   const [filter, setFilter] = useState("All");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
+    setIsLoading(true);
 
     async function loadReceipts() {
       const result = await loadVaultDocumentsFromSupabase();
@@ -46,6 +48,7 @@ export default function ReceiptsDashboard({ isDark, isBlankDemo = false, isDemoM
         setReceipts([]);
         setStatus(`No live receipts loaded yet. ${result.error}`);
       }
+      setIsLoading(false);
     }
 
     loadReceipts();
@@ -91,7 +94,7 @@ export default function ReceiptsDashboard({ isDark, isBlankDemo = false, isDemoM
         <MetricCard isDark={isDark} icon={FileText} label="Tools Spend" value={currency.format(toolsTotal)} note="Tools and supplies" />
       </section>
 
-      {receipts.length === 0 && (
+      {!isLoading && receipts.length === 0 && (
         <EmptyState
           isDark={isDark}
           eyebrow="Expense proof"
@@ -132,7 +135,22 @@ export default function ReceiptsDashboard({ isDark, isBlankDemo = false, isDemoM
         </div>
 
         <div className="mt-5 space-y-3">
-          {filteredReceipts.map((receipt) => (
+          {isLoading && (
+            <>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className={`${softPanel} p-4`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <Skeleton className="h-5 w-40 rounded" />
+                      <Skeleton className="h-4 w-56 rounded" />
+                    </div>
+                    <Skeleton className="h-7 w-20 rounded-lg" />
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+          {!isLoading && filteredReceipts.map((receipt) => (
             <div key={receipt.id} className={`${softPanel} p-4`}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -146,7 +164,7 @@ export default function ReceiptsDashboard({ isDark, isBlankDemo = false, isDemoM
               </div>
             </div>
           ))}
-          {!filteredReceipts.length && (
+          {!isLoading && !filteredReceipts.length && (
             <div className={`${softPanel} p-8 text-center`}>
               <p className={`font-black ${titleText}`}>No receipts in this filter yet.</p>
               <p className={`mt-1 text-sm font-semibold ${mutedText}`}>Choose All or use the mobile Receipts tab to upload one.</p>
