@@ -194,7 +194,7 @@ export default function OperationsDashboard({
           value={`${routeReadyTeams}/${teams.length || 0}`}
           note={`${complianceBlockers.length} blocker${complianceBlockers.length === 1 ? "" : "s"}`}
           tone="green"
-          onClick={() => goToSection("Compliance")}
+          onClick={() => goToSection("Teams")}
         />
       </section>
 
