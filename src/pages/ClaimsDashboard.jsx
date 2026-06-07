@@ -1550,6 +1550,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                   <option key={option}>{option}</option>
                 ))}
               </select>
+              <p className={`mt-1 text-[11px] leading-4 ${mutedText}`}>Could the crew have avoided it? <span className="font-bold">Yes</span> = driver-caused (coach the team). <span className="font-bold">No</span> = not your fault (dispute it). <span className="font-bold">Maybe</span> = unclear, gather evidence.</p>
             </div>
 
             <div>

@@ -22,7 +22,7 @@ function parseReceipt(doc) {
 
 export default function ReceiptsDashboard({ isDark, isBlankDemo = false, isDemoMode = false, navigateToTab }) {
   const [receipts, setReceipts] = useState([]);
-  const [status, setStatus] = useState("No uploaded receipts yet. Mobile uploads will appear here.");
+  const [status, setStatus] = useState("No receipts yet — they appear here once uploaded from the mobile app or entered in Intake.");
   const [filter, setFilter] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -42,7 +42,7 @@ export default function ReceiptsDashboard({ isDark, isBlankDemo = false, isDemoM
           setReceipts(remoteReceipts);
           setStatus("Live mobile receipts synced from Supabase.");
         } else {
-          setStatus("No uploaded receipts yet. Mobile uploads will appear here.");
+          setStatus("No receipts yet — they appear here once uploaded from the mobile app or entered in Intake.");
         }
       } else {
         setReceipts([]);

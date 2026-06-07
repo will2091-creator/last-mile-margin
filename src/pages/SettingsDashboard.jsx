@@ -880,6 +880,9 @@ function SettingsDashboard({
           {activeSettingsTab === "Claims" && (
             <div className="mt-6 grid gap-5 xl:grid-cols-[1fr_360px]">
               <div className="grid gap-4 md:grid-cols-2">
+                <p className={`md:col-span-2 text-xs leading-5 ${mutedText}`}>
+                  These dollar amounts decide how each claim is flagged. A claim at or above the High amount is marked <span className="font-bold">High risk</span>; at or above Medium it's <span className="font-bold">Medium</span>; below that it's <span className="font-bold">Low</span>. Risk flags drive the review queue and the alerts on Operations and Compliance.
+                </p>
                 <div>
                   <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Medium Risk Starts At</label>
                   <div className="relative">

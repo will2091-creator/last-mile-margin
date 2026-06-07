@@ -387,8 +387,8 @@ export function getPageEmptyStateConfig(pageName, status) {
     },
     reports: {
       eyebrow: "Reports readiness",
-      title: "Reports unlock as your data builds",
-      description: "Meaningful reports need contracts, route math, teams, and saved snapshots. Claims and receipts make them stronger.",
+      title: "Save your first day to generate a report",
+      description: "Reports are built from saved daily snapshots. Add a contract, run a route profit check, and save a snapshot — then daily, weekly, claims, and team reports become available to export.",
       primaryAction: { label: "Finish Setup", tab: next.tab },
       secondaryActions: [
         { label: "Save Snapshot", tab: "Dashboard" },
