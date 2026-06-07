@@ -824,12 +824,12 @@ function ProfitabilityDashboard({
 
     if (title === "Net Profit") {
       const rows = [
-        { label: "Actual margin", value: `${totals.margin.toFixed(1)}%`, width: clampPercent((totals.margin / 35) * 100), color: "bg-emerald-500" },
+        { label: "Actual margin", value: `${totals.margin.toFixed(2)}%`, width: clampPercent((totals.margin / 35) * 100), color: "bg-emerald-500" },
       ];
       if (showBenchmarkTargets) {
         rows.push({
           label: "Target margin",
-          value: `${profitabilityBenchmarks.targetMargin.toFixed(1)}%`,
+          value: `${profitabilityBenchmarks.targetMargin.toFixed(2)}%`,
           width: clampPercent((profitabilityBenchmarks.targetMargin / 35) * 100),
           color: "bg-blue-500",
         });
@@ -853,12 +853,12 @@ function ProfitabilityDashboard({
     }
 
     const rows = [
-      { label: "Average", value: `${totals.margin.toFixed(1)}%`, width: clampPercent((totals.margin / 40) * 100), color: "bg-purple-500" },
+      { label: "Average", value: `${totals.margin.toFixed(2)}%`, width: clampPercent((totals.margin / 40) * 100), color: "bg-purple-500" },
     ];
     if (showBenchmarkTargets) {
       rows.push({
         label: "Review line",
-        value: `${profitabilityBenchmarks.reviewLineMargin.toFixed(1)}%`,
+        value: `${profitabilityBenchmarks.reviewLineMargin.toFixed(2)}%`,
         width: clampPercent((profitabilityBenchmarks.reviewLineMargin / 40) * 100),
         color: "bg-slate-500",
       });

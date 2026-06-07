@@ -841,35 +841,44 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
                   : "Review and edit anything that looks off."}
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className={`text-xs font-bold ${mutedText}`}>Confidence Score</p>
-                <p className={`text-2xl font-black ${titleText}`}>{activeDraft?.confidence || 0}%</p>
+            {activeDraft && (
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className={`text-xs font-bold ${mutedText}`}>Confidence Score</p>
+                  <p className={`text-2xl font-black ${titleText}`}>{activeDraft.confidence || 0}%</p>
+                </div>
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-emerald-500/80 text-sm font-black text-emerald-600">
+                  {activeDraft.confidence || 0}%
+                </div>
               </div>
-              <div className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-emerald-500/80 text-sm font-black text-emerald-600">
-                {activeDraft?.confidence || 0}%
-              </div>
-            </div>
+            )}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            {extractedRows.map(([label, key, value, Icon, type]) => (
-              <label key={label} className="block">
-                <span className={`mb-1 block text-xs font-black ${mutedText}`}>{label}</span>
-                <div className="relative">
-                  <Icon className={`absolute left-3 top-3 h-4 w-4 ${mutedText}`} />
-                  <input
-                    type={type}
-                    value={value}
-                    onChange={(event) => updateActiveDraftData(key, event.target.value)}
-                    className={`${inputClass} pl-9`}
-                    placeholder="Review"
-                  />
-                  {activeDraft && <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-emerald-600" />}
-                </div>
-              </label>
-            ))}
-          </div>
+          {!activeDraft ? (
+            <div className={`flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed py-12 text-center ${mutedText} ${isDark ? "border-white/10" : "border-slate-200"}`}>
+              <p className={`text-base font-black ${titleText}`}>Drop a document to analyze it</p>
+              <p className={`max-w-xs text-sm ${mutedText}`}>Paste text, upload a file, or pick a sample above — AI will extract the key fields and confidence score.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-3">
+              {extractedRows.map(([label, key, value, Icon, type]) => (
+                <label key={label} className="block">
+                  <span className={`mb-1 block text-xs font-black ${mutedText}`}>{label}</span>
+                  <div className="relative">
+                    <Icon className={`absolute left-3 top-3 h-4 w-4 ${mutedText}`} />
+                    <input
+                      type={type}
+                      value={value}
+                      onChange={(event) => updateActiveDraftData(key, event.target.value)}
+                      className={`${inputClass} pl-9`}
+                      placeholder="Review"
+                    />
+                    <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-emerald-600" />
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
 
           <label className="mt-4 block">
             <span className={`mb-1 block text-xs font-black ${mutedText}`}>Notes / Summary</span>

@@ -747,15 +747,6 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
         </div>
       </div>
 
-      <div data-tour="ask-data-health">
-        <DataHealthChecklist
-          isDark={isDark}
-          status={setupStatus}
-          compact
-          onAction={(item) => item?.tab && navigateToTab(item.tab)}
-        />
-      </div>
-
       <div data-tour="ask-suggested-prompts" className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {suggestedModes.map((mode) => {
           const Icon = mode.icon;

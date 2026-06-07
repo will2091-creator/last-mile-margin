@@ -198,6 +198,7 @@ export default function App() {
     }
   };
 
+  const [isDemoBannerDismissed, setIsDemoBannerDismissed] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(() => isDemoModeActive());
   const [isDemoWorkspace, setIsDemoWorkspace] = useState(() =>
     sessionStorage.getItem("finalMileBlankDemo") === "true" || isDemoModeActive()
@@ -1697,51 +1698,33 @@ export default function App() {
         </aside>
 
         <main className="min-w-0 flex-1 p-4 pb-28 sm:p-6 sm:pb-28 lg:p-8">
-          {isDemoMode && (
-            <div className="mx-auto mb-5 max-w-[1600px]">
-              <div className={isDark ? "rounded-2xl border border-blue-400/30 bg-blue-500/15 p-4 shadow-xl shadow-black/20" : "rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm"}>
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">
-                      <LayoutDashboard className="h-5 w-5" />
-                    </span>
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">Viewing Demo Workspace</p>
-                      <p className={isDark ? "mt-1 text-sm font-bold text-blue-100" : "mt-1 text-sm font-bold text-blue-900"}>
-                        Sample contracts, teams, claims, receipts, reports, and history are isolated from your real workspace.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => navigateToTab("Dashboard")} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500">
-                      View Demo
-                    </button>
-                    <button type="button" onClick={resetDemoWorkspace} className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-blue-100 hover:bg-white/5" : "rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 hover:bg-blue-50"}>
-                      Reset Demo Data
-                    </button>
-                    <button type="button" onClick={restartGuidedDemo} className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-emerald-100 hover:bg-white/5" : "rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-50"}>
-                      Restart Guided Demo
-                    </button>
-                    <button type="button" onClick={exitDemoWorkspace} className={isDark ? "rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white hover:bg-slate-900" : "rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white hover:bg-slate-800"}>
-                      Exit Demo Mode
-                    </button>
-                  </div>
-                </div>
+          {isDemoMode && !isDemoBannerDismissed && (
+            <div className="mx-auto mb-4 max-w-[1600px]">
+              <div className={isDark ? "flex items-center gap-3 rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2" : "flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2"}>
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
+                  <LayoutDashboard className="h-3.5 w-3.5" />
+                </span>
+                <p className={isDark ? "min-w-0 flex-1 text-xs font-bold text-blue-200" : "min-w-0 flex-1 text-xs font-bold text-blue-800"}>
+                  <span className="font-black uppercase tracking-wide">Demo Workspace</span> — sample data is isolated from your real workspace
+                </p>
+                <button type="button" onClick={() => setIsDemoBannerDismissed(true)} className={isDark ? "shrink-0 rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white" : "shrink-0 rounded-lg p-1 text-slate-400 hover:bg-blue-100 hover:text-slate-700"} aria-label="Dismiss demo banner">
+                  ✕
+                </button>
               </div>
             </div>
           )}
           <div className="mx-auto mb-3 grid max-w-[1600px] grid-cols-1 gap-2 sm:mb-5 sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
-            {showDemoTourOffControl && (
+            {showDemoTourOffControl && !isDemoMode && (
               <button
                 type="button"
                 onClick={turnOffDemoAndTour}
                 className={
                   isDark
-                    ? "flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-black text-red-100 hover:bg-red-500/15 sm:w-auto"
-                    : "flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-black text-red-700 shadow-sm hover:bg-red-100 sm:w-auto"
+                    ? "flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-400 hover:bg-white/5 sm:w-auto"
+                    : "flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-500 shadow-sm hover:bg-slate-50 sm:w-auto"
                 }
               >
-                Turn Off Demo / Tour
+                Turn Off Tour
               </button>
             )}
 
@@ -1963,16 +1946,18 @@ export default function App() {
               )}
             </div>
           </div>
-          <div className="mx-auto mb-3 max-w-[1600px] sm:mb-5">
-            <SyncConfidencePanel
-              isDark={isDark}
-              appStateStatus={appStateBackendStatus}
-              claimsStatus={claimsBackendStatus}
-              teamStatus={teamAccessStatus}
-              isDemoMode={isDemoMode}
-              isDemoWorkspace={isDemoWorkspace}
-            />
-          </div>
+          {!isDemoMode && (
+            <div className="mx-auto mb-3 max-w-[1600px] sm:mb-5">
+              <SyncConfidencePanel
+                isDark={isDark}
+                appStateStatus={appStateBackendStatus}
+                claimsStatus={claimsBackendStatus}
+                teamStatus={teamAccessStatus}
+                isDemoMode={isDemoMode}
+                isDemoWorkspace={isDemoWorkspace}
+              />
+            </div>
+          )}
           <BusinessWorkflowRail
             isDark={isDark}
             setupStatus={workflowSetupStatus}
@@ -2095,7 +2080,7 @@ export default function App() {
                   }
                 >
                   <Icon className="mb-1 h-4 w-4" />
-                  <span className="max-w-full truncate">{item.name}</span>
+                  <span className="max-w-full truncate">{item.name === "Operations" ? "Ops" : item.name}</span>
                 </button>
               );
             })}
