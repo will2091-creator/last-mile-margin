@@ -52,7 +52,7 @@ import {
   XAxis,
   YAxis,
 } from "../shared";
-import EmptyState from "../components/EmptyState";
+import EmptyState, { InlineEmpty } from "../components/EmptyState";
 
 function ComplianceDashboard({ teams, claims, isDark, navigateToTab }) {
   const photosUploaded = teams.filter((team) => team.photoStatus === "Uploaded").length;
@@ -138,12 +138,13 @@ function ComplianceDashboard({ teams, claims, isDark, navigateToTab }) {
             <p className="text-sm text-slate-400">Insurance, DOT, licenses, inspections, and driver paperwork with expiration dates.</p>
           </div>
 
-          <div className="rounded-xl border border-dashed border-white/10 bg-white/5 px-4 py-8 text-center">
-            <FileText className="mx-auto h-6 w-6 text-slate-500" />
-            <p className="mt-3 text-sm font-bold text-slate-200">No documents tracked yet</p>
-            <p className="mx-auto mt-1 max-w-sm text-xs text-slate-400">
-              Add your insurance, DOT inspection, licenses, and driver medical cards with expiration dates, and they'll show here with valid / expiring / expired status so nothing lapses.
-            </p>
+          <div className="rounded-xl border border-dashed border-white/10 bg-white/5 px-4 py-2 text-center">
+            <InlineEmpty
+              isDark={isDark}
+              Icon={FileText}
+              title="No documents tracked yet"
+              hint="Add insurance, DOT inspection, licenses, and driver medical cards with expiration dates — they'll show here with valid / expiring / expired status so nothing lapses."
+            />
             <button
               type="button"
               onClick={() => navigateToTab?.("Intake")}

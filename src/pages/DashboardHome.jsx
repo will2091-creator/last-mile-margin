@@ -28,6 +28,7 @@ import {
   YAxis,
 } from "../shared";
 import NextActionCard from "../components/NextActionCard";
+import { InlineEmpty } from "../components/EmptyState";
 import { getNextBestSetupAction, getSetupStatus } from "../lib/onboarding";
 import { useCountUp } from "../hooks/useCountUp";
 import ContractModal from "../components/dashboard/ContractModal";
@@ -1113,9 +1114,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
               <button onClick={() => setActiveTab("Claims")} className="text-sm font-bold text-blue-600">View all</button>
             </div>
             {recentClaims.length === 0 ? (
-              <p className={`rounded-xl border border-dashed p-5 text-center text-sm font-semibold ${mutedText} ${isDark ? "border-white/10" : "border-slate-200"}`}>
-                No claims yet. New claims will show up here.
-              </p>
+              <InlineEmpty isDark={isDark} Icon={ShieldCheck} title="No claims yet" hint="New claims will show up here as they come in." />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[420px] text-left text-sm">

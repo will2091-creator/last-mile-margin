@@ -8,7 +8,7 @@ import {
   FileText,
   Truck,
 } from "../shared";
-import EmptyState from "../components/EmptyState";
+import EmptyState, { InlineEmpty } from "../components/EmptyState";
 
 function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backendStatus, navigateToTab }) {
   const unassignedDriverLabel = "Unassigned";
@@ -1716,9 +1716,13 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                   {filteredClaims.length === 0 && (
                     <tr>
                       <td colSpan="9" className={`py-8 text-center ${mutedText}`}>
-                        <div className="flex flex-col items-center gap-3">
-                          <p className={`font-black ${titleText}`}>No claims match these filters.</p>
-                          <p className="max-w-xl text-sm">Reset filters or add/import a claim if this workspace is still new.</p>
+                        <div className="flex flex-col items-center gap-1">
+                          <InlineEmpty
+                            isDark={isDark}
+                            Icon={FileText}
+                            title="No claims match these filters"
+                            hint="Reset filters or add/import a claim if this workspace is still new."
+                          />
                           <button
                             type="button"
                             onClick={resetClaimFilters}

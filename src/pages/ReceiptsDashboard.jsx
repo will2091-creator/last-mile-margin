@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Camera, currency, DollarSign, FileText, Skeleton, Upload } from "../shared";
 import { loadVaultDocumentsFromSupabase } from "../lib/documentRepository";
-import EmptyState from "../components/EmptyState";
+import EmptyState, { InlineEmpty } from "../components/EmptyState";
 
 const receiptCategories = ["All", "Gas", "Tools", "Maintenance", "Parking/Tolls", "Other"];
 
@@ -165,9 +165,13 @@ export default function ReceiptsDashboard({ isDark, isBlankDemo = false, isDemoM
             </div>
           ))}
           {!isLoading && !filteredReceipts.length && (
-            <div className={`${softPanel} p-8 text-center`}>
-              <p className={`font-black ${titleText}`}>No receipts in this filter yet.</p>
-              <p className={`mt-1 text-sm font-semibold ${mutedText}`}>Choose All or use the mobile Receipts tab to upload one.</p>
+            <div className={`${softPanel} p-2 text-center`}>
+              <InlineEmpty
+                isDark={isDark}
+                Icon={Camera}
+                title="No receipts in this filter yet"
+                hint="Choose All, or use the mobile Receipts tab to upload one."
+              />
               {filter !== "All" && (
                 <button type="button" onClick={() => setFilter("All")} className="mt-4 rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white">
                   Show All Receipts

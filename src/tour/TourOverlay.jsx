@@ -175,7 +175,13 @@ export default function TourOverlay({
         <p className="text-xs font-semibold uppercase tracking-wide text-blue-500">
           Step {stepIndex + 1} of {steps.length}
         </p>
-        <h2 className={`mt-1 text-lg font-black leading-tight ${titleClass}`}>{step.title}</h2>
+        <div className={`mt-2 h-1 w-full overflow-hidden rounded-full ${isDark ? "bg-white/10" : "bg-slate-200"}`}>
+          <div
+            className="h-full rounded-full bg-blue-600 transition-all duration-300 ease-out"
+            style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }}
+          />
+        </div>
+        <h2 className={`mt-3 text-lg font-black leading-tight ${titleClass}`}>{step.title}</h2>
         <p className={`mt-2 text-sm font-semibold leading-6 ${bodyClass}`}>{step.body}</p>
 
         <div className="mt-4 flex items-center justify-between gap-2">
