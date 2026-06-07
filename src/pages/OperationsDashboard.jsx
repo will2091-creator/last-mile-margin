@@ -69,13 +69,9 @@ export default function OperationsDashboard({
   const shellClass = isDark
     ? "mb-5 rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card"
     : "mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
-  const subTabShellClass = isDark
-    ? "mb-5 rounded-2xl border border-white/10 bg-slate-900/80 p-2 shadow-card"
-    : "mb-5 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm";
   const actionClass = isDark
     ? "mb-5 rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4"
     : "mb-5 rounded-2xl border border-blue-100 bg-blue-50 p-4";
-  const activeTab = operationTabs.find((tab) => tab.id === activeSection) || operationTabs[0];
   const setupStatus = useMemo(
     () => getSetupStatus({ teams, claims, appSettings, isBlankDemo, isDemoMode }),
     [teams, claims, appSettings, isBlankDemo, isDemoMode]
@@ -109,48 +105,31 @@ export default function OperationsDashboard({
   return (
     <div>
       <section data-tour="operations-header" className={shellClass}>
-        <h1 className={`text-3xl font-black leading-tight tracking-tight sm:text-4xl ${titleText}`}>Operations</h1>
-        <p className={`mt-2 text-sm font-semibold sm:text-base ${mutedText}`}>
-          Dispatch, claims, team readiness, and compliance — what needs attention before the day starts.
-        </p>
-      </section>
-
-      <section data-tour="operations-sections" className={subTabShellClass}>
-        <div className="grid gap-2 lg:grid-cols-4">
-          {operationTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeSection === tab.id;
-            return (
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className={`text-3xl font-black leading-tight tracking-tight sm:text-4xl ${titleText}`}>Operations</h1>
+            <p className={`mt-2 text-sm font-semibold sm:text-base ${mutedText}`}>
+              Dispatch, claims, team readiness, and compliance — what needs attention before the day starts.
+            </p>
+          </div>
+          <div data-tour="operations-sections" className="flex flex-wrap gap-2">
+            {operationTabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => goToSection(tab.id)}
                 className={
-                  isActive
-                    ? "rounded-xl bg-blue-600 px-4 py-3 text-left text-white shadow-sm shadow-blue-600/20"
+                  activeSection === tab.id
+                    ? "rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm"
                     : isDark
-                      ? "rounded-xl px-4 py-3 text-left text-slate-300 transition hover:bg-white/5"
-                      : "rounded-xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50"
+                      ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-300 hover:bg-white/5"
+                      : "rounded-xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-600 hover:bg-slate-50"
                 }
               >
-                <div className="flex items-center gap-2">
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className="text-sm font-black">{tab.label}</span>
-                </div>
-                <p className={isActive ? "mt-1 text-xs font-bold leading-5 text-blue-50" : isDark ? "mt-1 text-xs font-bold leading-5 text-slate-500" : "mt-1 text-xs font-bold leading-5 text-slate-500"}>
-                  {tab.description}
-                </p>
+                {tab.label}
               </button>
-            );
-          })}
-        </div>
-        <div className={isDark ? "mt-2 rounded-xl bg-slate-950/60 px-4 py-3" : "mt-2 rounded-xl bg-slate-50 px-4 py-3"}>
-          <p className={isDark ? "text-xs font-semibold uppercase tracking-wide text-slate-400" : "text-xs font-semibold uppercase tracking-wide text-slate-500"}>
-            Current workflow
-          </p>
-          <p className={`mt-1 text-sm font-bold ${mutedText}`}>
-            {activeTab.description}
-          </p>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -228,7 +207,7 @@ export default function OperationsDashboard({
             <div>
               <p className={isDark ? "text-sm font-semibold uppercase tracking-wide text-blue-200" : "text-sm font-semibold uppercase tracking-wide text-blue-700"}>Next operations move</p>
               <p className={`mt-1 text-lg font-bold ${titleText}`}>{nextMove}</p>
-              <p className={`mt-1 text-sm font-semibold ${mutedText}`}>Use the section buttons below to jump into the workflow that owns the issue.</p>
+              <p className={`mt-1 text-sm font-semibold ${mutedText}`}>Use the section tabs above to jump into the workflow that owns the issue.</p>
             </div>
           </div>
           <div className="flex gap-2">
