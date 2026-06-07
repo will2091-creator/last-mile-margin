@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { saveRouteCheckIn } from "../lib/mobileRepository";
-import { theme } from "../theme";
+import { useTheme } from "../ThemeContext";
 
 export default function CheckInScreen({ onDataChange }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [routeName, setRouteName] = useState("");
   const [truck, setTruck] = useState("");
   const [notes, setNotes] = useState("");
@@ -11,9 +13,14 @@ export default function CheckInScreen({ onDataChange }) {
   const [isSaving, setIsSaving] = useState(false);
 
   const save = async () => {
+    if (!routeName.trim() || !truck.trim()) {
+      setStatus("Route and truck are required before saving.");
+      return;
+    }
+
     setIsSaving(true);
     setStatus("");
-    const result = await saveRouteCheckIn({ routeName, truck, notes, photoUrl: "" });
+    const result = await saveRouteCheckIn({ routeName: routeName.trim(), truck: truck.trim(), notes: notes.trim(), photoUrl: "" });
     setIsSaving(false);
     if (result.ok) {
       setRouteName("");
@@ -49,36 +56,36 @@ export default function CheckInScreen({ onDataChange }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   card: {
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
-    backgroundColor: theme.colors.card,
+    backgroundColor: colors.card,
     padding: 16,
   },
   title: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 24,
     fontWeight: "900",
   },
   copy: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "700",
     lineHeight: 21,
     marginTop: 6,
   },
   label: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "900",
     marginBottom: 7,
     marginTop: 16,
   },
   input: {
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 14,
     borderWidth: 1,
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "800",
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -90,7 +97,7 @@ const styles = StyleSheet.create({
   button: {
     alignItems: "center",
     borderRadius: 14,
-    backgroundColor: theme.colors.blue,
+    backgroundColor: colors.blue,
     marginTop: 18,
     paddingVertical: 14,
   },
@@ -99,7 +106,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   status: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "800",
     marginTop: 12,
   },

@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { supabase } from "../lib/supabaseClient";
-import { theme } from "../theme";
+import { useTheme } from "../ThemeContext";
 
 export default function LoginScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -40,23 +42,23 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   shell: {
     flex: 1,
     justifyContent: "center",
     padding: 20,
-    backgroundColor: theme.colors.background,
+    backgroundColor: colors.background,
   },
   card: {
     borderRadius: 24,
-    backgroundColor: theme.colors.card,
+    backgroundColor: colors.card,
     padding: 22,
     shadowColor: "#0f172a",
     shadowOpacity: 0.12,
     shadowRadius: 20,
   },
   kicker: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 12,
     fontWeight: "900",
     letterSpacing: 0.5,
@@ -64,13 +66,13 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: 8,
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 32,
     fontWeight: "900",
   },
   copy: {
     marginTop: 8,
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 15,
     fontWeight: "700",
     lineHeight: 22,
@@ -78,22 +80,22 @@ const styles = StyleSheet.create({
   label: {
     marginTop: 18,
     marginBottom: 8,
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "900",
   },
   input: {
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: 14,
     paddingVertical: 13,
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "800",
   },
   button: {
     alignItems: "center",
     borderRadius: 16,
-    backgroundColor: theme.colors.blue,
+    backgroundColor: colors.blue,
     marginTop: 22,
     paddingVertical: 15,
   },
@@ -103,7 +105,7 @@ const styles = StyleSheet.create({
   },
   error: {
     marginTop: 14,
-    color: theme.colors.red,
+    color: colors.red,
     fontWeight: "800",
   },
 });

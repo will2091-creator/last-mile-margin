@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { currency, theme } from "../theme";
+import { currency } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { loadDashboardSnapshot, loadOpenClaims, loadOwnerCommandCenter, loadTeamMembership } from "../lib/mobileRepository";
 import { getRoleDescription, getRoleLabel, normalizeRole } from "../lib/roles";
 
 export default function HomeScreen({ mobileMode, refreshToken, onNavigate }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [claims, setClaims] = useState([]);
   const [membership, setMembership] = useState(null);
   const [snapshot, setSnapshot] = useState(null);
@@ -189,7 +192,7 @@ export default function HomeScreen({ mobileMode, refreshToken, onNavigate }) {
           {claims.slice(0, 3).map((claim) => (
             <ClaimRow key={claim.id} claim={claim} />
           ))}
-          {!claims.length && <ActivityIndicator color={theme.colors.blue} />}
+          {!claims.length && <ActivityIndicator color={colors.blue} />}
         </Section>
         </>
       )}
@@ -208,6 +211,8 @@ export default function HomeScreen({ mobileMode, refreshToken, onNavigate }) {
 }
 
 function OwnerHero({ profit, revenue, costs, exposure, margin, label, nextAction, onNavigate }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const canNavigate = Boolean(nextAction?.targetTab);
   const profitTone = profit >= 0 ? styles.greenValue : styles.redValue;
   const ownerMove = nextAction?.title || "Review today’s saved routes";
@@ -252,6 +257,8 @@ function OwnerHero({ profit, revenue, costs, exposure, margin, label, nextAction
 }
 
 function Section({ title, subtitle, children }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.card}>
       <View style={styles.sectionHeader}>
@@ -266,6 +273,8 @@ function Section({ title, subtitle, children }) {
 }
 
 function CommandMetricCard({ label, value, note, tone, onPress }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const content = (
     <>
       <Text style={styles.commandLabel}>{label}</Text>
@@ -288,6 +297,8 @@ function CommandMetricCard({ label, value, note, tone, onPress }) {
 }
 
 function AttentionCard({ item, onNavigate }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const isActionable = Boolean(item.targetTab);
   return (
     <TouchableOpacity
@@ -305,6 +316,8 @@ function AttentionCard({ item, onNavigate }) {
 }
 
 function SummaryTile({ label, value, tone }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.summaryTile}>
       <Text style={styles.summaryLabel}>{label}</Text>
@@ -314,6 +327,8 @@ function SummaryTile({ label, value, tone }) {
 }
 
 function ActivityRow({ item }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.activityRow}>
       <View style={[styles.activityDot, styles[`${item.tone}Dot`] || styles.blueDot]} />
@@ -327,6 +342,8 @@ function ActivityRow({ item }) {
 }
 
 function MetricCard({ title, value, note, tone = "ink" }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const toneStyle = styles[`${tone}Value`] || styles.inkValue;
 
   return (
@@ -339,6 +356,8 @@ function MetricCard({ title, value, note, tone = "ink" }) {
 }
 
 function StatusTile({ label, value, note, tone }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.statusTile}>
       <Text style={styles.statusTileLabel}>{label}</Text>
@@ -349,6 +368,8 @@ function StatusTile({ label, value, note, tone }) {
 }
 
 function ActionItem({ item, onNavigate }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const isActionable = Boolean(item.targetTab);
   const label = item.actionLabel || (isActionable ? "Open" : "Info");
 
@@ -371,6 +392,8 @@ function ActionItem({ item, onNavigate }) {
 }
 
 function MiniList({ items, emptyText }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   if (!items.length) {
     return <Text style={styles.emptyText}>{emptyText}</Text>;
   }
@@ -387,6 +410,8 @@ function MiniList({ items, emptyText }) {
 }
 
 function ClaimRow({ claim }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.miniRow}>
       <View style={styles.miniBody}>
@@ -580,7 +605,7 @@ function formatShortDate(value) {
   return `${date.getMonth() + 1}/${date.getDate()}`;
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container: {
     gap: 12,
     paddingBottom: 24,
@@ -588,7 +613,7 @@ const styles = StyleSheet.create({
   statusPill: {
     alignItems: "center",
     alignSelf: "flex-start",
-    backgroundColor: "#e0f2fe",
+    backgroundColor: colors.card,
     borderColor: "#bfdbfe",
     borderRadius: 999,
     borderWidth: 1,
@@ -598,18 +623,18 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   statusDot: {
-    backgroundColor: theme.colors.green,
+    backgroundColor: colors.green,
     borderRadius: 4,
     height: 8,
     width: 8,
   },
   status: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 12,
     fontWeight: "900",
   },
   ownerHero: {
-    backgroundColor: theme.colors.card,
+    backgroundColor: colors.card,
     borderColor: "#bfdbfe",
     borderRadius: 22,
     borderWidth: 1,
@@ -631,28 +656,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   ownerKicker: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   ownerTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 34,
     fontWeight: "900",
     lineHeight: 36,
     marginTop: 4,
   },
   ownerSubtitle: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
     marginTop: 4,
   },
   marginPill: {
     alignItems: "center",
-    backgroundColor: "#f8fafc",
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 16,
     borderWidth: 1,
     minWidth: 74,
@@ -660,7 +685,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   marginPillLabel: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 10,
     fontWeight: "900",
     textTransform: "uppercase",
@@ -671,15 +696,15 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   profitPanel: {
-    backgroundColor: "#f8fafc",
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 18,
     borderWidth: 1,
     marginTop: 12,
     padding: 13,
   },
   profitLabel: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "900",
     textTransform: "uppercase",
@@ -691,7 +716,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   profitFormula: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
     lineHeight: 18,
@@ -699,7 +724,7 @@ const styles = StyleSheet.create({
   },
   nextMoveCard: {
     alignItems: "center",
-    backgroundColor: "#eff6ff",
+    backgroundColor: colors.card,
     borderColor: "#bfdbfe",
     borderRadius: 18,
     borderWidth: 1,
@@ -712,27 +737,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   nextMoveLabel: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   nextMoveTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 15,
     fontWeight: "900",
     lineHeight: 18,
     marginTop: 4,
   },
   nextMoveNote: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
     lineHeight: 17,
     marginTop: 4,
   },
   nextMoveButton: {
-    backgroundColor: theme.colors.blue,
+    backgroundColor: colors.blue,
     borderRadius: 999,
     color: "#fff",
     fontSize: 11,
@@ -750,8 +775,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   commandCard: {
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 18,
     borderWidth: 1,
     flexBasis: "47%",
@@ -760,19 +785,19 @@ const styles = StyleSheet.create({
     padding: 13,
   },
   commandLabel: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   commandValue: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 28,
     fontWeight: "900",
     marginTop: 8,
   },
   commandNote: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
     marginTop: 5,
@@ -789,12 +814,12 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   attentionTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 15,
     fontWeight: "900",
   },
   attentionNote: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
     marginTop: 3,
@@ -816,8 +841,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   summaryTile: {
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 16,
     borderWidth: 1,
     flexBasis: "47%",
@@ -825,67 +850,67 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   summaryLabel: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   summaryValue: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 19,
     fontWeight: "900",
     marginTop: 5,
   },
   metricCard: {
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
-    backgroundColor: theme.colors.card,
+    backgroundColor: colors.card,
     padding: 16,
   },
   metricTitle: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   metricValue: {
     marginTop: 8,
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 30,
     fontWeight: "900",
     textTransform: "capitalize",
   },
   inkValue: {
-    color: theme.colors.ink,
+    color: colors.ink,
   },
   blueValue: {
-    color: theme.colors.blue,
+    color: colors.blue,
   },
   greenValue: {
-    color: theme.colors.green,
+    color: colors.green,
   },
   redValue: {
-    color: theme.colors.red,
+    color: colors.red,
   },
   amberValue: {
-    color: theme.colors.amber,
+    color: colors.amber,
   },
   redSoft: {
-    backgroundColor: "#fef2f2",
+    backgroundColor: colors.card,
   },
   amberSoft: {
-    backgroundColor: "#fffbeb",
+    backgroundColor: colors.card,
   },
   blueSoft: {
-    backgroundColor: "#eff6ff",
+    backgroundColor: colors.card,
   },
   greenSoft: {
-    backgroundColor: "#ecfdf5",
+    backgroundColor: colors.card,
   },
   activityRow: {
     alignItems: "center",
-    borderTopColor: theme.colors.border,
+    borderTopColor: colors.border,
     borderTopWidth: 1,
     flexDirection: "row",
     gap: 10,
@@ -897,45 +922,45 @@ const styles = StyleSheet.create({
     width: 10,
   },
   redDot: {
-    backgroundColor: theme.colors.red,
+    backgroundColor: colors.red,
   },
   amberDot: {
-    backgroundColor: theme.colors.amber,
+    backgroundColor: colors.amber,
   },
   blueDot: {
-    backgroundColor: theme.colors.blue,
+    backgroundColor: colors.blue,
   },
   greenDot: {
-    backgroundColor: theme.colors.green,
+    backgroundColor: colors.green,
   },
   activityCopy: {
     flex: 1,
   },
   activityTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "900",
   },
   activityNote: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
     marginTop: 3,
   },
   activityTime: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "900",
   },
   metricNote: {
     marginTop: 4,
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "800",
   },
   card: {
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
-    backgroundColor: theme.colors.card,
+    backgroundColor: colors.card,
     padding: 16,
   },
   sectionHeader: {
@@ -943,12 +968,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   cardTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 20,
     fontWeight: "900",
   },
   cardSubtitle: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "800",
     lineHeight: 19,
     marginTop: 3,
@@ -962,15 +987,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   statusTile: {
-    backgroundColor: "#f8fafc",
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 16,
     borderWidth: 1,
     flex: 1,
     padding: 12,
   },
   statusTileLabel: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
@@ -981,7 +1006,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   statusTileNote: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
     marginTop: 3,
@@ -997,19 +1022,19 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   redAction: {
-    backgroundColor: "#fef2f2",
+    backgroundColor: colors.card,
   },
   amberAction: {
-    backgroundColor: "#fffbeb",
+    backgroundColor: colors.card,
   },
   blueAction: {
-    backgroundColor: "#eff6ff",
+    backgroundColor: colors.card,
   },
   greenAction: {
-    backgroundColor: "#ecfdf5",
+    backgroundColor: colors.card,
   },
   actionDot: {
-    backgroundColor: theme.colors.blue,
+    backgroundColor: colors.blue,
     borderRadius: 5,
     height: 10,
     width: 10,
@@ -1018,23 +1043,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 15,
     fontWeight: "900",
   },
   actionNote: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "800",
     lineHeight: 18,
     marginTop: 3,
   },
   actionChevron: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 25,
     fontWeight: "900",
   },
   actionButton: {
-    backgroundColor: theme.colors.ink,
+    backgroundColor: colors.ink,
     borderRadius: 999,
     color: "#fff",
     fontSize: 11,
@@ -1044,10 +1069,10 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   actionTag: {
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 999,
     borderWidth: 1,
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 11,
     fontWeight: "900",
     overflow: "hidden",
@@ -1056,7 +1081,7 @@ const styles = StyleSheet.create({
   },
   miniRow: {
     alignItems: "center",
-    borderTopColor: theme.colors.border,
+    borderTopColor: colors.border,
     borderTopWidth: 1,
     flexDirection: "row",
     gap: 10,
@@ -1066,11 +1091,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   miniTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "900",
   },
   miniNote: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
     lineHeight: 17,
@@ -1097,20 +1122,20 @@ const styles = StyleSheet.create({
     color: "#991b1b",
   },
   blueBadge: {
-    backgroundColor: "#dbeafe",
-    color: "#1d4ed8",
+    backgroundColor: colors.card,
+    color: colors.blue,
   },
   amount: {
-    color: theme.colors.red,
+    color: colors.red,
     fontWeight: "900",
   },
   emptyText: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "800",
     paddingVertical: 8,
   },
   financeRow: {
-    borderTopColor: theme.colors.border,
+    borderTopColor: colors.border,
     borderTopWidth: 1,
     flexDirection: "row",
     gap: 12,
@@ -1121,31 +1146,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   financeLabel: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "900",
   },
   financeNote: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "700",
     lineHeight: 17,
     marginTop: 3,
   },
   financeValue: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "900",
     maxWidth: 118,
     textAlign: "right",
   },
   formulaBox: {
-    backgroundColor: "#ecfdf5",
+    backgroundColor: colors.card,
     borderColor: "#bbf7d0",
     borderRadius: 16,
     borderWidth: 1,
     padding: 12,
   },
   formulaLabel: {
-    color: theme.colors.green,
+    color: colors.green,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
@@ -1162,30 +1187,30 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   readinessValue: {
-    color: theme.colors.green,
+    color: colors.green,
     fontSize: 40,
     fontWeight: "900",
   },
   readinessLabel: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 14,
     fontWeight: "900",
     marginTop: -2,
   },
   readinessNote: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "900",
     marginBottom: 6,
   },
   progressTrack: {
-    backgroundColor: "#e2e8f0",
+    backgroundColor: colors.border,
     borderRadius: 999,
     height: 10,
     overflow: "hidden",
   },
   progressFill: {
-    backgroundColor: theme.colors.green,
+    backgroundColor: colors.green,
     borderRadius: 999,
     height: 10,
   },
@@ -1193,22 +1218,22 @@ const styles = StyleSheet.create({
     borderColor: "#bfdbfe",
     borderRadius: 20,
     borderWidth: 1,
-    backgroundColor: "#eff6ff",
+    backgroundColor: colors.card,
     padding: 16,
   },
   roleTitle: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 17,
     fontWeight: "900",
   },
   roleCopy: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "800",
     lineHeight: 21,
     marginTop: 6,
   },
   roleHint: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "700",
     lineHeight: 18,

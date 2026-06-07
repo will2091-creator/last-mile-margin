@@ -1,12 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { currency, theme } from "../theme";
+import { currency } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { loadClaimsCenter, loadTeamMembership, updateClaimStatus } from "../lib/mobileRepository";
 import { getRoleCapabilities, getRoleLabel, normalizeRole } from "../lib/roles";
 
 const claimTabs = ["Needs Review", "Waiting on Evidence", "Dispute Ready", "Resolved"];
 
 export default function ClaimsScreen({ refreshToken, onDataChange }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [claims, setClaims] = useState([]);
   const [membership, setMembership] = useState(null);
   const [activeTab, setActiveTab] = useState("Needs Review");
@@ -213,6 +216,8 @@ function buildTimeline(claim) {
 }
 
 function Metric({ label, value, tone }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.metric}>
       <Text style={styles.metricLabel}>{label}</Text>
@@ -222,6 +227,8 @@ function Metric({ label, value, tone }) {
 }
 
 function Detail({ label, value, tone = "ink" }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.detailItem}>
       <Text style={styles.detailItemLabel}>{label}</Text>
@@ -231,31 +238,33 @@ function Detail({ label, value, tone = "ink" }) {
 }
 
 function RiskBadge({ risk }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const normalized = risk || "Medium";
   const style = normalized === "High" ? styles.highRisk : normalized === "Low" ? styles.lowRisk : styles.mediumRisk;
   return <Text style={[styles.riskBadge, style]}>{normalized} Risk</Text>;
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container: {
     gap: 12,
     paddingBottom: 24,
   },
   headerCard: {
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
     padding: 14,
   },
   kicker: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   title: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 25,
     fontWeight: "900",
     marginTop: 3,
@@ -266,15 +275,15 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   metric: {
-    backgroundColor: "#f8fafc",
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 16,
     borderWidth: 1,
     flex: 1,
     padding: 11,
   },
   metricLabel: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 10,
     fontWeight: "900",
     textTransform: "uppercase",
@@ -291,8 +300,8 @@ const styles = StyleSheet.create({
   },
   tab: {
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 999,
     borderWidth: 1,
     flexDirection: "row",
@@ -301,16 +310,16 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   activeTab: {
-    backgroundColor: theme.colors.blue,
-    borderColor: theme.colors.blue,
+    backgroundColor: colors.blue,
+    borderColor: colors.blue,
   },
   tabText: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 11,
     fontWeight: "900",
   },
   tabCount: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 11,
     fontWeight: "900",
   },
@@ -318,7 +327,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   detailCard: {
-    backgroundColor: theme.colors.card,
+    backgroundColor: colors.card,
     borderColor: "#bfdbfe",
     borderRadius: 20,
     borderWidth: 1,
@@ -333,19 +342,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailLabel: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   detailTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 20,
     fontWeight: "900",
     marginTop: 3,
   },
   detailNote: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
     lineHeight: 17,
@@ -353,7 +362,7 @@ const styles = StyleSheet.create({
   },
   primaryAction: {
     alignItems: "center",
-    backgroundColor: theme.colors.blue,
+    backgroundColor: colors.blue,
     borderRadius: 14,
     minWidth: 92,
     paddingHorizontal: 12,
@@ -374,8 +383,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   detailItem: {
-    backgroundColor: "#f8fafc",
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 14,
     borderWidth: 1,
     flexBasis: "47%",
@@ -383,19 +392,19 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   detailItemLabel: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 10,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   detailItemValue: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 14,
     fontWeight: "900",
     marginTop: 4,
   },
   evidenceBox: {
-    backgroundColor: "#eff6ff",
+    backgroundColor: colors.card,
     borderColor: "#bfdbfe",
     borderRadius: 16,
     borderWidth: 1,
@@ -403,13 +412,13 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   evidenceTitle: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 12,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   evidenceCopy: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "800",
     lineHeight: 19,
     marginTop: 4,
@@ -418,7 +427,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   timelineTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "900",
     marginBottom: 6,
   },
@@ -429,30 +438,30 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   timelineDot: {
-    backgroundColor: theme.colors.blue,
+    backgroundColor: colors.blue,
     borderRadius: 4,
     height: 8,
     width: 8,
   },
   timelineText: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
   },
   status: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
   },
   claimCard: {
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 18,
     borderWidth: 1,
     padding: 14,
   },
   selectedClaimCard: {
-    borderColor: theme.colors.blue,
+    borderColor: colors.blue,
   },
   claimTop: {
     alignItems: "flex-start",
@@ -464,12 +473,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   claimAmount: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 28,
     fontWeight: "900",
   },
   claimMeta: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "800",
     marginTop: 4,
   },
@@ -483,18 +492,18 @@ const styles = StyleSheet.create({
   },
   highRisk: {
     backgroundColor: "#fee2e2",
-    color: theme.colors.red,
+    color: colors.red,
   },
   mediumRisk: {
     backgroundColor: "#fef3c7",
-    color: theme.colors.amber,
+    color: colors.amber,
   },
   lowRisk: {
     backgroundColor: "#dcfce7",
     color: "#166534",
   },
   claimFooter: {
-    borderTopColor: theme.colors.border,
+    borderTopColor: colors.border,
     borderTopWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -502,45 +511,45 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   claimStatus: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 12,
     fontWeight: "900",
   },
   claimDays: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "900",
   },
   emptyCard: {
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 18,
     borderWidth: 1,
     padding: 18,
   },
   emptyTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 17,
     fontWeight: "900",
   },
   emptyCopy: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "800",
     lineHeight: 20,
     marginTop: 5,
     textAlign: "center",
   },
   inkText: {
-    color: theme.colors.ink,
+    color: colors.ink,
   },
   redText: {
-    color: theme.colors.red,
+    color: colors.red,
   },
   amberText: {
-    color: theme.colors.amber,
+    color: colors.amber,
   },
   greenText: {
-    color: theme.colors.green,
+    color: colors.green,
   },
 });

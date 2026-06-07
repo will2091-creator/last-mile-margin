@@ -18,7 +18,7 @@ import MoreScreen from "./src/screens/MoreScreen";
 import { supabase } from "./src/lib/supabaseClient";
 import { loadTeamMembership } from "./src/lib/mobileRepository";
 import { normalizeRole } from "./src/lib/roles";
-import { theme } from "./src/theme";
+import { ThemeProvider, useTheme } from "./src/ThemeContext";
 
 const tabs = [
   { key: "home", label: "Home", ownerLabel: "Command", modes: ["owner", "driver"] },
@@ -30,7 +30,9 @@ const tabs = [
   { key: "evidence", label: "Evidence", modes: ["driver"] },
 ];
 
-export default function App() {
+function AppShell() {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -127,7 +129,7 @@ export default function App() {
   if (!fontsReady || isLoadingSession || (session && isLoadingRole)) {
     return (
       <SafeAreaView style={styles.centered}>
-        <ActivityIndicator color={theme.colors.blue} />
+        <ActivityIndicator color={colors.blue} />
         <Text style={styles.loadingText}>Loading Final Mile Margin...</Text>
       </SafeAreaView>
     );
@@ -143,7 +145,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.shell}>
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? "light" : "dark"} />
       <View style={styles.header}>
         <View style={styles.headerCopy}>
           <Text style={styles.kicker}>Final Mile Margin</Text>
@@ -158,6 +160,9 @@ export default function App() {
               <Text style={styles.modeButtonText}>{effectiveMode === "owner" ? "Owner" : "Driver"}</Text>
             </TouchableOpacity>
           )}
+          <TouchableOpacity style={styles.signOutButton} onPress={toggleTheme}>
+            <Text style={styles.signOutText}>{isDark ? "☀" : "☾"}</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.signOutButton} onPress={() => supabase.auth.signOut()}>
             <Text style={styles.signOutText}>Out</Text>
           </TouchableOpacity>
@@ -191,8 +196,10 @@ export default function App() {
 }
 
 function TabIcon({ tabKey, isActive }) {
-  const tint = isActive ? "#fff" : theme.colors.muted;
-  const fill = isActive ? "#fff" : theme.colors.blue;
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const tint = isActive ? "#fff" : colors.muted;
+  const fill = isActive ? "#fff" : colors.blue;
   const lineStyle = { backgroundColor: tint };
   const dotStyle = { backgroundColor: fill };
 
@@ -253,9 +260,11 @@ function TabIcon({ tabKey, isActive }) {
 }
 
 function ModeChooser({ onChoose, onSignOut }) {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <SafeAreaView style={styles.modeShell}>
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? "light" : "dark"} />
       <View style={styles.modeCard}>
         <Text style={styles.kicker}>Final Mile Margin</Text>
         <Text style={styles.modeTitle}>How are you working today?</Text>
@@ -276,20 +285,20 @@ function ModeChooser({ onChoose, onSignOut }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   shell: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: colors.background,
   },
   centered: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: theme.colors.background,
+    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: 12,
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "700",
   },
   header: {
@@ -306,24 +315,24 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   kicker: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   title: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 25,
     fontWeight: "900",
   },
   headerSubtitle: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 11,
     fontWeight: "800",
     marginTop: 1,
   },
   signOutButton: {
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 14,
     borderWidth: 1,
     paddingHorizontal: 11,
@@ -334,18 +343,18 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   modeButton: {
-    backgroundColor: "#dbeafe",
+    backgroundColor: colors.card,
     borderRadius: 14,
     paddingHorizontal: 11,
     paddingVertical: 7,
   },
   modeButtonText: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 12,
     fontWeight: "900",
   },
   signOutText: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "900",
   },
   content: {
@@ -356,11 +365,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 6,
     padding: 12,
-    borderTopColor: theme.colors.border,
+    borderTopColor: colors.border,
     borderTopWidth: 1,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     shadowColor: "#0f172a",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
@@ -376,10 +385,10 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   activeTabButton: {
-    backgroundColor: theme.colors.blue,
+    backgroundColor: colors.blue,
   },
   tabText: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 10,
     fontWeight: "900",
     marginTop: 3,
@@ -403,7 +412,7 @@ const styles = StyleSheet.create({
     width: 22,
   },
   receiptIcon: {
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 3,
     borderWidth: 1,
   },
@@ -441,15 +450,15 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: theme.colors.background,
+    backgroundColor: colors.background,
     padding: 20,
   },
   modeCard: {
     width: "100%",
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 24,
     borderWidth: 1,
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     padding: 22,
     shadowColor: "#0f172a",
     shadowOffset: { width: 0, height: 14 },
@@ -458,21 +467,21 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   modeTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 31,
     fontWeight: "900",
     lineHeight: 36,
     marginTop: 8,
   },
   modeCopy: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 15,
     fontWeight: "800",
     lineHeight: 22,
     marginTop: 8,
   },
   primaryModeOption: {
-    backgroundColor: theme.colors.blue,
+    backgroundColor: colors.blue,
     borderRadius: 18,
     marginTop: 22,
     padding: 16,
@@ -489,19 +498,19 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   secondaryModeOption: {
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 18,
     borderWidth: 1,
     marginTop: 12,
     padding: 16,
   },
   secondaryModeTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 20,
     fontWeight: "900",
   },
   secondaryModeCopy: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "800",
     lineHeight: 20,
     marginTop: 5,
@@ -511,7 +520,15 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   modeSignOutText: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "900",
   },
 });
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppShell />
+    </ThemeProvider>
+  );
+}

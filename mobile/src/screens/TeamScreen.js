@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { currency, theme } from "../theme";
+import { currency } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { loadClaimsCenter, loadOwnerCommandCenter } from "../lib/mobileRepository";
 
 export default function TeamScreen({ refreshToken }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [summary, setSummary] = useState(null);
   const [claims, setClaims] = useState([]);
   const [selectedMemberId, setSelectedMemberId] = useState(null);
@@ -104,6 +107,8 @@ export default function TeamScreen({ refreshToken }) {
 }
 
 function Detail({ label, value, tone = "ink" }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.detailItem}>
       <Text style={styles.detailLabel}>{label}</Text>
@@ -112,32 +117,32 @@ function Detail({ label, value, tone = "ink" }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container: {
     gap: 12,
     paddingBottom: 24,
   },
   headerCard: {
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
     padding: 14,
   },
   kicker: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   title: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 25,
     fontWeight: "900",
     marginTop: 3,
   },
   copy: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "800",
     marginTop: 4,
   },
@@ -147,8 +152,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   statCard: {
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 18,
     borderWidth: 1,
     flexBasis: "47%",
@@ -156,38 +161,38 @@ const styles = StyleSheet.create({
     padding: 13,
   },
   statLabel: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   statValue: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 26,
     fontWeight: "900",
     marginTop: 6,
   },
   statNote: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
     marginTop: 4,
   },
   detailCard: {
-    backgroundColor: theme.colors.card,
+    backgroundColor: colors.card,
     borderColor: "#bfdbfe",
     borderRadius: 20,
     borderWidth: 1,
     padding: 14,
   },
   detailKicker: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   detailTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 20,
     fontWeight: "900",
     marginTop: 3,
@@ -199,8 +204,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   detailItem: {
-    backgroundColor: "#f8fafc",
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 14,
     borderWidth: 1,
     flexBasis: "47%",
@@ -208,59 +213,59 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   detailLabel: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 10,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   detailValue: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 14,
     fontWeight: "900",
     marginTop: 4,
   },
   nextAction: {
-    backgroundColor: "#eff6ff",
+    backgroundColor: colors.card,
     borderRadius: 14,
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "900",
     lineHeight: 20,
     marginTop: 12,
     padding: 11,
   },
   listCard: {
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
     padding: 14,
   },
   sectionTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 18,
     fontWeight: "900",
     marginBottom: 4,
   },
   memberRow: {
     alignItems: "center",
-    borderTopColor: theme.colors.border,
+    borderTopColor: colors.border,
     borderTopWidth: 1,
     flexDirection: "row",
     gap: 10,
     paddingVertical: 12,
   },
   activeMemberRow: {
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.card,
   },
   memberCopy: {
     flex: 1,
   },
   memberName: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "900",
   },
   memberRole: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
     marginTop: 3,
@@ -279,26 +284,26 @@ const styles = StyleSheet.create({
   },
   reviewBadge: {
     backgroundColor: "#fef3c7",
-    color: theme.colors.amber,
+    color: colors.amber,
   },
   emptyText: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "800",
     paddingVertical: 10,
   },
   inkText: {
-    color: theme.colors.ink,
+    color: colors.ink,
   },
   blueText: {
-    color: theme.colors.blue,
+    color: colors.blue,
   },
   greenText: {
-    color: theme.colors.green,
+    color: colors.green,
   },
   redText: {
-    color: theme.colors.red,
+    color: colors.red,
   },
   amberText: {
-    color: theme.colors.amber,
+    color: colors.amber,
   },
 });

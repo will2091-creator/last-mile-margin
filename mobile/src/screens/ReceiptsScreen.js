@@ -2,13 +2,16 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
-import { currency, theme } from "../theme";
+import { currency } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { extractReceiptInfo, loadOwnerCommandCenter, updateReceiptStatus, uploadExpenseReceipt } from "../lib/mobileRepository";
 
 const receiptTabs = ["Pending Approval", "Approved", "Attached to Profit"];
 const categories = ["Fuel", "Repairs", "Tools", "Maintenance", "Tolls", "Supplies"];
 
 export default function ReceiptsScreen({ refreshToken, onDataChange }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [receipts, setReceipts] = useState([]);
   const [activeTab, setActiveTab] = useState("Pending Approval");
   const [selectedReceiptId, setSelectedReceiptId] = useState(null);
@@ -325,6 +328,8 @@ function formatDate(value) {
 }
 
 function Detail({ label, value, tone = "ink" }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.detailItem}>
       <Text style={styles.detailLabel}>{label}</Text>
@@ -333,14 +338,14 @@ function Detail({ label, value, tone = "ink" }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container: {
     gap: 12,
     paddingBottom: 24,
   },
   headerCard: {
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
     padding: 14,
@@ -354,24 +359,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   kicker: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   title: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 25,
     fontWeight: "900",
     marginTop: 3,
   },
   copy: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "800",
     marginTop: 4,
   },
   addButton: {
-    backgroundColor: theme.colors.blue,
+    backgroundColor: colors.blue,
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 9,
@@ -387,8 +392,8 @@ const styles = StyleSheet.create({
   },
   tab: {
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 999,
     borderWidth: 1,
     flexDirection: "row",
@@ -397,16 +402,16 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   activeTab: {
-    backgroundColor: theme.colors.blue,
-    borderColor: theme.colors.blue,
+    backgroundColor: colors.blue,
+    borderColor: colors.blue,
   },
   tabText: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 11,
     fontWeight: "900",
   },
   tabCount: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 11,
     fontWeight: "900",
   },
@@ -414,15 +419,15 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   addPanel: {
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
     gap: 10,
     padding: 14,
   },
   panelTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 18,
     fontWeight: "900",
   },
@@ -432,18 +437,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryButton: {
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: 11,
     paddingVertical: 8,
   },
   activeCategoryButton: {
-    backgroundColor: theme.colors.blue,
-    borderColor: theme.colors.blue,
+    backgroundColor: colors.blue,
+    borderColor: colors.blue,
   },
   categoryText: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "900",
   },
@@ -451,10 +456,10 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   input: {
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 14,
     borderWidth: 1,
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "800",
     paddingHorizontal: 12,
     paddingVertical: 11,
@@ -469,30 +474,30 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     alignItems: "center",
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 14,
     borderWidth: 1,
     flex: 1,
     paddingVertical: 11,
   },
   secondaryButtonText: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "900",
   },
   fileText: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
   },
   analyzeButton: {
     alignItems: "center",
-    backgroundColor: theme.colors.blue,
+    backgroundColor: colors.blue,
     borderRadius: 14,
     paddingVertical: 12,
   },
   uploadButton: {
     alignItems: "center",
-    backgroundColor: theme.colors.green,
+    backgroundColor: colors.green,
     borderRadius: 14,
     paddingVertical: 12,
   },
@@ -504,38 +509,38 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   detailCard: {
-    backgroundColor: theme.colors.card,
+    backgroundColor: colors.card,
     borderColor: "#bfdbfe",
     borderRadius: 20,
     borderWidth: 1,
     padding: 14,
   },
   detailKicker: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   detailTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 20,
     fontWeight: "900",
     marginTop: 3,
   },
   receiptImageBox: {
-    backgroundColor: "#f8fafc",
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 16,
     borderWidth: 1,
     marginTop: 12,
     padding: 12,
   },
   receiptImageTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "900",
   },
   receiptImageCopy: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
     marginTop: 4,
@@ -547,8 +552,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   detailItem: {
-    backgroundColor: "#f8fafc",
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 14,
     borderWidth: 1,
     flexBasis: "47%",
@@ -556,13 +561,13 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   detailLabel: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 10,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   detailValue: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 14,
     fontWeight: "900",
     marginTop: 4,
@@ -574,44 +579,44 @@ const styles = StyleSheet.create({
   },
   approveButton: {
     alignItems: "center",
-    backgroundColor: theme.colors.green,
+    backgroundColor: colors.green,
     borderRadius: 14,
     flex: 1,
     paddingVertical: 12,
   },
   rejectButton: {
     alignItems: "center",
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 14,
     borderWidth: 1,
     flex: 1,
     paddingVertical: 12,
   },
   rejectButtonText: {
-    color: theme.colors.red,
+    color: colors.red,
     fontWeight: "900",
   },
   attachButton: {
     alignItems: "center",
-    backgroundColor: theme.colors.blue,
+    backgroundColor: colors.blue,
     borderRadius: 14,
     marginTop: 8,
     paddingVertical: 12,
   },
   status: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
   },
   receiptCard: {
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 18,
     borderWidth: 1,
     padding: 14,
   },
   selectedReceiptCard: {
-    borderColor: theme.colors.blue,
+    borderColor: colors.blue,
   },
   receiptTop: {
     alignItems: "flex-start",
@@ -623,25 +628,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   receiptVendor: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 17,
     fontWeight: "900",
   },
   receiptMeta: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
     marginTop: 4,
   },
   receiptAmount: {
-    color: theme.colors.amber,
+    color: colors.amber,
     fontSize: 19,
     fontWeight: "900",
   },
   receiptStatus: {
-    borderTopColor: theme.colors.border,
+    borderTopColor: colors.border,
     borderTopWidth: 1,
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "900",
     marginTop: 10,
@@ -649,28 +654,28 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 18,
     borderWidth: 1,
     padding: 18,
   },
   emptyTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 17,
     fontWeight: "900",
   },
   emptyCopy: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "800",
     lineHeight: 20,
     marginTop: 5,
     textAlign: "center",
   },
   inkText: {
-    color: theme.colors.ink,
+    color: colors.ink,
   },
   amberText: {
-    color: theme.colors.amber,
+    color: colors.amber,
   },
 });

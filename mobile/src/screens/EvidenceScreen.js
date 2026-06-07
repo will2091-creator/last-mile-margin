@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { uploadClaimEvidence } from "../lib/mobileRepository";
-import { theme } from "../theme";
+import { useTheme } from "../ThemeContext";
 
 export default function EvidenceScreen({ onDataChange }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [claimId, setClaimId] = useState("");
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [status, setStatus] = useState("");
@@ -73,61 +75,61 @@ export default function EvidenceScreen({ onDataChange }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   card: {
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
-    backgroundColor: theme.colors.card,
+    backgroundColor: colors.card,
     padding: 16,
   },
   title: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 24,
     fontWeight: "900",
   },
   copy: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "700",
     lineHeight: 21,
     marginTop: 6,
   },
   label: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "900",
     marginBottom: 7,
     marginTop: 16,
   },
   input: {
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 14,
     borderWidth: 1,
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "800",
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
   secondaryButton: {
     alignItems: "center",
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     borderRadius: 14,
     borderWidth: 1,
     marginTop: 14,
     paddingVertical: 14,
   },
   secondaryText: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontWeight: "900",
   },
   fileText: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "700",
     marginTop: 10,
   },
   button: {
     alignItems: "center",
     borderRadius: 14,
-    backgroundColor: theme.colors.blue,
+    backgroundColor: colors.blue,
     marginTop: 18,
     paddingVertical: 14,
   },
@@ -136,7 +138,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   status: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "800",
     marginTop: 12,
   },

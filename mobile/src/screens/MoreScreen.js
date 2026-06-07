@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { theme } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { loadOwnerCommandCenter } from "../lib/mobileRepository";
 
 export default function MoreScreen({ refreshToken }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [summary, setSummary] = useState(null);
   const [status, setStatus] = useState("Loading owner tools...");
 
@@ -88,37 +90,37 @@ export default function MoreScreen({ refreshToken }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container: {
     gap: 12,
     paddingBottom: 24,
   },
   headerCard: {
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
     padding: 14,
   },
   kicker: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 11,
     fontWeight: "900",
     textTransform: "uppercase",
   },
   title: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 25,
     fontWeight: "900",
     marginTop: 3,
   },
   copy: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontWeight: "800",
     marginTop: 4,
   },
   note: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "700",
     lineHeight: 17,
@@ -126,8 +128,8 @@ const styles = StyleSheet.create({
   },
   toolCard: {
     alignItems: "center",
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.border,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderRadius: 18,
     borderWidth: 1,
     flexDirection: "row",
@@ -140,46 +142,46 @@ const styles = StyleSheet.create({
     width: 16,
   },
   blueMark: {
-    backgroundColor: theme.colors.blue,
+    backgroundColor: colors.blue,
   },
   greenMark: {
-    backgroundColor: theme.colors.green,
+    backgroundColor: colors.green,
   },
   amberMark: {
-    backgroundColor: theme.colors.amber,
+    backgroundColor: colors.amber,
   },
   redMark: {
-    backgroundColor: theme.colors.red,
+    backgroundColor: colors.red,
   },
   toolCopy: {
     flex: 1,
   },
   toolTitle: {
-    color: theme.colors.ink,
+    color: colors.ink,
     fontSize: 17,
     fontWeight: "900",
   },
   toolSubtitle: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "900",
     marginTop: 3,
   },
   toolOutcome: {
-    color: theme.colors.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "700",
     lineHeight: 17,
     marginTop: 4,
   },
   webTag: {
-    backgroundColor: "#eff6ff",
+    backgroundColor: colors.card,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   webTagText: {
-    color: theme.colors.blue,
+    color: colors.blue,
     fontSize: 11,
     fontWeight: "900",
   },
