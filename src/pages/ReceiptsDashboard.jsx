@@ -104,7 +104,7 @@ export default function ReceiptsDashboard({ isDark, isBlankDemo = false, isDemoM
           primaryAction={{ label: "Open Intake", onClick: () => navigateToTab?.("Intake") }}
           secondaryActions={[
             { label: "Review Mobile Setup", onClick: () => navigateToTab?.("Settings") },
-            { label: "View Finance", onClick: () => navigateToTab?.("Finance") },
+            { label: "View Profitability", onClick: () => navigateToTab?.("Profitability") },
           ]}
         />
       )}
