@@ -1,15 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import lastMileMarginLogo from "./assets/last-mile-margin-logo-transparent.svg";
 import lastMileMarginLogoDark from "./assets/last-mile-margin-logo-transparent-dark.svg";
 import LoginPage from "./pages/LoginPage";
-import DashboardHome from "./pages/DashboardHome";
-import SettingsDashboard from "./pages/SettingsDashboard";
-import OperationsDashboard from "./pages/OperationsDashboard";
-import FinanceDashboard from "./pages/FinanceDashboard";
-import ReportsDashboard from "./pages/ReportsDashboard";
-import AskBusinessDashboard from "./pages/AskBusinessDashboard";
-import AiQuickIntake from "./components/AiQuickIntake";
+// Heavy authenticated pages (charts, AI, big forms) are code-split so the
+// initial load — and especially the logged-out login screen — stays lean.
+const DashboardHome = lazy(() => import("./pages/DashboardHome"));
+const SettingsDashboard = lazy(() => import("./pages/SettingsDashboard"));
+const OperationsDashboard = lazy(() => import("./pages/OperationsDashboard"));
+const FinanceDashboard = lazy(() => import("./pages/FinanceDashboard"));
+const ReportsDashboard = lazy(() => import("./pages/ReportsDashboard"));
+const AskBusinessDashboard = lazy(() => import("./pages/AskBusinessDashboard"));
+const AiQuickIntake = lazy(() => import("./components/AiQuickIntake"));
 import BusinessWorkflowRail from "./components/BusinessWorkflowRail";
 import SyncConfidencePanel from "./components/SyncConfidencePanel";
 import AppSidebar from "./components/app/AppSidebar";
@@ -105,6 +107,28 @@ const getLocalDateKey = (date = new Date()) => {
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
+
+// Shown briefly while a code-split page chunk loads. Mirrors a dashboard's
+// shape (hero + KPI grid + table) with shimmer blocks so navigation never
+// flashes blank.
+function PageFallback() {
+  return (
+    <div className="space-y-4" aria-busy="true" aria-label="Loading">
+      <span className="skeleton block h-9 w-64 rounded-xl" />
+      <div className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
+        <span className="skeleton block h-56 rounded-2xl" />
+        <span className="skeleton block h-56 rounded-2xl" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <span className="skeleton block h-28 rounded-2xl" />
+        <span className="skeleton block h-28 rounded-2xl" />
+        <span className="skeleton block h-28 rounded-2xl" />
+        <span className="skeleton block h-28 rounded-2xl" />
+      </div>
+      <span className="skeleton block h-64 rounded-2xl" />
+    </div>
+  );
+}
 
 export default function App() {
   const loadFromLocalStorage = (key, fallback) => {
@@ -1195,6 +1219,7 @@ export default function App() {
           />
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1600px]">
             <ErrorBoundary key={activeTab} variant="page">
+            <Suspense fallback={<PageFallback />}>
             {activeTab === "Dashboard" ? (
               <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} ownerName={ownerName} />
             ) : activeTab === "Intake" ? (
@@ -1280,6 +1305,7 @@ export default function App() {
             ) : (
               <DashboardHome teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} ownerName={ownerName} />
             )}
+            </Suspense>
             </ErrorBoundary>
           </motion.div>
         </main>
