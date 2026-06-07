@@ -874,21 +874,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
             {isAnswering ? "Answering..." : "Ask"}
           </button>
           {aiStatus && <p className={`mt-2 text-xs font-bold ${mutedText}`}>{aiStatus}</p>}
-          <div className={isDark ? "mt-4 rounded-2xl border border-white/10 bg-white/5 p-3" : "mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3"}>
-            <p className={`text-xs font-semibold uppercase tracking-wide ${mutedText}`}>Try asking</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {suggestedModes.slice(0, 4).map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => askBusiness(item.prompt)}
-                  className={isDark ? "rounded-full bg-white/10 px-3 py-1.5 text-xs font-black text-slate-200 hover:bg-white/15" : "rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-200"}
-                >
-                  {item.title}
-                </button>
-              ))}
-            </div>
-          </div>
+          <p className={`mt-3 text-xs font-semibold ${mutedText}`}>Or pick a suggested analysis above.</p>
         </div>
       </div>
 
