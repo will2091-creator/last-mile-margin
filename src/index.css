@@ -67,3 +67,79 @@ td.safe-number,
 th.safe-number {
   display: table-cell;
 }
+
+/*
+  Tabular (monospaced) figures so currency, percentages, and counts line up
+  in columns and don't jitter as values change — a hallmark of polished
+  finance UIs.
+*/
+.safe-number,
+table td,
+table th,
+input[type="number"],
+.app-card :where(.text-2xl, .text-3xl, .text-4xl, .text-5xl, .text-6xl).font-black,
+button :where(.text-2xl, .text-3xl, .text-4xl, .text-5xl, .text-6xl).font-black {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Polished keyboard focus — a clean ring on tab/keyboard nav only, never on click. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+  /* Components with their own focus treatment opt out of the global ring. */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+  }
+}
+
+/* Branded text selection. */
+::selection {
+  background: rgba(59, 130, 246, 0.22);
+}
+
+/* Slim, unobtrusive scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+  background-clip: padding-box;
+}
+
+/* Tactile press: interactive surfaces settle slightly when clicked. */
+@layer base {
+  button:active:not(:disabled),
+  [role="button"]:active {
+    transform: translateY(0.5px) scale(0.995);
+  }
+}
+
+/* Respect users who prefer less motion — keep state changes, drop the animation. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
