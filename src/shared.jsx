@@ -306,6 +306,7 @@ export const defaultSettings = {
   companyName: "Will's Fleet",
   themeMode: "light",
   accentColor: "blue",
+  tourCompleted: false,
   dashboardWidgets: {
     periodMetrics: true,
     todaysProfit: true,

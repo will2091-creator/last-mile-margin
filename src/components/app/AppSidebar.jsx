@@ -14,6 +14,7 @@ export default function AppSidebar({
   roleLabel,
   toggleThemeMode,
   navigateToTab,
+  onStartTour,
   signOut,
 }) {
   return (
@@ -68,6 +69,19 @@ export default function AppSidebar({
           );
         })}
       </nav>
+
+      {onStartTour && (
+        <button
+          onClick={onStartTour}
+          className={
+            isDark
+              ? "mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-slate-200 hover:bg-white/10"
+              : "mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-100"
+          }
+        >
+          Take the tour
+        </button>
+      )}
 
       <div className="mt-6 text-sm text-slate-500">
         <p>{appSettings.companyName}</p>

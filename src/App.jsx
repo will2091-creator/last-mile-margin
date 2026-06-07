@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import lastMileMarginLogo from "./assets/last-mile-margin-logo-transparent.svg";
 import lastMileMarginLogoDark from "./assets/last-mile-margin-logo-transparent-dark.svg";
@@ -18,12 +18,15 @@ import AppSidebar from "./components/app/AppSidebar";
 import AppToolbar from "./components/app/AppToolbar";
 import AppBottomNav from "./components/app/AppBottomNav";
 import ErrorBoundary from "./components/ErrorBoundary";
+import TourOverlay from "./tour/TourOverlay";
+import { tourSteps } from "./tour/tourSteps";
+import { demoDataset } from "./tour/tourDemoData";
 import { useToast } from "./components/Toast";
 import { loadAppStateFromSupabase, saveAppStateToSupabase } from "./lib/appStateRepository";
 import { loadClaimsFromSupabase, syncClaimsToSupabase } from "./lib/claimsRepository";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 import { addTeamMember, loadTeamAccess, updateTeamMemberRole } from "./lib/teamAccessRepository";
-import { getSetupStatus } from "./lib/onboarding";
+import { getSetupStatus, getNextBestSetupAction } from "./lib/onboarding";
 import {
   accentThemes,
   Bot,
@@ -147,6 +150,13 @@ export default function App() {
   const isDemoMode = false;
   const isDemoWorkspace = false;
   const isBlankDemoWorkspace = false;
+  // Guided product tour: runs over an in-memory demo dataset, then restores the
+  // user's real workspace. tourSnapshotRef holds the real state during the tour;
+  // tourLaunchedRef makes the auto-launch fire at most once per session.
+  const [tourActive, setTourActive] = useState(false);
+  const [tourStepIndex, setTourStepIndex] = useState(0);
+  const tourSnapshotRef = useRef(null);
+  const tourLaunchedRef = useRef(false);
   const { toast } = useToast();
   const [form, setForm] = useState(defaultForm);
   const [savedScenarios, setSavedScenarios] = useState(() =>
@@ -225,8 +235,9 @@ export default function App() {
   const [teamAccessStatus, setTeamAccessStatus] = useState("Team access will load after sign in.");
 
   useEffect(() => {
+    if (tourActive) return;
     localStorage.setItem("finalMileSettings", JSON.stringify(appSettings));
-  }, [appSettings]);
+  }, [appSettings, tourActive]);
 
   useEffect(() => {
     localStorage.setItem("finalMileLoggedIn", String(isLoggedIn));
@@ -303,12 +314,14 @@ export default function App() {
   }, [authUser]);
 
   useEffect(() => {
+    if (tourActive) return;
     localStorage.setItem("finalMileTeams", JSON.stringify(teams));
-  }, [teams]);
+  }, [teams, tourActive]);
 
   useEffect(() => {
+    if (tourActive) return;
     localStorage.setItem("finalMileClaims", JSON.stringify(claims));
-  }, [claims]);
+  }, [claims, tourActive]);
 
   useEffect(() => {
     let isMounted = true;
@@ -396,6 +409,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (tourActive) return;
     if (!hasLoadedRemoteClaims) return;
 
     let isMounted = true;
@@ -418,9 +432,10 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, [claims, hasLoadedRemoteClaims]);
+  }, [claims, hasLoadedRemoteClaims, tourActive]);
 
   useEffect(() => {
+    if (tourActive) return;
     if (!hasLoadedRemoteAppState) return;
 
     let isMounted = true;
@@ -449,19 +464,22 @@ export default function App() {
       isMounted = false;
       window.clearTimeout(syncTimer);
     };
-  }, [appSettings, currentWorkDate, form, globalDateRange, hasLoadedRemoteAppState, savedDays, savedScenarios, teams]);
+  }, [appSettings, currentWorkDate, form, globalDateRange, hasLoadedRemoteAppState, savedDays, savedScenarios, teams, tourActive]);
 
   useEffect(() => {
+    if (tourActive) return;
     localStorage.setItem("finalMileSavedScenarios", JSON.stringify(savedScenarios));
-  }, [savedScenarios]);
+  }, [savedScenarios, tourActive]);
 
   useEffect(() => {
+    if (tourActive) return;
     localStorage.setItem("finalMileSavedDays", JSON.stringify(savedDays));
-  }, [savedDays]);
+  }, [savedDays, tourActive]);
 
   useEffect(() => {
+    if (tourActive) return;
     localStorage.setItem("finalMileCurrentWorkDate", currentWorkDate);
-  }, [currentWorkDate]);
+  }, [currentWorkDate, tourActive]);
 
   useEffect(() => {
     const handleHistoryChange = () => {
@@ -751,6 +769,98 @@ export default function App() {
     navigateToTab(defaultAllowedTab, { replace: true });
   }, [activeTab, currentUserRole, defaultAllowedTab, isLoggedIn]);
 
+  // --- Guided product tour ---------------------------------------------------
+  // Only show steps whose tab the current role can reach.
+  const tourStepsForRole = useMemo(
+    () => tourSteps.filter((stepDef) => canAccessTab(currentUserRole, stepDef.tab)),
+    [currentUserRole]
+  );
+
+  const startTour = () => {
+    // Idempotent — guards React StrictMode's double effect invocation and any
+    // double-click on the replay button.
+    if (tourActive || tourSnapshotRef.current) return;
+    tourSnapshotRef.current = { claims, teams, savedScenarios, savedDays, form, loadedSavedDay };
+    setClaims(demoDataset.claims);
+    setTeams(demoDataset.teams);
+    setForm(demoDataset.form);
+    setSavedDays(demoDataset.savedDays);
+    setSavedScenarios(demoDataset.savedScenarios);
+    setLoadedSavedDay(demoDataset.loadedSavedDay);
+    setTourStepIndex(0);
+    setTourActive(true);
+    navigateToTab("Dashboard");
+  };
+
+  // Restore the user's real workspace, mark the tour seen, and re-enable the
+  // persisters (setTourActive(false) runs last so they only fire with real data).
+  const endTour = () => {
+    const snap = tourSnapshotRef.current;
+    if (snap) {
+      setClaims(snap.claims);
+      setTeams(snap.teams);
+      setSavedScenarios(snap.savedScenarios);
+      setSavedDays(snap.savedDays);
+      setForm(snap.form);
+      setLoadedSavedDay(snap.loadedSavedDay);
+    }
+    tourSnapshotRef.current = null;
+    setAppSettings((current) => ({ ...current, tourCompleted: true }));
+    try {
+      localStorage.setItem("finalMileTourSeen", "true");
+    } catch (error) {
+      console.warn("Could not persist tour-seen flag", error);
+    }
+    setTourStepIndex(0);
+    setTourActive(false);
+  };
+
+  const finishTour = () => {
+    // Compute the real next setup step from the restored data BEFORE clearing the
+    // snapshot — real localStorage (contracts/imports/receipts) is untouched.
+    const snap = tourSnapshotRef.current;
+    const realStatus = getSetupStatus({
+      teams: snap?.teams,
+      claims: snap?.claims,
+      savedScenarios: snap?.savedScenarios,
+      savedDays: snap?.savedDays,
+      appSettings,
+    });
+    endTour();
+    const next = getNextBestSetupAction(realStatus);
+    navigateToTab(next?.tab || "Settings");
+  };
+
+  const skipTour = () => endTour();
+  const goNextTourStep = () => setTourStepIndex((index) => Math.min(index + 1, tourStepsForRole.length - 1));
+  const goBackTourStep = () => setTourStepIndex((index) => Math.max(index - 1, 0));
+
+  // Auto-launch once for a brand-new, empty workspace (owner/admin only). Waits
+  // for both remote loads so we never launch over data about to arrive.
+  useEffect(() => {
+    if (!isLoggedIn || !hasLoadedRemoteAppState || !hasLoadedRemoteClaims) return;
+    if (tourActive || tourLaunchedRef.current) return;
+    if (appSettings.tourCompleted) return;
+    if (currentUserRole !== "owner" && currentUserRole !== "admin") return;
+    if (workflowSetupStatus.hasAnyBusinessData) return;
+    try {
+      if (localStorage.getItem("finalMileTourSeen")) return;
+    } catch (error) {
+      console.warn("Could not read tour-seen flag", error);
+    }
+    tourLaunchedRef.current = true;
+    startTour();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isLoggedIn,
+    hasLoadedRemoteAppState,
+    hasLoadedRemoteClaims,
+    appSettings.tourCompleted,
+    workflowSetupStatus.hasAnyBusinessData,
+    currentUserRole,
+    tourActive,
+  ]);
+
   const getDaySnapshot = (dateRange = globalDateRange, options = {}) => {
     const claimsExposure = claims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
     const openClaims = claims.filter((claim) => claim.status !== "Closed").length;
@@ -832,10 +942,11 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (tourActive) return undefined;
     autoSaveAndStartFreshDay();
     const interval = window.setInterval(autoSaveAndStartFreshDay, 30000);
     return () => window.clearInterval(interval);
-  }, [currentWorkDate, claims, teams, results]);
+  }, [currentWorkDate, claims, teams, results, tourActive]);
 
   const loadSavedDay = (day) => {
     setGlobalDateRange(day.dateRange);
@@ -1182,6 +1293,7 @@ export default function App() {
           roleLabel={roleLabels[currentUserRole]}
           toggleThemeMode={toggleThemeMode}
           navigateToTab={navigateToTab}
+          onStartTour={startTour}
           signOut={signOut}
         />
 
@@ -1337,6 +1449,18 @@ export default function App() {
           navigateToTab={navigateToTab}
         />
       </div>
+
+      <TourOverlay
+        active={tourActive}
+        steps={tourStepsForRole}
+        stepIndex={tourStepIndex}
+        isDark={isDark}
+        onNext={goNextTourStep}
+        onBack={goBackTourStep}
+        onSkip={skipTour}
+        onFinish={finishTour}
+        navigateToTab={navigateToTab}
+      />
     </div>
   );
 }
