@@ -1,5 +1,5 @@
 import { useState } from "react";
-import loginRoadLakeTruck from "../assets/login-road-lake-truck-branded.png?truck-logo-liftgate";
+import loginRoadLakeTruck from "../assets/login-road-lake-truck-branded.jpg";
 import lastMileMarginLogo from "../assets/last-mile-margin-logo-transparent.svg";
 import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-transparent-dark.svg";
 import {
