@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, Inter_900Black } from "@expo-google-fonts/inter";
+import { applyInterFont } from "./src/applyInterFont";
+
+// Map every <Text>'s fontWeight to the matching Inter variant, app-wide, so
+// the mobile app shares the web app's Inter typography with crisp weights.
+applyInterFont();
 import LoginScreen from "./src/screens/LoginScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import ClaimsScreen from "./src/screens/ClaimsScreen";
@@ -25,6 +31,16 @@ const tabs = [
 ];
 
 export default function App() {
+  const [fontsLoaded, fontError] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+    Inter_900Black,
+  });
+  // Never block the app on fonts — if they fail, fall through to system fonts.
+  const fontsReady = fontsLoaded || Boolean(fontError);
   const [session, setSession] = useState(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [activeTab, setActiveTab] = useState("home");
@@ -108,7 +124,7 @@ export default function App() {
     [effectiveMode, refreshToken, session]
   );
 
-  if (isLoadingSession || (session && isLoadingRole)) {
+  if (!fontsReady || isLoadingSession || (session && isLoadingRole)) {
     return (
       <SafeAreaView style={styles.centered}>
         <ActivityIndicator color={theme.colors.blue} />
