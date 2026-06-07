@@ -1036,6 +1036,14 @@ export default function App() {
           color: #0f172a !important;
         }
 
+        /* Dark mode is the baseline, but slate-500 muted text on dark cards
+           lands at ~3:1 contrast — below WCAG AA. Lift the dimmest muted text
+           one step to slate-400 (~4.9:1) everywhere, centrally, mirroring how
+           light mode is themed above. */
+        .theme-dark main .text-slate-500 {
+          color: #94a3b8 !important;
+        }
+
         .theme-light main button.bg-blue-600,
         .theme-light main button.bg-red-600,
         .theme-light main button.bg-purple-600,
