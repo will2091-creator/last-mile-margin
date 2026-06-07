@@ -12,6 +12,7 @@ import {
   DollarSign,
   FileDown,
   FileText,
+  FlaskConical,
   LayoutDashboard,
   MessageCircle,
   Moon,
@@ -28,6 +29,7 @@ import {
   Upload,
   UserPlus,
   Users,
+  X,
 } from "lucide-react";
 import {
   Area,
@@ -55,6 +57,7 @@ export {
   DollarSign,
   FileDown,
   FileText,
+  FlaskConical,
   LayoutDashboard,
   MessageCircle,
   Moon,
@@ -71,6 +74,7 @@ export {
   Upload,
   UserPlus,
   Users,
+  X,
   Area,
   AreaChart,
   CartesianGrid,

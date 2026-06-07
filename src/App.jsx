@@ -1626,6 +1626,8 @@ export default function App() {
           toggleThemeMode={toggleThemeMode}
           navigateToTab={navigateToTab}
           signOut={signOut}
+          onLoadDemo={loadDemoWorkspace}
+          onExitDemo={exitDemoWorkspace}
         />
 
         <main className="min-w-0 flex-1 p-4 pb-28 sm:p-6 sm:pb-28 lg:p-8">
@@ -1663,6 +1665,8 @@ export default function App() {
             turnOffDemoAndTour={turnOffDemoAndTour}
             formatDateLabel={formatDateLabel}
             formatDateRangeLabel={formatDateRangeLabel}
+            onLoadDemo={loadDemoWorkspace}
+            onExitDemo={exitDemoWorkspace}
           />
           {!isDemoMode && (
             <div className="mx-auto mb-3 max-w-[1600px] sm:mb-5">

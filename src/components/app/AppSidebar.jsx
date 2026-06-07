@@ -2,7 +2,7 @@ import React from "react";
 import lastMileMarginLogo from "../../assets/last-mile-margin-logo-transparent.svg";
 import lastMileMarginLogoDark from "../../assets/last-mile-margin-logo-transparent-dark.svg";
 import { navPreviewContent } from "../guidedDemoContent";
-import { Moon, Sun } from "../../shared";
+import { FlaskConical, Moon, Sun, X } from "../../shared";
 
 export default function AppSidebar({
   isDark,
@@ -18,6 +18,8 @@ export default function AppSidebar({
   toggleThemeMode,
   navigateToTab,
   signOut,
+  onLoadDemo,
+  onExitDemo,
 }) {
   return (
     <aside className={isDark ? "sticky top-0 hidden h-screen w-72 shrink-0 overflow-y-auto border-r border-white/10 bg-slate-950 p-5 lg:block" : "sticky top-0 hidden h-screen w-72 shrink-0 overflow-y-auto border-r border-slate-200 bg-white p-5 lg:block"}>
@@ -101,7 +103,45 @@ export default function AppSidebar({
         })}
       </nav>
 
-      <div className="mt-10 text-sm text-slate-500">
+      <div className="mt-8">
+        {isDemoMode ? (
+          <button
+            type="button"
+            onClick={onExitDemo}
+            className={isDark
+              ? "flex w-full items-center justify-between rounded-xl border border-blue-500/40 bg-blue-500/15 px-4 py-3 text-sm font-black text-blue-200 hover:bg-blue-500/25"
+              : "flex w-full items-center justify-between rounded-xl border border-blue-300 bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 hover:bg-blue-100"
+            }
+          >
+            <span className="flex items-center gap-2">
+              <FlaskConical className="h-4 w-4" />
+              Demo Mode
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full bg-blue-600 px-2 py-0.5 text-xs text-white">
+              On <X className="h-3 w-3" />
+            </span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onLoadDemo}
+            className={isDark
+              ? "flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-slate-400 hover:bg-white/10 hover:text-white"
+              : "flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            }
+          >
+            <span className="flex items-center gap-2">
+              <FlaskConical className="h-4 w-4" />
+              Demo Mode
+            </span>
+            <span className={isDark ? "rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-400" : "rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-500"}>
+              Off
+            </span>
+          </button>
+        )}
+      </div>
+
+      <div className="mt-6 text-sm text-slate-500">
         <p>{appSettings.companyName}</p>
         <p>{isDemoMode ? "Demo Workspace" : isDemoWorkspace ? "demo123" : authUser?.email || "Owner Account"}</p>
         <p className="mt-1 text-xs font-black uppercase tracking-wide">{roleLabel || currentUserRole}</p>

@@ -1,5 +1,5 @@
 import React from "react";
-import { currency, FileText, Save } from "../../shared";
+import { currency, FileText, FlaskConical, Save, X } from "../../shared";
 
 export default function AppToolbar({
   isDark,
@@ -28,6 +28,8 @@ export default function AppToolbar({
   turnOffDemoAndTour,
   formatDateLabel,
   formatDateRangeLabel,
+  onLoadDemo,
+  onExitDemo,
 }) {
   const statusPillClass = (status) => {
     if (status === "Review") return "bg-red-500/10 text-red-600";
@@ -37,6 +39,33 @@ export default function AppToolbar({
 
   return (
     <div className="mx-auto mb-3 grid max-w-[1600px] grid-cols-1 gap-2 sm:mb-5 sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
+      {isDemoMode ? (
+        <button
+          type="button"
+          onClick={onExitDemo}
+          className={isDark
+            ? "flex w-full items-center justify-center gap-2 rounded-xl border border-blue-500/40 bg-blue-500/15 px-4 py-2 text-sm font-black text-blue-200 hover:bg-blue-500/25 sm:w-auto"
+            : "flex w-full items-center justify-center gap-2 rounded-xl border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-black text-blue-700 hover:bg-blue-100 sm:w-auto"
+          }
+        >
+          <FlaskConical className="h-4 w-4" />
+          Demo On
+          <X className="h-3.5 w-3.5 opacity-60" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={onLoadDemo}
+          className={isDark
+            ? "flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-black text-slate-400 hover:bg-white/10 hover:text-white sm:w-auto"
+            : "flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-500 shadow-sm hover:bg-slate-50 sm:w-auto"
+          }
+        >
+          <FlaskConical className="h-4 w-4" />
+          Demo Mode
+        </button>
+      )}
+
       {showDemoTourOffControl && !isDemoMode && (
         <button
           type="button"
