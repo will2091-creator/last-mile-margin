@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { getEvidenceChecklist as sharedEvidenceChecklist, getMissingEvidence as sharedMissingEvidence, isLikelyWorthDisputing as sharedIsLikelyWorthDisputing } from "../lib/claims";
 import {
   AlertTriangle,
   BarChart3,
@@ -622,27 +623,12 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
 
   const getClaimTeam = (claim) => claim.team || getDriverTeam(getClaimDriver(claim)) || "Unassigned";
   const getClaimTeamRecord = (claim) => teams.find((team) => team.name === getClaimTeam(claim));
-  const getEvidenceChecklist = (claim) => {
-    const assignedTeam = getClaimTeamRecord(claim);
-    const hasRouteDetails = Boolean(claim.route && claim.date);
-    const hasDailyPhoto = assignedTeam?.photoStatus === "Uploaded";
-    const isResolved = claim.status === "Closed";
-    const isHighRisk = claim.risk === "High" || Number(claim.amount || 0) >= riskThresholds.high;
-
-    return [
-      { label: "Retailer claim notice", present: true },
-      { label: "Route and delivery date matched", present: hasRouteDetails },
-      { label: "Driver statement collected", present: isResolved || claim.preventable === "No" },
-      { label: "Daily route photo uploaded", present: hasDailyPhoto },
-      { label: "Damage photos attached", present: isResolved || !isHighRisk },
-      { label: "Proof of delivery / customer sign-off", present: claim.category !== "Penalty" ? isResolved : Boolean(claim.route) },
-    ];
-  };
-  const getMissingEvidence = (claim) => getEvidenceChecklist(claim).filter((item) => !item.present).map((item) => item.label);
-  const isLikelyWorthDisputing = (claim) =>
-    claim.status !== "Closed" &&
-    Number(claim.amount || 0) >= riskThresholds.high &&
-    (claim.preventable !== "Yes" || claim.risk === "High" || getMissingEvidence(claim).length > 0);
+  // Logic lives in src/lib/claims.js (shared with the dashboard action feed); the team
+  // resolver is injected so this page keeps its driver→team fallback fidelity unchanged.
+  const claimEvidenceOpts = { resolveTeam: getClaimTeamRecord, riskThresholds };
+  const getEvidenceChecklist = (claim) => sharedEvidenceChecklist(claim, claimEvidenceOpts);
+  const getMissingEvidence = (claim) => sharedMissingEvidence(claim, claimEvidenceOpts);
+  const isLikelyWorthDisputing = (claim) => sharedIsLikelyWorthDisputing(claim, claimEvidenceOpts);
   const getRecommendedDisputeAngle = (claim) => {
     const missingEvidence = getMissingEvidence(claim);
     if (claim.preventable === "No") return "Challenge contractor responsibility and request retailer proof tying the damage to this delivery.";
