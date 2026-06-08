@@ -1,8 +1,9 @@
 import { useState } from "react";
 import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-transparent-dark.svg";
 import frameDashboard from "../assets/inside-preview/frame-01.png";
-import frameRouteProfit from "../assets/inside-preview/frame-05.png";
-import frameContracts from "../assets/inside-preview/frame-07.png";
+import frameIntake from "../assets/inside-preview/intake.png";
+import frameClaims from "../assets/inside-preview/claims.png";
+import frameRouteProfit from "../assets/inside-preview/route-profit.png";
 import frameSaveDay from "../assets/inside-preview/frame-08.png";
 import {
   ArrowRight,
@@ -34,78 +35,39 @@ const FEATURES = [
   { icon: Bot, title: "Ask the business", text: "Use AI insights to surface profit leaks, risk, missing data, and the next best actions." },
 ];
 
-// Mini on-brand mockups stand in for the two demo-video frames that were mid-transition,
-// so every screen in the gallery is crisp.
-function MiniSidebar({ active }) {
-  const items = ["Dashboard", "Intake", "Profitability", "Contracts", "Claims", "Reports"];
-  return (
-    <div className="hidden w-24 shrink-0 border-r border-white/10 bg-slate-950/80 p-2 lg:block">
-      <div className="mb-3 h-5 rounded bg-white/5" />
-      {items.map((i) => (
-        <div key={i} className={`mb-1 rounded px-2 py-1 text-[10px] font-bold ${i === active ? "bg-blue-600 text-white" : "text-slate-500"}`}>{i}</div>
-      ))}
-    </div>
-  );
-}
-
-function IntakeMock() {
-  return (
-    <div className="flex h-full w-full bg-slate-950 text-left">
-      <MiniSidebar active="Intake" />
-      <div className="min-w-0 flex-1 p-3 sm:p-4">
-        <p className="text-sm font-black text-white">Intake</p>
-        <p className="text-[10px] font-semibold text-slate-400">Drop messy info once. Review, then send it where it belongs.</p>
-        <div className="mt-3 rounded-lg border border-dashed border-blue-500/40 bg-blue-500/5 p-3 text-center">
-          <p className="text-[11px] font-bold text-blue-300">Drop files here or paste your text</p>
-          <p className="mt-0.5 text-[9px] text-slate-500">Email · screenshot · PDF · route sheet · contract terms</p>
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="rounded-lg border border-white/10 bg-white/5 p-2">
-            <p className="text-[9px] font-black uppercase tracking-wide text-slate-500">Extracted</p>
-            {[["Source", "Email"], ["Store", "Lowe's #1234"], ["Issue", "Wall Damage"], ["Amount", "$950"]].map(([k, v]) => (
-              <div key={k} className="mt-1 flex justify-between text-[10px]"><span className="text-slate-500">{k}</span><span className="font-bold text-slate-200">{v}</span></div>
-            ))}
-          </div>
-          <div className="rounded-lg border border-white/10 bg-white/5 p-2">
-            <p className="text-[9px] font-black uppercase tracking-wide text-slate-500">Send to</p>
-            {["Save to Claim", "Save to Contract", "Save to Profitability", "Save to Saved Day"].map((s) => (
-              <div key={s} className="mt-1 rounded bg-blue-600/15 px-2 py-1 text-[10px] font-bold text-blue-300">{s}</div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ClaimsMock() {
-  const cols = [
-    { name: "Needs Review", cards: [["Wall Damage", "$950", "text-red-400"]] },
-    { name: "In Progress", cards: [["Product Damage", "$725", "text-amber-400"]] },
-    { name: "Resolved", cards: [["Missed Window", "$250", "text-emerald-400"]] },
+// Contracts Roll-Up has no crossfade-free frame in the source demo (the edit modal is open
+// over the table in every frame), so this on-brand mockup stands in with the real roll-up data.
+function ContractsMock() {
+  const rows = [
+    ["RC Willey Furniture", "5", "$20,700", "$12,730", "$7,970", "38.5%"],
+    ["Home Depot Large Item", "6", "$19,000", "$13,800", "$5,200", "27.3%"],
+    ["Best Buy Tech", "4", "$13,200", "$10,050", "$3,150", "23.9%"],
+    ["Lowe's Appliance Delivery", "5", "$15,600", "$11,700", "$3,900", "25.0%"],
   ];
+  const cols = "grid grid-cols-[1.7fr_repeat(5,1fr)] gap-1";
   return (
-    <div className="flex h-full w-full bg-slate-950 text-left">
-      <MiniSidebar active="Claims" />
-      <div className="min-w-0 flex-1 p-3 sm:p-4">
-        <p className="text-sm font-black text-white">Claims</p>
-        <p className="text-[10px] font-semibold text-slate-400">Drag claims between columns; status updates automatically.</p>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {cols.map((c) => (
-            <div key={c.name}>
-              <p className="truncate text-[9px] font-black uppercase tracking-wide text-slate-500">{c.name}</p>
-              {c.cards.map(([t, amt, tone]) => (
-                <div key={t} className="mt-1 rounded-lg border border-white/10 bg-white/5 p-2">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="truncate text-[10px] font-black text-white">{t}</span>
-                    <span className={`text-[10px] font-black ${tone}`}>{amt}</span>
-                  </div>
-                  <p className="mt-0.5 text-[8px] text-slate-500">Driver assigned · Route linked</p>
-                </div>
-              ))}
-            </div>
-          ))}
+    <div className="flex h-full w-full flex-col bg-slate-950 p-3 text-left sm:p-5">
+      <p className="text-sm font-black text-white sm:text-base">Contracts Roll-Up</p>
+      <p className="text-[10px] font-semibold text-slate-400 sm:text-xs">Compare revenue, cost, profit, and margin per contract.</p>
+      <div className="mt-3 overflow-hidden rounded-lg border border-white/10">
+        <div className={`${cols} bg-white/5 px-2.5 py-1.5 text-[8px] font-black uppercase tracking-wide text-slate-500 sm:text-[10px]`}>
+          <span>Contract</span>
+          <span className="text-right">Routes</span>
+          <span className="text-right">Revenue</span>
+          <span className="text-right">Cost</span>
+          <span className="text-right">Profit</span>
+          <span className="text-right">Margin</span>
         </div>
+        {rows.map(([name, routes, rev, cost, profit, margin]) => (
+          <div key={name} className={`${cols} items-center border-t border-white/5 px-2.5 py-2 text-[9px] sm:text-[11px]`}>
+            <span className="truncate font-bold text-white">{name}</span>
+            <span className="text-right text-slate-300">{routes}</span>
+            <span className="text-right text-slate-300">{rev}</span>
+            <span className="text-right text-slate-400">{cost}</span>
+            <span className="text-right font-black text-emerald-400">{profit}</span>
+            <span className="text-right font-black text-emerald-400">{margin}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -114,10 +76,10 @@ function ClaimsMock() {
 // Tabbed screenshot gallery. `img` = real app screenshot; `mock` = on-brand component.
 const GALLERY = [
   { name: "Command Center", img: frameDashboard, desc: "See today's numbers and what needs attention.", helps: "Spot what's leaking margin before you start digging.", alt: "Last Mile Margin dashboard with today's profit, claims, revenue, margin, and a needs-attention list" },
-  { name: "Intake", mock: IntakeMock, desc: "Drop in route, cost, or business info and turn it into usable records.", helps: "Capture the messy stuff once, then send it where it belongs.", alt: "Intake screen where emails, route sheets, and notes become reviewable claim, contract, and route drafts" },
-  { name: "Claims", mock: ClaimsMock, desc: "Track deductions, evidence, disputes, and claim exposure.", helps: "Control claims before they control the month.", alt: "Claims board with needs-review, in-progress, and resolved columns for chargebacks and damage claims" },
+  { name: "Intake", img: frameIntake, desc: "Drop in route, cost, or business info and turn it into usable records.", helps: "Capture the messy stuff once, then send it where it belongs.", alt: "Intake screen where emails, route sheets, and notes become reviewable claim, contract, and route drafts" },
+  { name: "Claims", img: frameClaims, desc: "Track deductions, evidence, disputes, and claim exposure.", helps: "Control claims before they control the month.", alt: "Claims board with needs-review, in-progress, and resolved columns for chargebacks and damage claims" },
   { name: "Route Profit Check", img: frameRouteProfit, desc: "Know the route margin before saying yes.", helps: "Catch bad work before you accept it.", alt: "Route Profit Check with a contract rate card and a live route summary showing revenue, cost, net profit, and margin" },
-  { name: "Contracts Roll-Up", img: frameContracts, desc: "Compare contract rules, rates, and payout logic.", helps: "Know which contracts are worth keeping.", alt: "Contracts roll-up table comparing routes, revenue, costs, claims, profit, and margin per contract" },
+  { name: "Contracts Roll-Up", mock: ContractsMock, desc: "Compare contract rules, rates, and payout logic.", helps: "Know which contracts are worth keeping.", alt: "Contracts roll-up table comparing routes, revenue, cost, profit, and margin per contract" },
   { name: "Save Day", img: frameSaveDay, desc: "Build daily history for cleaner reporting.", helps: "Close the loop on every day's numbers.", alt: "Save Day screen with a day snapshot of profit, claims, revenue, and margin plus a saved-days history list" },
 ];
 
@@ -222,27 +184,28 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
               </div>
             </div>
 
-            {/* Hero visual: browser-frame dashboard + floating owner-view overlay */}
+            {/* Hero visual: browser-frame dashboard + a compact floating owner-view accent
+                that hangs off the bottom-left corner without covering the screenshot content. */}
             <div className="relative">
               <BrowserFrame src={frameDashboard} alt="Last Mile Margin dashboard showing today's profit, claims exposure, revenue, and margin" />
-              <div className="absolute -bottom-6 -left-2 w-56 rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-2xl shadow-black/60 backdrop-blur sm:-left-8 sm:w-60">
-                <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">Owner view</p>
-                <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="absolute bottom-4 -left-3 w-[224px] rounded-2xl border border-white/10 bg-slate-900/95 p-3.5 shadow-2xl shadow-black/60 backdrop-blur sm:-left-7">
+                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Owner view</p>
+                <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-2">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Today's Profit</p>
-                    <p className="text-lg font-black text-emerald-400">$356.03</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Profit</p>
+                    <p className="text-sm font-black text-emerald-400">$356.03</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Claims Exposure</p>
-                    <p className="text-lg font-black text-red-400">$2,600</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Claims</p>
+                    <p className="text-sm font-black text-red-400">$2,600</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Saved Days</p>
-                    <p className="text-lg font-black text-blue-300">$1,200</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Saved Days</p>
+                    <p className="text-sm font-black text-blue-300">$1,200</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Margin</p>
-                    <p className="text-lg font-black text-emerald-400">26.5%</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Margin</p>
+                    <p className="text-sm font-black text-emerald-400">26.5%</p>
                   </div>
                 </div>
               </div>
