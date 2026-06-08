@@ -1,16 +1,15 @@
 import { useState } from "react";
 import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-transparent-dark.svg";
-import frameDashboard from "../assets/inside-preview/frame-01.png";
-import frameIntake from "../assets/inside-preview/intake.png";
-import frameClaims from "../assets/inside-preview/claims.png";
-import frameRouteProfit from "../assets/inside-preview/route-profit.png";
-import frameContracts from "../assets/inside-preview/contracts.png";
-import frameSaveDay from "../assets/inside-preview/frame-08.png";
+import frameDashboard from "../assets/inside-preview/frame-01.webp";
+import frameIntake from "../assets/inside-preview/intake.webp";
+import frameClaims from "../assets/inside-preview/claims.webp";
+import frameRouteProfit from "../assets/inside-preview/route-profit.webp";
+import frameContracts from "../assets/inside-preview/contracts.webp";
+import frameSaveDay from "../assets/inside-preview/frame-08.webp";
 import {
   ArrowRight,
   ArrowUpRight,
   Bot,
-  Calendar,
   CheckCircle2,
   DollarSign,
   FileSpreadsheet,
@@ -36,22 +35,22 @@ const FEATURES = [
   { icon: Bot, title: "Ask the business", text: "Use AI insights to surface profit leaks, risk, missing data, and the next best actions." },
 ];
 
-// Tabbed screenshot gallery.
+// Tabbed gallery — real screenshots of the app.
 const GALLERY = [
-  { name: "Command Center", img: frameDashboard, desc: "See today's numbers and what needs attention.", helps: "Spot what's leaking margin before you start digging.", alt: "Last Mile Margin dashboard with today's profit, claims, revenue, margin, and a needs-attention list" },
-  { name: "Intake", img: frameIntake, desc: "Drop in route, cost, or business info and turn it into usable records.", helps: "Capture the messy stuff once, then send it where it belongs.", alt: "Intake screen where emails, route sheets, and notes become reviewable claim, contract, and route drafts" },
-  { name: "Claims", img: frameClaims, desc: "Track deductions, evidence, disputes, and claim exposure.", helps: "Control claims before they control the month.", alt: "Claims board with needs-review, in-progress, and resolved columns for chargebacks and damage claims" },
-  { name: "Route Profit Check", img: frameRouteProfit, desc: "Know the route margin before saying yes.", helps: "Catch bad work before you accept it.", alt: "Route Profit Check with a contract rate card and a live route summary showing revenue, cost, net profit, and margin" },
-  { name: "Contracts Roll-Up", img: frameContracts, desc: "Compare contract rules, rates, and payout logic.", helps: "Know which contracts are worth keeping.", alt: "Contracts roll-up table comparing routes, revenue, cost, claims, profit, and margin per contract" },
-  { name: "Save Day", img: frameSaveDay, desc: "Build daily history for cleaner reporting.", helps: "Close the loop on every day's numbers.", alt: "Save Day screen with a day snapshot of profit, claims, revenue, and margin plus a saved-days history list" },
+  { name: "Command Center", img: frameDashboard, desc: "Your whole workspace, ranked into one AI to-do list.", helps: "Know what to fix first, before you start digging.", alt: "Last Mile Margin dashboard with a 'Do this now' AI action feed of disputes, claims, and margin alerts" },
+  { name: "Intake", img: frameIntake, desc: "Drop a claim email, file, or notes and AI pulls out what matters.", helps: "Capture the messy stuff once, then send it where it belongs.", alt: "AI Intake screen that turns emails, route sheets, and notes into reviewable drafts" },
+  { name: "Claims", img: frameClaims, desc: "Open-claim exposure, AI claim-risk forecast, and one-click disputes.", helps: "Control claims before they control the month.", alt: "Operations claims view with open-claim exposure, high-risk scoring, and a claim-risk forecast" },
+  { name: "Profitability", img: frameRouteProfit, desc: "Contract-level revenue, cost, margin, and claims — plus Route Profit Check.", helps: "Know which routes actually pay before you say yes.", alt: "Profitability dashboard with revenue, net profit, claims exposure, and average margin per contract" },
+  { name: "Contracts", img: frameContracts, desc: "Compare contracts and edit terms in place.", helps: "Know which contracts are worth keeping.", alt: "Contracts view comparing revenue, cost, claims, and margin per contract" },
+  { name: "Reports", img: frameSaveDay, desc: "Roll up profit, claims, and route performance for clean reporting.", helps: "Close the loop on the month.", alt: "Reports view rolling up profit, claims, and route performance" },
 ];
 
-// Demo / example metrics (clearly labeled, not a guarantee).
+// Example demo metrics (clearly labeled, not a guarantee). Values match the demo workspace.
 const METRICS = [
-  { icon: DollarSign, value: "$356.03", label: "Today's Profit" },
-  { icon: ShieldAlert, value: "$2,600", label: "Claims Exposure" },
-  { icon: Calendar, value: "$1,200", label: "Saved Days" },
-  { icon: Percent, value: "26.5%", label: "Demo Margin" },
+  { icon: DollarSign, value: "$14,640", label: "Weekly Revenue" },
+  { icon: TrendingUp, value: "$4,020", label: "Net Profit" },
+  { icon: Percent, value: "27.46%", label: "Average Margin" },
+  { icon: ShieldAlert, value: "$1,380", label: "Claims Exposure" },
 ];
 
 function BrowserFrame({ src, alt, className = "" }) {
@@ -136,31 +135,10 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
               </div>
             </div>
 
-            {/* Hero visual: browser-frame dashboard + a compact floating owner-view accent
-                that hangs off the bottom-left corner without covering the screenshot content. */}
+            {/* Hero visual: the real product dashboard */}
             <div className="relative">
-              <BrowserFrame src={frameDashboard} alt="Last Mile Margin dashboard showing today's profit, claims exposure, revenue, and margin" />
-              <div className="absolute -bottom-5 -left-3 w-[196px] rounded-2xl border border-white/10 bg-slate-900/95 p-3 shadow-2xl shadow-black/60 backdrop-blur sm:-left-8">
-                <p className="text-[9px] font-black uppercase tracking-wide text-slate-400">Owner view</p>
-                <div className="mt-2 grid grid-cols-2 gap-x-2.5 gap-y-1.5">
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Profit</p>
-                    <p className="text-sm font-black text-emerald-400">$356.03</p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Claims</p>
-                    <p className="text-sm font-black text-red-400">$2,600</p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Saved Days</p>
-                    <p className="text-sm font-black text-blue-300">$1,200</p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Margin</p>
-                    <p className="text-sm font-black text-emerald-400">26.5%</p>
-                  </div>
-                </div>
-              </div>
+              <div className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-blue-500/10 blur-2xl" aria-hidden="true" />
+              <BrowserFrame src={frameDashboard} alt="Last Mile Margin dashboard with the 'Do this now' AI action feed ranking disputes, claims, and margin alerts" />
             </div>
           </div>
         </section>
@@ -204,7 +182,7 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
               </ul>
             </div>
             <div className="lg:sticky lg:top-24">
-              <BrowserFrame src={frameRouteProfit} alt="Route Profit Check comparing contract pay, labor, fuel, and stops with a live margin readout" />
+              <BrowserFrame src={frameRouteProfit} alt="Profitability dashboard showing revenue, net profit, average margin, and claims exposure per contract" />
               <p className="mt-4 text-center text-sm font-semibold text-slate-400">Route Profit Check — know if the route pays before you say yes.</p>
             </div>
           </div>
