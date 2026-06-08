@@ -10,6 +10,7 @@ import frameSaveDay from "../assets/inside-preview/frame-08.webp";
 import {
   ArrowRight,
   ArrowUpRight,
+  Banknote,
   Bot,
   CheckCircle2,
   DollarSign,
@@ -27,6 +28,7 @@ import {
   TrendingUp,
   TriangleAlert,
   Upload,
+  XCircle,
 } from "lucide-react";
 
 const CLH_URL = "https://contractor-launch-hub.vercel.app";
@@ -35,7 +37,7 @@ const CLH_URL = "https://contractor-launch-hub.vercel.app";
 const FEATURES = [
   { icon: Gauge, title: "See daily profit fast", text: "Track revenue, expenses, claims exposure, saved days, and margin without digging through spreadsheets." },
   { icon: Route, title: "Know if a route pays", text: "Use Route Profit Check to compare contract pay, labor, miles, fuel, and risk before you accept bad work." },
-  { icon: ShieldAlert, title: "Control claims and chargebacks", text: "Track open claims, evidence, dispute status, and exposure so deductions do not quietly eat the month." },
+  { icon: ShieldAlert, title: "Stop losing money to chargebacks", text: "Every undisputed chargeback is money you earned and handed back. Track claims, score dispute viability with AI, and fight the ones worth winning." },
   { icon: Save, title: "Save the day's history", text: "Save snapshots of routes, expenses, claims, and notes so the business has a clean operating record." },
   { icon: FileSpreadsheet, title: "Roll up contracts", text: "Review route rates, stop pay, fees, and contract rules in one place — before guessing with your wallet like it owes you money." },
   { icon: Bot, title: "Ask the business", text: "Use AI insights to surface profit leaks, risk, missing data, and the next best actions." },
@@ -45,7 +47,7 @@ const FEATURES = [
 const GALLERY = [
   { name: "Command Center", img: frameDashboard, desc: "Your whole workspace, ranked into one AI to-do list.", helps: "Know what to fix first, before you start digging.", alt: "Last Mile Margin dashboard with a 'Do this now' AI action feed of disputes, claims, and margin alerts" },
   { name: "Intake", img: frameIntake, desc: "Drop a claim email, file, or notes and AI pulls out what matters.", helps: "Capture the messy stuff once, then send it where it belongs.", alt: "AI Intake screen that turns emails, route sheets, and notes into reviewable drafts" },
-  { name: "Claims", img: frameClaims, desc: "Open-claim exposure, AI claim-risk forecast, and one-click disputes.", helps: "Control claims before they control the month.", alt: "Operations claims view with open-claim exposure, high-risk scoring, and a claim-risk forecast" },
+  { name: "Claims", img: frameClaims, desc: "Open-claim exposure, AI risk scoring, and one-click dispute packets — so you know exactly what to fight and what it's worth.", helps: "Stop accepting chargebacks you didn't earn. Dispute the right ones with the right evidence.", alt: "Operations claims view with open-claim exposure, high-risk scoring, and a claim-risk forecast" },
   { name: "Profitability", img: frameRouteProfit, desc: "Contract-level revenue, cost, margin, and claims — plus Route Profit Check.", helps: "Know which routes actually pay before you say yes.", alt: "Profitability dashboard with revenue, net profit, claims exposure, and average margin per contract" },
   { name: "Contracts", img: frameContracts, desc: "Compare contracts and edit terms in place.", helps: "Know which contracts are worth keeping.", alt: "Contracts view comparing revenue, cost, claims, and margin per contract" },
   { name: "Reports", img: frameSaveDay, desc: "Roll up profit, claims, and route performance for clean reporting.", helps: "Close the loop on the month.", alt: "Reports view rolling up profit, claims, and route performance" },
@@ -161,8 +163,7 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
                 <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent">before the route costs you.</span>
               </h1>
               <p className={`mt-6 max-w-xl text-lg font-semibold leading-8 ${t.heroPara}`}>
-                Last Mile Margin helps final-mile contractors track profit, claims, contracts, expenses, saved days, and
-                route performance in one place.
+                Last Mile Margin helps final-mile contractors track profit, fight chargebacks, manage claims, and know their real margin — before a bad route or undisputed deduction wipes out the month.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <button
@@ -208,6 +209,54 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
           </div>
         </section>
 
+        {/* ---------- CLAIMS MONEY CALLOUT ---------- */}
+        <section className="mx-auto max-w-6xl px-5 pt-14 lg:px-8 lg:pt-20">
+          <div className={`overflow-hidden rounded-3xl border p-8 sm:p-12 ${isDark ? "border-red-500/20 bg-gradient-to-br from-red-500/10 via-orange-500/5 to-slate-950" : "border-red-200 bg-gradient-to-br from-red-50 via-orange-50/50 to-white"}`}>
+            <div className="grid items-center gap-10 lg:grid-cols-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${isDark ? "bg-red-500/20 text-red-400" : "bg-red-100 text-red-600"}`}>
+                    <XCircle className="h-4 w-4" />
+                  </span>
+                  <span className={`text-xs font-black uppercase tracking-widest ${isDark ? "text-red-400" : "text-red-600"}`}>The quiet profit killer</span>
+                </div>
+                <h2 className="mt-4 text-3xl font-black leading-tight tracking-tight sm:text-4xl">
+                  Most chargebacks go unpaid — not because they're valid, but because nobody disputed them.
+                </h2>
+                <p className={`mt-4 text-base font-semibold leading-7 ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                  Every uncontested deduction is money you earned and quietly gave back. Final-mile contractors absorb chargebacks, short-pays, and damage claims every week — most of which have strong dispute grounds when the right evidence is captured.
+                </p>
+                <p className={`mt-3 text-base font-semibold leading-7 ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                  Last Mile Margin tracks every open claim, scores it for dispute viability, flags missing evidence, and builds the dispute packet — so you submit once with the right support.
+                </p>
+                <button
+                  onClick={onSignIn}
+                  className={`mt-7 flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 ${isDark ? "bg-red-600 shadow-red-600/30 hover:bg-red-500" : "bg-red-600 shadow-red-600/20 hover:bg-red-500"}`}
+                >
+                  Start recovering claims <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-1">
+                {[
+                  { icon: XCircle,   color: isDark ? "text-red-400 bg-red-500/15"    : "text-red-600 bg-red-50",    stat: "Most chargebacks",    sub: "go undisputed — not because they're valid, but because tracking them manually is impossible." },
+                  { icon: Banknote,  color: isDark ? "text-amber-400 bg-amber-500/15": "text-amber-600 bg-amber-50", stat: "High-value claims",    sub: "over $500 often have strong grounds for dispute when photos, timestamps, and evidence are captured at delivery." },
+                  { icon: TrendingUp,color: isDark ? "text-emerald-400 bg-emerald-500/15":"text-emerald-700 bg-emerald-50",stat: "AI-scored disputes",  sub: "let you prioritize the fights worth having — and skip the ones that aren't, so your time goes where the money is." },
+                ].map(({ icon: Icon, color, stat, sub }) => (
+                  <div key={stat} className={`flex gap-4 rounded-2xl border p-5 ${isDark ? "border-white/8 bg-white/[0.03]" : "border-slate-100 bg-white"}`}>
+                    <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${color}`}>
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className={`text-sm font-black ${isDark ? "text-white" : "text-slate-950"}`}>{stat}</p>
+                      <p className={`mt-1 text-sm font-medium leading-5 ${isDark ? "text-slate-400" : "text-slate-600"}`}>{sub}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ---------- AI SECTION ---------- */}
         <section className="mx-auto max-w-6xl px-5 py-16 lg:px-8 lg:py-24">
           <div className={`relative overflow-hidden rounded-3xl border p-8 sm:p-12 ${t.aiBox}`}>
@@ -230,9 +279,9 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
                 {[
                   { Icon: ListChecks,    title: "Ranked action feed",  text: `Every open task — disputes, thin-margin routes, missing data, overdue reminders — ranked by dollar impact and urgency into one "Do this now" list. No digging.` },
                   { Icon: Upload,        title: "AI Intake",           text: "Drop a claim email, route sheet, or notes. AI reads it, pulls out the fields that matter, and routes the draft to Claims or Expenses for one-tap review — no manual entry." },
-                  { Icon: TriangleAlert, title: "Claim risk scoring",  text: "Each open claim gets an AI risk score based on amount, evidence completeness, and dispute history. High-risk claims surface automatically so the right ones get attention first." },
+                  { Icon: TriangleAlert, title: "Claim risk scoring",  text: "Each open claim gets an AI score: dispute viability, dollar impact, and evidence gaps. Know exactly which chargebacks are worth fighting — and what it's going to take to win." },
                   { Icon: MessageSquare, title: "Ask the business",    text: "Powered by Claude. Ask anything about your profit, claims, or operations in plain English and get a direct answer — grounded in your actual snapshot data, not a generic template." },
-                  { Icon: Bot,           title: "AI dispute packets",  text: "For claims worth fighting, AI assembles the evidence checklist, flags what's missing, and frames the dispute angle — so you submit once with the right support, not multiple rounds.", span: "sm:col-span-2 lg:col-span-1" },
+                  { Icon: Bot,           title: "AI dispute packets",  text: "For claims worth fighting, AI builds the full dispute packet — evidence checklist, missing gaps, dispute angle. Submit once, correctly, instead of losing by default because the paperwork was too hard.", span: "sm:col-span-2 lg:col-span-1" },
                 ].map(({ Icon, title, text, span = "" }) => (
                   <div key={title} className={`flex flex-col gap-4 rounded-2xl border p-6 backdrop-blur ${t.aiCard} ${span}`}>
                     <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ${t.aiIconBg}`}>
