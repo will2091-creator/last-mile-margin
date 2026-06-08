@@ -151,11 +151,13 @@ def caption(img, title, body):
 def card(d, xy, title, value, note, color=TEXT, icon="$"):
     x1, y1, x2, y2 = xy
     rounded(d, xy, 18, PANEL, BORDER, 2)
-    rounded(d, (x1 + 22, y1 + 24, x1 + 76, y1 + 78), 14, "#13213A")
-    text(d, (x1 + 44, y1 + 34), icon, "h2", color, anchor="ma")
-    text(d, (x1 + 96, y1 + 26), title.upper(), "small_b", MUTED)
-    text(d, (x1 + 96, y1 + 60), value, "num", color)
-    text(d, (x1 + 96, y1 + 118), note, "body_b", MUTED)
+    # icon chip + label on the top row
+    rounded(d, (x1 + 22, y1 + 20, x1 + 60, y1 + 58), 11, "#13213A")
+    text(d, (x1 + 41, y1 + 28), icon, "sub", color, anchor="ma")
+    text(d, (x1 + 74, y1 + 30), title.upper(), "tiny", MUTED)
+    # big value, full card width below the icon row, with the note at the bottom
+    text(d, (x1 + 24, y1 + 64), value, "num", color)
+    text(d, (x1 + 24, y1 + 110), note, "small_b", MUTED)
 
 
 def draw_dashboard(progress=0):
@@ -308,7 +310,7 @@ def draw_context_popup(progress=0):
     return img
 
 
-def draw_contracts(progress=0):
+def draw_contracts(progress=0, show_popup=True):
     img = base(progress)
     d = ImageDraw.Draw(img)
     text(d, (245, 86), "Contracts Roll-Up", "h1")
@@ -326,20 +328,21 @@ def draw_contracts(progress=0):
     ]
     for i, row in enumerate(rows):
         y = 270 + i * 70
-        if i == 3:
+        if i == 3 and show_popup:
             rounded(d, (260, y - 18, 1215, y + 48), 12, "#13213A", BLUE, 2)
         for x, val in zip(xs, row):
             fill = RED if val in ("1,625", "18.6%") else GREEN_2 if val.startswith("$") and x >= 1060 else TEXT
             text(d, (x, y), val, "body_b", fill)
-    rounded(d, (760, 444, 1220, 705), 18, "#070B19", "#1D4ED8", 2)
-    text(d, (790, 475), "Edit Contract", "small_b", MUTED)
-    text(d, (790, 510), "Lowe's Appliance Delivery", "sub")
-    for i, (label, val) in enumerate([("Revenue", "15600"), ("Labor", "5200"), ("Claims", "1625"), ("Routes / Week", "5")]):
-        x = 790 + (i % 2) * 210
-        y = 560 + (i // 2) * 62
-        text(d, (x, y), label.upper(), "tiny", MUTED)
-        rounded(d, (x, y + 18, x + 170, y + 54), 9, PANEL_3, BORDER)
-        text(d, (x + 12, y + 26), val, "small_b")
+    if show_popup:
+        rounded(d, (760, 444, 1220, 705), 18, "#070B19", "#1D4ED8", 2)
+        text(d, (790, 475), "Edit Contract", "small_b", MUTED)
+        text(d, (790, 510), "Lowe's Appliance Delivery", "sub")
+        for i, (label, val) in enumerate([("Revenue", "15600"), ("Labor", "5200"), ("Claims", "1625"), ("Routes / Week", "5")]):
+            x = 790 + (i % 2) * 210
+            y = 560 + (i // 2) * 62
+            text(d, (x, y), label.upper(), "tiny", MUTED)
+            rounded(d, (x, y + 18, x + 170, y + 54), 9, PANEL_3, BORDER)
+            text(d, (x + 12, y + 26), val, "small_b")
     caption(img, "Contracts: click a row, edit in place", "Contract totals stay clean while detailed editing happens in a focused popup.")
     return img
 

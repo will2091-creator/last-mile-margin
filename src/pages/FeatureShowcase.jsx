@@ -4,6 +4,7 @@ import frameDashboard from "../assets/inside-preview/frame-01.png";
 import frameIntake from "../assets/inside-preview/intake.png";
 import frameClaims from "../assets/inside-preview/claims.png";
 import frameRouteProfit from "../assets/inside-preview/route-profit.png";
+import frameContracts from "../assets/inside-preview/contracts.png";
 import frameSaveDay from "../assets/inside-preview/frame-08.png";
 import {
   ArrowRight,
@@ -35,51 +36,13 @@ const FEATURES = [
   { icon: Bot, title: "Ask the business", text: "Use AI insights to surface profit leaks, risk, missing data, and the next best actions." },
 ];
 
-// Contracts Roll-Up has no crossfade-free frame in the source demo (the edit modal is open
-// over the table in every frame), so this on-brand mockup stands in with the real roll-up data.
-function ContractsMock() {
-  const rows = [
-    ["RC Willey Furniture", "5", "$20,700", "$12,730", "$7,970", "38.5%"],
-    ["Home Depot Large Item", "6", "$19,000", "$13,800", "$5,200", "27.3%"],
-    ["Best Buy Tech", "4", "$13,200", "$10,050", "$3,150", "23.9%"],
-    ["Lowe's Appliance Delivery", "5", "$15,600", "$11,700", "$3,900", "25.0%"],
-  ];
-  const cols = "grid grid-cols-[1.7fr_repeat(5,1fr)] gap-1";
-  return (
-    <div className="flex h-full w-full flex-col bg-slate-950 p-3 text-left sm:p-5">
-      <p className="text-sm font-black text-white sm:text-base">Contracts Roll-Up</p>
-      <p className="text-[10px] font-semibold text-slate-400 sm:text-xs">Compare revenue, cost, profit, and margin per contract.</p>
-      <div className="mt-3 overflow-hidden rounded-lg border border-white/10">
-        <div className={`${cols} bg-white/5 px-2.5 py-1.5 text-[8px] font-black uppercase tracking-wide text-slate-500 sm:text-[10px]`}>
-          <span>Contract</span>
-          <span className="text-right">Routes</span>
-          <span className="text-right">Revenue</span>
-          <span className="text-right">Cost</span>
-          <span className="text-right">Profit</span>
-          <span className="text-right">Margin</span>
-        </div>
-        {rows.map(([name, routes, rev, cost, profit, margin]) => (
-          <div key={name} className={`${cols} items-center border-t border-white/5 px-2.5 py-2 text-[9px] sm:text-[11px]`}>
-            <span className="truncate font-bold text-white">{name}</span>
-            <span className="text-right text-slate-300">{routes}</span>
-            <span className="text-right text-slate-300">{rev}</span>
-            <span className="text-right text-slate-400">{cost}</span>
-            <span className="text-right font-black text-emerald-400">{profit}</span>
-            <span className="text-right font-black text-emerald-400">{margin}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Tabbed screenshot gallery. `img` = real app screenshot; `mock` = on-brand component.
+// Tabbed screenshot gallery.
 const GALLERY = [
   { name: "Command Center", img: frameDashboard, desc: "See today's numbers and what needs attention.", helps: "Spot what's leaking margin before you start digging.", alt: "Last Mile Margin dashboard with today's profit, claims, revenue, margin, and a needs-attention list" },
   { name: "Intake", img: frameIntake, desc: "Drop in route, cost, or business info and turn it into usable records.", helps: "Capture the messy stuff once, then send it where it belongs.", alt: "Intake screen where emails, route sheets, and notes become reviewable claim, contract, and route drafts" },
   { name: "Claims", img: frameClaims, desc: "Track deductions, evidence, disputes, and claim exposure.", helps: "Control claims before they control the month.", alt: "Claims board with needs-review, in-progress, and resolved columns for chargebacks and damage claims" },
   { name: "Route Profit Check", img: frameRouteProfit, desc: "Know the route margin before saying yes.", helps: "Catch bad work before you accept it.", alt: "Route Profit Check with a contract rate card and a live route summary showing revenue, cost, net profit, and margin" },
-  { name: "Contracts Roll-Up", mock: ContractsMock, desc: "Compare contract rules, rates, and payout logic.", helps: "Know which contracts are worth keeping.", alt: "Contracts roll-up table comparing routes, revenue, cost, profit, and margin per contract" },
+  { name: "Contracts Roll-Up", img: frameContracts, desc: "Compare contract rules, rates, and payout logic.", helps: "Know which contracts are worth keeping.", alt: "Contracts roll-up table comparing routes, revenue, cost, claims, profit, and margin per contract" },
   { name: "Save Day", img: frameSaveDay, desc: "Build daily history for cleaner reporting.", helps: "Close the loop on every day's numbers.", alt: "Save Day screen with a day snapshot of profit, claims, revenue, and margin plus a saved-days history list" },
 ];
 
@@ -91,14 +54,10 @@ const METRICS = [
   { icon: Percent, value: "26.5%", label: "Demo Margin" },
 ];
 
-function BrowserFrame({ src, alt, children, className = "" }) {
+function BrowserFrame({ src, alt, className = "" }) {
   return (
     <div className={`overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/50 ${className}`}>
-      {src ? (
-        <img src={src} alt={alt} className="block w-full" loading="lazy" />
-      ) : (
-        <div className="aspect-[16/9] w-full overflow-hidden" role="img" aria-label={alt}>{children}</div>
-      )}
+      <img src={src} alt={alt} className="block w-full" loading="lazy" />
     </div>
   );
 }
@@ -106,7 +65,6 @@ function BrowserFrame({ src, alt, children, className = "" }) {
 export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
   const [tab, setTab] = useState(0);
   const active = GALLERY[tab];
-  const ActiveMock = active.mock;
 
   const onTabKey = (e) => {
     if (e.key === "ArrowRight") setTab((t) => (t + 1) % GALLERY.length);
@@ -277,11 +235,7 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
             ))}
           </div>
           <div role="tabpanel" id="gallery-panel" aria-labelledby={`gallery-tab-${tab}`} className="grid items-center gap-10 lg:grid-cols-[1.4fr_1fr]">
-            {ActiveMock ? (
-              <BrowserFrame alt={active.alt}><ActiveMock /></BrowserFrame>
-            ) : (
-              <BrowserFrame key={active.name} src={active.img} alt={active.alt} />
-            )}
+            <BrowserFrame key={active.name} src={active.img} alt={active.alt} />
             <div>
               <h3 className="text-2xl font-black tracking-tight text-white">{active.name}</h3>
               <p className="mt-3 text-base font-semibold leading-7 text-slate-300">{active.desc}</p>
