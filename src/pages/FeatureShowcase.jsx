@@ -13,10 +13,12 @@ import {
   DollarSign,
   FileSpreadsheet,
   Gauge,
+  Moon,
   Percent,
   Route,
   Save,
   ShieldAlert,
+  Sun,
   TrendingUp,
 } from "lucide-react";
 
@@ -145,7 +147,7 @@ function BrowserFrame({ src, alt, children, className = "" }) {
   );
 }
 
-export default function FeatureShowcase({ onClose }) {
+export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
   const [tab, setTab] = useState(0);
   const active = GALLERY[tab];
   const ActiveMock = active.mock;
@@ -166,13 +168,24 @@ export default function FeatureShowcase({ onClose }) {
         <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/70 backdrop-blur-md">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3 lg:px-8">
             <img src={lastMileMarginLogoDark} alt="Last Mile Margin" className="h-10 w-auto object-contain" />
-            <button
-              onClick={onClose}
-              aria-label="Return to sign in"
-              className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-500"
-            >
-              Sign in <ArrowRight className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              {onToggleTheme && (
+                <button
+                  onClick={onToggleTheme}
+                  aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+                  title="Toggle theme"
+                  className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-slate-200 transition hover:bg-white/10"
+                >
+                  {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
+              )}
+              <button
+                onClick={onSignIn}
+                className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-500"
+              >
+                Sign in <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </header>
 
@@ -193,7 +206,7 @@ export default function FeatureShowcase({ onClose }) {
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <button
-                  onClick={onClose}
+                  onClick={onSignIn}
                   className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 py-3.5 text-base font-black text-white shadow-xl shadow-blue-600/30 transition hover:-translate-y-0.5 hover:bg-blue-500"
                 >
                   Sign in to your workspace <ArrowRight className="h-5 w-5" />
@@ -343,7 +356,7 @@ export default function FeatureShowcase({ onClose }) {
             <p className="mx-auto mt-3 max-w-xl text-base font-semibold text-slate-300">Sign in and let the numbers do the talking while you run the routes.</p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <button
-                onClick={onClose}
+                onClick={onSignIn}
                 className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 py-3.5 text-base font-black text-white shadow-xl shadow-blue-600/30 transition hover:-translate-y-0.5 hover:bg-blue-500"
               >
                 Sign in <ArrowRight className="h-5 w-5" />
