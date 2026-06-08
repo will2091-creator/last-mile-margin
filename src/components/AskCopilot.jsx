@@ -80,7 +80,7 @@ export default function AskCopilot({ isDark, activeTab, navigateToTab, teams = [
     }
     return {
       title: "Add your numbers first",
-      summary: "I work best with live data. Add a contract, a team, and a saved day, then ask me what's helping or hurting your margin.",
+      summary: "I work best with live data. Add a contract, a team, and a saved snapshot, then ask me what's helping or hurting your margin.",
       actions: ["Add a contract"],
       tab: "Dashboard",
       confidence: "Low",

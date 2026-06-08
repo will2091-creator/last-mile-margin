@@ -525,9 +525,13 @@ function TeamsDashboard({ teams, setTeams, claims, isDark = true }) {
             <TextField label="Truck #" value={personForm.truck} onChange={(v) => updatePersonField("truck", v)} placeholder="204" />
             <TextField label="Route" value={personForm.route} onChange={(v) => updatePersonField("route", v)} placeholder="Syracuse Appliance" />
             <Field label="Compliance Score" value={personForm.complianceScore} onChange={(v) => updatePersonField("complianceScore", v)} suffix="%" />
-            <Field label="Survey Avg" value={personForm.surveyAvg} onChange={(v) => updatePersonField("surveyAvg", v)} />
+            <Field label="Survey Avg" value={personForm.surveyAvg} onChange={(v) => updatePersonField("surveyAvg", v)} suffix="/10" />
             <SelectField label="Status" value={personForm.status} onChange={(v) => updatePersonField("status", v)} options={["Good", "Watch", "At Risk"]} />
           </div>
+
+          <p className="mt-2 text-xs leading-snug text-slate-400">
+            <span className="font-semibold">Compliance Score (0–100%)</span> tracks paperwork and process readiness — photos in, docs current, protocols followed. <span className="font-semibold">Survey Avg</span> is this person's average customer-satisfaction rating on a 1–10 scale. Both feed the daily claim-risk forecast.
+          </p>
 
           <div className="mt-5 rounded-xl bg-white/5 p-4">
             <p className="mb-2 text-sm font-bold text-white">Person Photo</p>

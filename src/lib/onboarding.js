@@ -338,7 +338,7 @@ export function getPageEmptyStateConfig(pageName, status) {
     },
     contracts: {
       eyebrow: "Contract setup",
-      title: "No contract rate cards yet",
+      title: "No contracts added yet",
       description: "Add customer terms, route pay, stop pay, claim terms, renewal dates, and rate structure before Finance can judge margin.",
       primaryAction: { label: "Create First Contract", tab: "Dashboard", setupStep: "contract" },
       secondaryActions: [

@@ -580,7 +580,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
       setMessage("Intake is attached to today's workday notes.");
       showSavedConfirmation({
         title: "Saved to Today",
-        detail: "This intake was attached to the current saved day snapshot.",
+        detail: "This intake was attached to today's snapshot.",
         tab: "Dashboard",
       });
       return;
@@ -672,7 +672,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
     ["Save to Claim", "Create or update a claim", AlertTriangle, "claim", "text-red-500"],
     ["Save to Contract", "Link or update contract details", FileText, "contract", "text-blue-500"],
     ["Save to Profitability", "Add to revenue or expense", BarChart3, "profitability", "text-emerald-500"],
-    ["Save to Saved Day", "Add to today's operational records", ClipboardCheck, "savedDay", "text-amber-500"],
+    ["Save to Snapshot", "Attach to today's snapshot", ClipboardCheck, "savedDay", "text-amber-500"],
   ];
 
   return (
@@ -1123,7 +1123,7 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
                   The app reads what it can find and turns it into a draft. You can edit the extracted fields before saving, so bad guesses do not go into your records.
                 </p>
                 <p>
-                  Save to Claim sends a claim to the Claims review board. Save to Contract creates a contract draft. Save to Profitability fills route numbers. Save to Saved Day attaches the note to today's snapshot.
+                  Save to Claim sends a claim to the Claims review board. Save to Contract creates a contract draft. Save to Profitability fills route numbers. Save to Snapshot attaches the note to today's snapshot.
                 </p>
               </div>
             </div>

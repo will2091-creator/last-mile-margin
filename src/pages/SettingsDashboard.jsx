@@ -65,47 +65,47 @@ const defaultMarginFactors = {
 
 const factorLabels = {
   revenue: [
-    ["routePay", "Route Pay"],
-    ["perStopPay", "Per Stop Pay"],
-    ["extraStops", "Extra Stops / Stops Pay"],
-    ["installRevenue", "Install Revenue"],
-    ["haulAwayRevenue", "Haul Away Revenue"],
-    ["fuelSurcharge", "Fuel Surcharge"],
-    ["reattemptFee", "Reattempt / Redelivery Fee"],
-    ["stairsLongCarry", "Stairs / Long Carry"],
-    ["detentionWaitTime", "Detention / Wait Time"],
-    ["assemblySetup", "Assembly / Setup"],
-    ["otherAccessorials", "Other Accessorials"],
+    ["routePay", "Route Pay", "Base pay the retailer or 3PL pays for running the route."],
+    ["perStopPay", "Per Stop Pay", "Extra pay earned for each delivery stop, on top of base route pay."],
+    ["extraStops", "Extra Stops / Stops Pay", "Pay for stops beyond the contracted minimum."],
+    ["installRevenue", "Install Revenue", "Pay for installing or hooking up appliances and products."],
+    ["haulAwayRevenue", "Haul Away Revenue", "Pay for removing and hauling away old units."],
+    ["fuelSurcharge", "Fuel Surcharge", "A fuel adjustment the retailer adds when fuel prices rise."],
+    ["reattemptFee", "Reattempt / Redelivery Fee", "Pay for re-delivering after a failed first attempt."],
+    ["stairsLongCarry", "Stairs / Long Carry", "Surcharge for stairs or a long carry into the home."],
+    ["detentionWaitTime", "Detention / Wait Time", "Pay for time spent waiting at the warehouse or a stop."],
+    ["assemblySetup", "Assembly / Setup", "Pay for assembling or setting up the product on site."],
+    ["otherAccessorials", "Other Accessorials", "Any other add-on fee the contract pays."],
   ],
   costs: [
-    ["driverPay", "Driver Pay"],
-    ["helperPay", "Helper Pay"],
-    ["truckPayment", "Truck Payment / Lease"],
-    ["truckInsurance", "Truck Insurance"],
-    ["fuel", "Fuel"],
-    ["maintenance", "Maintenance / Repairs"],
-    ["tollsParking", "Tolls / Parking"],
-    ["claimsReserve", "Claims Reserve"],
-    ["bond", "Bond"],
-    ["phonesSoftware", "Phones / Software"],
-    ["warehouseFees", "Warehouse Fees"],
-    ["uniformsPpe", "Uniforms / PPE"],
-    ["backgroundChecks", "Background Checks"],
-    ["drugTests", "Drug Tests"],
-    ["dotCompliance", "DOT / Compliance"],
-    ["otherExpenses", "Other Expenses"],
+    ["driverPay", "Driver Pay", "What you pay the lead driver for the route."],
+    ["helperPay", "Helper Pay", "What you pay the helper or second crew member."],
+    ["truckPayment", "Truck Payment / Lease", "Daily share of the truck loan or lease payment."],
+    ["truckInsurance", "Truck Insurance", "Daily share of vehicle and cargo insurance."],
+    ["fuel", "Fuel", "Fuel burned running the route."],
+    ["maintenance", "Maintenance / Repairs", "Repairs, tires, oil, and upkeep (often figured per mile)."],
+    ["tollsParking", "Tolls / Parking", "Tolls and parking paid while running the route."],
+    ["claimsReserve", "Claims Reserve", "Money set aside to cover expected damage claims and chargebacks."],
+    ["bond", "Bond", "Daily share of any surety bond you carry."],
+    ["phonesSoftware", "Phones / Software", "Phones, routing apps, and software fees."],
+    ["warehouseFees", "Warehouse Fees", "Fees for warehouse or dock access and staging."],
+    ["uniformsPpe", "Uniforms / PPE", "Uniforms and protective equipment for the crew."],
+    ["backgroundChecks", "Background Checks", "Cost of running driver and helper background checks."],
+    ["drugTests", "Drug Tests", "Cost of required drug testing."],
+    ["dotCompliance", "DOT / Compliance", "DOT, licensing, and compliance costs."],
+    ["otherExpenses", "Other Expenses", "Any other route cost not listed above."],
   ],
   metrics: [
-    ["marginPercent", "Margin %"],
-    ["netProfit", "Net Profit ($)"],
-    ["profitPerStop", "Profit / Stop"],
-    ["profitPerMile", "Profit / Mile"],
-    ["profitPerHour", "Profit / Hour"],
-    ["stopsPerHour", "Stops Per Hour"],
-    ["milesPerStop", "Miles Per Stop"],
-    ["laborPercentRevenue", "Labor % of Revenue"],
-    ["fuelPercentRevenue", "Fuel % of Revenue"],
-    ["claimsPerRoute", "Claims per Route"],
+    ["marginPercent", "Margin %", "Profit as a percent of revenue — your core profitability number."],
+    ["netProfit", "Net Profit ($)", "Revenue minus all costs, in dollars."],
+    ["profitPerStop", "Profit / Stop", "Net profit divided by the number of stops."],
+    ["profitPerMile", "Profit / Mile", "Net profit divided by miles driven."],
+    ["profitPerHour", "Profit / Hour", "Net profit divided by route hours."],
+    ["stopsPerHour", "Stops Per Hour", "Delivery stops completed per hour — a pace gauge."],
+    ["milesPerStop", "Miles Per Stop", "Average miles between stops — how dense the route is."],
+    ["laborPercentRevenue", "Labor % of Revenue", "Driver plus helper pay as a percent of revenue."],
+    ["fuelPercentRevenue", "Fuel % of Revenue", "Fuel cost as a percent of revenue."],
+    ["claimsPerRoute", "Claims per Route", "Average number of claims generated per route."],
   ],
 };
 
@@ -483,15 +483,19 @@ function SettingsDashboard({
         </div>
 
         <div className={`space-y-3 border-t pt-4 ${rowBorder}`}>
-          {card.items.map(([key, label]) => (
-            <div key={key} className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className={`text-xs ${mutedText}`}>⋮⋮</span>
-                <p className={`truncate text-sm font-semibold ${titleText}`}>{label}</p>
+          {card.items.map(([key, label, description]) => (
+            <div key={key} className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-3">
+                <span className={`mt-0.5 text-xs ${mutedText}`}>⋮⋮</span>
+                <div className="min-w-0">
+                  <p className={`text-sm font-semibold ${titleText}`}>{label}</p>
+                  {description && <p className={`text-xs leading-snug ${mutedText}`}>{description}</p>}
+                </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex shrink-0 items-center gap-3">
                 <button
-                  onClick={() => showNotice(`${label} is included when calculating or displaying ${card.title.toLowerCase()}.`)}
+                  onClick={() => showNotice(`${label}: ${description || `included when calculating or displaying ${card.title.toLowerCase()}.`} Toggle it off to leave it out of your margin math.`)}
+                  title={description || ""}
                   className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] ${mutedText}`}
                 >
                   i
@@ -813,6 +817,7 @@ function SettingsDashboard({
                     />
                     <span className={`absolute right-3 top-2.5 text-sm font-black ${mutedText}`}>%</span>
                   </div>
+                  <p className={`mt-1 text-xs leading-snug ${mutedText}`}>The margin you aim to clear on a route. Routes at or above this read as healthy.</p>
                 </div>
 
                 <div>
@@ -828,6 +833,7 @@ function SettingsDashboard({
                       className={`${inputClass} pl-7`}
                     />
                   </div>
+                  <p className={`mt-1 text-xs leading-snug ${mutedText}`}>How much to set aside for claims and chargebacks — a buffer so one bad week doesn't erase the month.</p>
                 </div>
 
                 <div>
@@ -844,6 +850,7 @@ function SettingsDashboard({
                     />
                     <span className={`absolute right-3 top-2.5 text-sm font-black ${mutedText}`}>%</span>
                   </div>
+                  <p className={`mt-1 text-xs leading-snug ${mutedText}`}>Your red line. Routes below this margin get flagged for review.</p>
                 </div>
               </div>
 
