@@ -364,6 +364,31 @@ export const analyzeComplianceDocWithOpenAI = ({ imageBase64, contentType }) =>
     image: { base64: imageBase64, mediaType: contentType || "image/jpeg" },
   });
 
+export const receiptScanInstructions = `You read a photo of a business expense receipt for a final-mile delivery contractor. Extract the merchant, total paid, date, and the best-fit expense category.
+
+Rules:
+- Use only what is printed on the receipt. If a field is not visible, return an empty string (or 0 for amount).
+- "amount" is the final TOTAL actually paid (after tax and tip), as a plain number — no "$", no commas.
+- "date" must be YYYY-MM-DD if a purchase date is visible, otherwise "".
+- Pick the closest "category" from the allowed list based on the merchant and items (e.g. a gas station → Fuel; an auto shop / parts → Maintenance; a toll or parking lot → Tolls & Parking; a hardware/office store → Supplies; a phone/tablet/scanner → Equipment; an insurer → Insurance; a restaurant → Meals; otherwise Other).
+
+Return only JSON with this shape:
+{
+  "vendor": "merchant name",
+  "amount": number,
+  "date": "YYYY-MM-DD or empty",
+  "category": "Fuel|Maintenance|Tolls & Parking|Supplies|Equipment|Insurance|Meals|Other",
+  "notes": "short note on what was bought, if useful",
+  "confidence": 0-100
+}`;
+
+export const analyzeReceiptWithOpenAI = ({ imageBase64, contentType }) =>
+  callClaudeJson({
+    instructions: receiptScanInstructions,
+    input: "Extract the merchant, total amount, date, and expense category from this receipt.",
+    image: { base64: imageBase64, mediaType: contentType || "image/jpeg" },
+  });
+
 export const riskForecastInstructions = `You are the Claim Risk Forecaster inside Final Mile Margin, a final-mile delivery margin app. Before the day's dispatch, you predict which route team is most likely to generate a claim today and what to do about it.
 
 You receive each team's pre-dispatch signals: a computed risk score (0-100), compliance %, whether today's route photo is in, an at-risk flag, recent claim exposure, and survey average.

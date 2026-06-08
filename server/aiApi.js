@@ -1,4 +1,4 @@
-import { analyzeComplianceDocWithOpenAI, analyzeDamagePhotoWithOpenAI, analyzeIntakeWithOpenAI, askBusinessWithOpenAI, generateContractEvalWithOpenAI, generateDisputeLetterWithOpenAI, generateForecastWithOpenAI, generateMarginBriefWithOpenAI, generateRiskForecastWithOpenAI, generateWatchdogWithOpenAI, parseDayLogWithOpenAI } from "./openaiCore.js";
+import { analyzeComplianceDocWithOpenAI, analyzeDamagePhotoWithOpenAI, analyzeIntakeWithOpenAI, analyzeReceiptWithOpenAI, askBusinessWithOpenAI, generateContractEvalWithOpenAI, generateDisputeLetterWithOpenAI, generateForecastWithOpenAI, generateMarginBriefWithOpenAI, generateRiskForecastWithOpenAI, generateWatchdogWithOpenAI, parseDayLogWithOpenAI } from "./openaiCore.js";
 
 const readJsonBody = (req) =>
   new Promise((resolve, reject) => {
@@ -82,6 +82,12 @@ export async function handleAiApi(req, res, next) {
 
     if (req.url.startsWith("/api/vision-doc")) {
       const result = await analyzeComplianceDocWithOpenAI({ imageBase64: body.imageBase64, contentType: body.contentType });
+      sendJson(res, result.ok ? 200 : result.status, result.payload);
+      return;
+    }
+
+    if (req.url.startsWith("/api/vision-receipt")) {
+      const result = await analyzeReceiptWithOpenAI({ imageBase64: body.imageBase64, contentType: body.contentType });
       sendJson(res, result.ok ? 200 : result.status, result.payload);
       return;
     }
