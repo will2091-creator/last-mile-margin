@@ -1,6 +1,13 @@
-import OpenAI from "openai";
+// AI core for Final Mile Margin — runs on Anthropic Claude.
+// Default model: claude-haiku-4-5 (cheapest tier). Override with ANTHROPIC_MODEL.
+// NOTE: the exported helpers keep a *WithOpenAI suffix for historical reasons —
+// they used to call OpenAI and are imported by the 8 /api route handlers under
+// those names. They now call Claude via callClaudeJson; the names are retained
+// only to avoid churning every route file.
+import Anthropic from "@anthropic-ai/sdk";
 
-const MODEL = process.env.OPENAI_MODEL || "gpt-5.4-mini";
+const MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
+const MAX_TOKENS = Number(process.env.ANTHROPIC_MAX_TOKENS || 4096);
 
 const extractJson = (text) => {
   if (!text) return null;
@@ -9,34 +16,57 @@ const extractJson = (text) => {
   } catch {
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) return null;
-    return JSON.parse(match[0]);
+    try {
+      return JSON.parse(match[0]);
+    } catch {
+      return null;
+    }
   }
 };
 
 const createClient = () => {
-  if (!process.env.OPENAI_API_KEY) return null;
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  return new Anthropic(); // reads ANTHROPIC_API_KEY from the environment
 };
 
-export const callOpenAIJson = async ({ instructions, input }) => {
+// instructions -> system prompt; input -> the user message (string or object,
+// JSON-stringified); image (optional) -> { base64, mediaType } for vision tasks.
+export const callClaudeJson = async ({ instructions, input, image }) => {
   const client = createClient();
   if (!client) {
     return {
       ok: false,
       status: 503,
       payload: {
-        error: "OPENAI_API_KEY is not set. Using local fallback.",
+        error: "ANTHROPIC_API_KEY is not set. Using local fallback.",
       },
     };
   }
 
-  const response = await client.responses.create({
-    model: MODEL,
-    instructions,
-    input,
-  });
+  const userText = typeof input === "string" ? input : JSON.stringify(input ?? {});
+  const content = image
+    ? [
+        { type: "text", text: userText },
+        { type: "image", source: { type: "base64", media_type: image.mediaType || "image/jpeg", data: image.base64 } },
+      ]
+    : userText;
 
-  const parsed = extractJson(response.output_text);
+  let response;
+  try {
+    response = await client.messages.create({
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
+      system: `${instructions}\n\nReturn ONLY the JSON object — no preamble, no explanation, no markdown code fences.`,
+      messages: [{ role: "user", content }],
+    });
+  } catch (error) {
+    return { ok: false, status: error?.status || 502, payload: { error: error?.message || "AI request failed." } };
+  }
+
+  const text = Array.isArray(response?.content)
+    ? response.content.filter((block) => block.type === "text").map((block) => block.text).join("")
+    : "";
+  const parsed = extractJson(text);
   if (!parsed) {
     return {
       ok: false,
@@ -157,7 +187,7 @@ Return only JSON with this shape:
 }`;
 
 export const generateDisputeLetterWithOpenAI = ({ claim }) =>
-  callOpenAIJson({
+  callClaudeJson({
     instructions: disputeLetterInstructions,
     input: JSON.stringify({ claim }),
   });
@@ -184,7 +214,7 @@ Return only JSON with this shape:
 }`;
 
 export const generateMarginBriefWithOpenAI = ({ context }) =>
-  callOpenAIJson({
+  callClaudeJson({
     instructions: marginBriefInstructions,
     input: JSON.stringify({ context }),
   });
@@ -214,7 +244,7 @@ Return only JSON with this shape:
 Include in "form" only the keys you could extract. Return an empty "claims" array if no damage/penalty is mentioned.`;
 
 export const parseDayLogWithOpenAI = ({ text }) =>
-  callOpenAIJson({
+  callClaudeJson({
     instructions: dayLogInstructions,
     input: JSON.stringify({ note: text }),
   });
@@ -256,26 +286,18 @@ Return only JSON with this shape:
   "confidence": 0-100
 }`;
 
-const visionInput = (text, imageBase64, contentType) => [
-  {
-    role: "user",
-    content: [
-      { type: "input_text", text },
-      { type: "input_image", image_url: `data:${contentType || "image/jpeg"};base64,${imageBase64}` },
-    ],
-  },
-];
-
 export const analyzeDamagePhotoWithOpenAI = ({ imageBase64, contentType, note }) =>
-  callOpenAIJson({
+  callClaudeJson({
     instructions: damagePhotoInstructions,
-    input: visionInput(note ? `Assess this delivery damage and draft a claim. Context from the contractor: ${note}` : "Assess this delivery damage and draft a claim.", imageBase64, contentType),
+    input: note ? `Assess this delivery damage and draft a claim. Context from the contractor: ${note}` : "Assess this delivery damage and draft a claim.",
+    image: { base64: imageBase64, mediaType: contentType || "image/jpeg" },
   });
 
 export const analyzeComplianceDocWithOpenAI = ({ imageBase64, contentType }) =>
-  callOpenAIJson({
+  callClaudeJson({
     instructions: complianceDocInstructions,
-    input: visionInput("Extract the document type, issuer, and dates from this compliance document.", imageBase64, contentType),
+    input: "Extract the document type, issuer, and dates from this compliance document.",
+    image: { base64: imageBase64, mediaType: contentType || "image/jpeg" },
   });
 
 export const riskForecastInstructions = `You are the Claim Risk Forecaster inside Final Mile Margin, a final-mile delivery margin app. Before the day's dispatch, you predict which route team is most likely to generate a claim today and what to do about it.
@@ -297,13 +319,13 @@ Return only JSON with this shape:
 }`;
 
 export const generateRiskForecastWithOpenAI = ({ context }) =>
-  callOpenAIJson({
+  callClaudeJson({
     instructions: riskForecastInstructions,
     input: JSON.stringify({ context }),
   });
 
 export const askBusinessWithOpenAI = ({ question, businessContext, history }) =>
-  callOpenAIJson({
+  callClaudeJson({
     instructions: askInstructions,
     input: JSON.stringify({
       question,
@@ -313,7 +335,7 @@ export const askBusinessWithOpenAI = ({ question, businessContext, history }) =>
   });
 
 export const analyzeIntakeWithOpenAI = ({ text, files, teams, claims, appSettings }) =>
-  callOpenAIJson({
+  callClaudeJson({
     instructions: intakeInstructions,
     input: JSON.stringify({
       text,

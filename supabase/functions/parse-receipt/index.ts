@@ -25,26 +25,28 @@ Deno.serve(async (req) => {
       return json({ error: "imageBase64 is required." }, 400);
     }
 
-    const apiKey = Deno.env.get("OPENAI_API_KEY");
+    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) {
-      return json({ error: "OPENAI_API_KEY is not set for this Supabase function." }, 503);
+      return json({ error: "ANTHROPIC_API_KEY is not set for this Supabase function." }, 503);
     }
 
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: Deno.env.get("OPENAI_MODEL") || "gpt-5.4-mini",
-        instructions,
-        input: [
+        model: Deno.env.get("ANTHROPIC_MODEL") || "claude-haiku-4-5",
+        max_tokens: 1024,
+        system: `${instructions}\n\nReturn ONLY the JSON object — no preamble, no markdown code fences.`,
+        messages: [
           {
             role: "user",
             content: [
-              { type: "input_text", text: "Extract the receipt fields from this image." },
-              { type: "input_image", image_url: `data:${contentType};base64,${imageBase64}` },
+              { type: "text", text: "Extract the receipt fields from this image." },
+              { type: "image", source: { type: "base64", media_type: contentType, data: imageBase64 } },
             ],
           },
         ],
@@ -53,10 +55,13 @@ Deno.serve(async (req) => {
 
     const payload = await response.json();
     if (!response.ok) {
-      return json({ error: payload?.error?.message || "OpenAI receipt extraction failed." }, response.status);
+      return json({ error: payload?.error?.message || "Receipt extraction failed." }, response.status);
     }
 
-    const parsed = parseJson(payload.output_text || "");
+    const outputText = Array.isArray(payload?.content)
+      ? payload.content.filter((block: { type?: string }) => block?.type === "text").map((block: { text?: string }) => block.text || "").join("")
+      : "";
+    const parsed = parseJson(outputText);
     if (!parsed) {
       return json({ error: "Receipt extraction did not return valid JSON." }, 502);
     }

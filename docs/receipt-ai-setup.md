@@ -11,16 +11,16 @@ npx supabase functions deploy parse-receipt --project-ref eptoyxshbwglnnklqebl
 
 ## Add AI Secret
 
-Set the OpenAI key in Supabase Edge Function secrets:
+This function runs on Anthropic Claude. Set the Anthropic key in Supabase Edge Function secrets:
 
 ```bash
-npx supabase secrets set OPENAI_API_KEY=your_openai_api_key --project-ref eptoyxshbwglnnklqebl
+npx supabase secrets set ANTHROPIC_API_KEY=your_anthropic_api_key --project-ref eptoyxshbwglnnklqebl
 ```
 
-Optional model override:
+Optional model override (defaults to `claude-haiku-4-5`):
 
 ```bash
-npx supabase secrets set OPENAI_MODEL=gpt-5.4-mini --project-ref eptoyxshbwglnnklqebl
+npx supabase secrets set ANTHROPIC_MODEL=claude-haiku-4-5 --project-ref eptoyxshbwglnnklqebl
 ```
 
 After deployment, use the mobile Receipts tab:
