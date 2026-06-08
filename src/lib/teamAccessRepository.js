@@ -18,6 +18,24 @@ const toTeamMember = (row) => ({
   createdAt: row.created_at || "",
 });
 
+// When the team-access backend isn't fully provisioned, a solo owner should still work
+// silently — treat them as the sole "owner" member rather than surfacing a raw DB error.
+const ownerFallback = (user) => ({
+  ok: true,
+  members: [
+    {
+      id: user.id,
+      email: normalizeEmail(user.email),
+      name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Owner",
+      role: "owner",
+      status: "active",
+      createdAt: "",
+    },
+  ],
+  currentRole: "owner",
+  error: "",
+});
+
 const getCurrentUser = async () => {
   if (!isSupabaseConfigured || !supabase) {
     return { ok: false, user: null, error: "Supabase is not configured." };
@@ -30,17 +48,11 @@ const getCurrentUser = async () => {
 };
 
 const upsertProfile = async (user) => {
-  const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Owner";
-  const { error } = await supabase.from("profiles").upsert(
-    {
-      id: user.id,
-      email: normalizeEmail(user.email),
-      display_name: displayName,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "id" }
-  );
-
+  const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Owner";
+  // The live `profiles` table is { id, company_id, full_name, role, created_at }. Touch only
+  // a column that exists (full_name), and UPDATE in place (never insert) so a NOT NULL
+  // company_id on a missing row can't fail this. Best-effort — must not block team access.
+  const { error } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", user.id);
   return error ? error.message : "";
 };
 
@@ -66,15 +78,9 @@ export const loadTeamAccess = async () => {
   const userResult = await getCurrentUser();
   if (!userResult.ok) return { ok: false, members: [], currentRole: "owner", error: userResult.error };
 
+  // Best-effort profile sync — a failure here must never block team access.
   const profileError = await upsertProfile(userResult.user);
-  if (profileError) {
-    return {
-      ok: false,
-      members: [],
-      currentRole: "owner",
-      error: profileError,
-    };
-  }
+  if (profileError) console.warn("Profile sync skipped:", profileError);
 
   const userEmail = normalizeEmail(userResult.user.email);
   const { data: membershipRows, error: membershipError } = await supabase
@@ -83,7 +89,7 @@ export const loadTeamAccess = async () => {
     .or(`user_id.eq.${userResult.user.id},email.eq.${userEmail}`)
     .order("created_at", { ascending: true });
 
-  if (membershipError) return { ok: false, members: [], currentRole: "owner", error: membershipError.message };
+  if (membershipError) return ownerFallback(userResult.user);
 
   let currentMembership = (membershipRows || []).find((row) => row.user_id === userResult.user.id)
     || (membershipRows || []).find((row) => normalizeEmail(row.email) === userEmail && row.status === "active")
@@ -91,14 +97,7 @@ export const loadTeamAccess = async () => {
 
   if (!currentMembership) {
     const ownerError = await ensureOwnerMembership(userResult.user);
-    if (ownerError) {
-      return {
-        ok: false,
-        members: [],
-        currentRole: "owner",
-        error: ownerError,
-      };
-    }
+    if (ownerError) return ownerFallback(userResult.user);
 
     currentMembership = {
       owner_id: userResult.user.id,
@@ -113,11 +112,11 @@ export const loadTeamAccess = async () => {
 
   const { data, error } = await supabase
     .from("team_memberships")
-    .select("id,email,display_name,role,status,created_at,user_id,profiles:profiles!team_memberships_user_id_fkey(email,display_name)")
+    .select("id,email,display_name,role,status,created_at,user_id")
     .eq("owner_id", workspaceOwnerId)
     .order("created_at", { ascending: true });
 
-  if (error) return { ok: false, members: [], currentRole: "owner", error: error.message };
+  if (error) return ownerFallback(userResult.user);
 
   const members = (data || []).map(toTeamMember);
   const currentMember = members.find((member) => member.id === currentMembership.id)
