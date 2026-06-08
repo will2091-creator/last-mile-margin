@@ -38,7 +38,7 @@ const FEATURES = [
   { icon: Gauge, title: "See daily profit fast", text: "Track revenue, expenses, claims exposure, saved days, and margin without digging through spreadsheets." },
   { icon: Route, title: "Know if a route pays", text: "Use Route Profit Check to compare contract pay, labor, miles, fuel, and risk before you accept bad work." },
   { icon: ShieldAlert, title: "Stop losing money to chargebacks", text: "Every undisputed chargeback is money you earned and handed back. Track claims, score dispute viability with AI, and fight the ones worth winning." },
-  { icon: Save, title: "Save the day's history", text: "Save snapshots of routes, expenses, claims, and notes so the business has a clean operating record." },
+  { icon: Save, title: "Automatic daily history", text: "Every workday closes itself out into clean history — routes, expenses, claims, and margin — with nothing to remember to save." },
   { icon: FileSpreadsheet, title: "Roll up contracts", text: "Review route rates, stop pay, fees, and contract rules in one place — before guessing with your wallet like it owes you money." },
   { icon: Bot, title: "Ask the business", text: "Use AI insights to surface profit leaks, risk, missing data, and the next best actions." },
 ];
@@ -160,7 +160,7 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
               </span>
               <h1 className="mt-6 text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
                 Know your margin{" "}
-                <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent">before the route costs you.</span>
+                <span className={`bg-gradient-to-r bg-clip-text text-transparent ${isDark ? "from-blue-400 via-indigo-400 to-violet-400" : "from-blue-600 via-indigo-600 to-violet-600"}`}>before the route costs you.</span>
               </h1>
               <p className={`mt-6 max-w-xl text-lg font-semibold leading-8 ${t.heroPara}`}>
                 Last Mile Margin helps final-mile contractors track profit, fight chargebacks, manage claims, and know their real margin — before a bad route or undisputed deduction wipes out the month.
