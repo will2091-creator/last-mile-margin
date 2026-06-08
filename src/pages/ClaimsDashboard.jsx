@@ -2164,34 +2164,13 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                 </div>
 
                 <div className="space-y-5">
-                  <div className={isDark ? "rounded-2xl border border-red-500/20 bg-red-500/10 p-5" : "rounded-2xl border border-red-100 bg-red-50 p-5"}>
-                    <h3 className={`text-lg font-bold ${titleText}`}>Missing Evidence</h3>
-                    {getMissingEvidence(disputePacketClaim).length ? (
-                      <ul className="mt-3 space-y-2">
-                        {getMissingEvidence(disputePacketClaim).map((item) => (
-                          <li key={item} className={isDark ? "text-sm font-semibold text-red-200" : "text-sm font-semibold text-red-700"}>- {item}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className={isDark ? "mt-3 text-sm font-semibold text-emerald-200" : "mt-3 text-sm font-semibold text-emerald-700"}>No major evidence gaps found.</p>
-                    )}
-                  </div>
-
-                  <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5" : "rounded-2xl border border-slate-200 bg-slate-50 p-5"}>
-                    <h3 className={`text-lg font-bold ${titleText}`}>Recommended Dispute Angle</h3>
-                    <p className={`mt-3 text-sm font-semibold leading-6 ${mutedText}`}>{getRecommendedDisputeAngle(disputePacketClaim)}</p>
-                  </div>
-
-                  <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5" : "rounded-2xl border border-slate-200 bg-slate-50 p-5"}>
-                    <h3 className={`text-lg font-bold ${titleText}`}>Notes</h3>
-                    <p className={`mt-3 text-sm font-semibold leading-6 ${mutedText}`}>
-                      Review claim amount, driver assignment, route timing, and retailer claim language before accepting this as a loss.
-                    </p>
-                  </div>
-
                   <div className={isDark ? "rounded-2xl border border-blue-500/20 bg-blue-500/10 p-5" : "rounded-2xl border border-blue-100 bg-blue-50 p-5"}>
-                    <h3 className={`text-lg font-bold ${titleText}`}>Next Action</h3>
-                    <p className={isDark ? "mt-3 text-sm font-black leading-6 text-blue-100" : "mt-3 text-sm font-black leading-6 text-blue-800"}>{getDisputeNextAction(disputePacketClaim)}</p>
+                    <h3 className={`text-lg font-bold ${titleText}`}>Recommended move</h3>
+                    <p className={`mt-3 text-sm font-semibold leading-6 ${mutedText}`}>{getRecommendedDisputeAngle(disputePacketClaim)}</p>
+                    <div className={isDark ? "mt-4 rounded-xl border border-blue-500/30 bg-blue-500/10 p-3" : "mt-4 rounded-xl border border-blue-200 bg-white p-3"}>
+                      <p className={`text-[11px] font-black uppercase tracking-wide ${isDark ? "text-blue-300" : "text-blue-600"}`}>Next step</p>
+                      <p className={isDark ? "mt-1 text-sm font-black leading-6 text-blue-100" : "mt-1 text-sm font-black leading-6 text-blue-800"}>{getDisputeNextAction(disputePacketClaim)}</p>
+                    </div>
                   </div>
                 </div>
               </div>
