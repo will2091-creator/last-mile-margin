@@ -31,6 +31,7 @@ import {
 } from "../shared";
 import NextActionCard from "../components/NextActionCard";
 import WatchdogPanel from "../components/WatchdogPanel";
+import ForecastPanel from "../components/ForecastPanel";
 import { InlineEmpty } from "../components/EmptyState";
 import { getNextBestSetupAction, getSetupStatus } from "../lib/onboarding";
 import { useCountUp } from "../hooks/useCountUp";
@@ -1386,6 +1387,15 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           teams={teams}
           contracts={quickContracts}
           today={{ profit: todayProfit, revenue: dashboardRevenue, margin }}
+          appSettings={appSettings}
+        />
+      )}
+
+      {marginBriefContext.hasData && (
+        <ForecastPanel
+          isDark={isDark}
+          navigateToTab={setActiveTab}
+          savedDays={savedDays}
           appSettings={appSettings}
         />
       )}

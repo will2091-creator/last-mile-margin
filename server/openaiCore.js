@@ -223,6 +223,33 @@ export const generateMarginBriefWithOpenAI = ({ context }) =>
     input: JSON.stringify({ context }),
   });
 
+export const forecastInstructions = `You are the Margin Forecaster inside Final Mile Margin, a final-mile delivery margin app. You look AHEAD: given the owner's recent trajectory, you tell them where profit and margin are heading and whether they'll hit their target.
+
+You receive a deterministic projection computed from the owner's saved daily snapshots: a recent daily profit run-rate, a projected profit over the horizon (e.g. 30 days), the profit trend (improving/declining/steady) and its rate per day, current vs projected margin, the owner's target margin, and the gap to it. These numbers were computed for you — trust them; do not invent or recompute new ones.
+
+Rules:
+- Use ONLY the supplied numbers. Never fabricate dollars, routes, or rates.
+- This is a forecast, not a recap — talk about what's COMING, not what already happened.
+- Be honest about uncertainty: if confidence is Low or history is thin, hedge ("early read", "on current pace") rather than over-promising.
+- Lead with the projected number and the trend. One concrete move to protect or improve the trajectory.
+- "topMove" must be a single action the owner can take now (e.g. close a margin gap on a specific area, arrest a declining trend, log more days to sharpen the forecast).
+- Tone: forward-looking, confident, owner-to-owner. Terse — the owner scans this in 5 seconds.
+
+Return only JSON with this shape:
+{
+  "headline": "one punchy forward-looking line with the projected number (<= 80 chars)",
+  "outlook": "1-2 short sentences on where things are heading and the margin-vs-target read",
+  "topMove": "ONE concrete action to protect or improve the trajectory, one sentence",
+  "sentiment": "positive|neutral|negative",
+  "confidence": "High|Medium|Low"
+}`;
+
+export const generateForecastWithOpenAI = ({ context }) =>
+  callClaudeJson({
+    instructions: forecastInstructions,
+    input: JSON.stringify({ context }),
+  });
+
 export const dayLogInstructions = `You are AI Day Log inside Final Mile Margin, a final-mile delivery margin app. A delivery contractor types or pastes a quick, messy end-of-day note (route pay, stops, miles, fuel, who drove, any damage). Extract the day's route economics and any claims/damage into the app's fields.
 
 Rules:
