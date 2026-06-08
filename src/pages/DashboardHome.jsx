@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Area,
@@ -17,9 +17,11 @@ import {
   FileText,
   number,
   ResponsiveContainer,
+  RotateCcw,
   Save,
   Settings,
   ShieldCheck,
+  Sparkles,
   Tooltip,
   Upload,
   UserPlus,
@@ -372,6 +374,164 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
 
   const goToSource = (tabName) => setActiveTab(tabName);
+
+  // ---- AI Margin Brief (Pillar 2) ----
+  const marginBriefContext = useMemo(() => {
+    const profit = Number(todayProfit || 0);
+    const revenue = Number(dashboardRevenue || 0);
+    const costs = Number(dashboardCosts || 0);
+    const marginPct = Number(margin || 0);
+    const normMargin = (m) => (Math.abs(Number(m || 0)) <= 1 ? Number(m || 0) * 100 : Number(m || 0));
+    const history = (Array.isArray(savedDays) ? savedDays : []).slice(0, 7);
+    const avgProfit = history.length ? history.reduce((sum, day) => sum + Number(day.profit || 0), 0) / history.length : null;
+    const avgMargin = history.length ? history.reduce((sum, day) => sum + normMargin(day.margin), 0) / history.length : null;
+    const contractRows = (quickContracts || [])
+      .map((row) => {
+        const rev = Number(row.revenue || 0);
+        const cost =
+          Number(row.labor || 0) + Number(row.fuel || 0) + Number(row.truckInsurance || 0) +
+          Number(row.maintenance || 0) + Number(row.claims || 0) + Number(row.other || 0);
+        const prof = rev - cost;
+        return { name: row.contract || "Unnamed route", revenue: rev, profit: prof, margin: rev ? Math.round((prof / rev) * 100) : 0 };
+      })
+      .filter((row) => row.revenue > 0);
+    const byMargin = [...contractRows].sort((a, b) => a.margin - b.margin);
+    const openClaimsList = (claims || []).filter((claim) => claim.status !== "Closed");
+    const openExposure = openClaimsList.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
+    const highRisk = openClaimsList.filter((claim) => claim.risk === "High").length;
+    const topClaim = openClaimsList.slice().sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0))[0];
+    return {
+      period: dashboardPeriod,
+      revenue,
+      costs,
+      profit,
+      margin: Math.round(marginPct * 10) / 10,
+      trend: avgProfit === null ? null : {
+        avgProfit: Math.round(avgProfit),
+        avgMargin: Math.round(avgMargin * 10) / 10,
+        deltaProfit: Math.round(profit - avgProfit),
+        deltaMargin: Math.round((marginPct - avgMargin) * 10) / 10,
+        daysCompared: history.length,
+      },
+      worstContract: byMargin[0] || null,
+      bestContract: byMargin[byMargin.length - 1] || null,
+      claims: {
+        open: openClaimsList.length,
+        exposure: openExposure,
+        highRisk,
+        topClaim: topClaim ? { type: topClaim.type, amount: Number(topClaim.amount || 0) } : null,
+      },
+      teams: {
+        total: (teams || []).length,
+        atRisk: (teams || []).filter((team) => team.status === "At Risk").length,
+        missingPhotos: (teams || []).filter((team) => team.photoStatus !== "Uploaded").length,
+      },
+      companyName: appSettings?.companyName || "your business",
+      hasData: revenue > 0 || profit !== 0 || contractRows.length > 0,
+    };
+  }, [todayProfit, dashboardRevenue, dashboardCosts, margin, savedDays, quickContracts, claims, teams, dashboardPeriod, appSettings]);
+
+  const buildFallbackBrief = (ctx) => {
+    const money = (value) => currency.format(Math.round(Number(value || 0)));
+    const dir = ctx.trend ? (ctx.trend.deltaProfit >= 0 ? "up" : "down") : null;
+    const sentiment = ctx.trend ? (ctx.trend.deltaProfit >= 0 ? "positive" : "negative") : "neutral";
+    const headline = ctx.trend
+      ? `Net profit ${dir} ${money(Math.abs(ctx.trend.deltaProfit))} vs your ${ctx.trend.daysCompared}-day average`
+      : `${money(ctx.profit)} net profit at ${ctx.margin}% margin`;
+    const parts = [`You're at ${money(ctx.profit)} net profit on ${money(ctx.revenue)} revenue (${ctx.margin}% margin) this ${ctx.period.toLowerCase()}.`];
+    if (ctx.trend) parts.push(`That's ${dir} ${money(Math.abs(ctx.trend.deltaProfit))} versus your recent ${ctx.trend.daysCompared}-day average of ${money(ctx.trend.avgProfit)}.`);
+    if (ctx.worstContract && ctx.bestContract && ctx.worstContract.name !== ctx.bestContract.name) {
+      parts.push(`${ctx.worstContract.name} is your thinnest route at ${ctx.worstContract.margin}% margin; ${ctx.bestContract.name} leads at ${ctx.bestContract.margin}%.`);
+    } else if (ctx.worstContract) {
+      parts.push(`${ctx.worstContract.name} is running at ${ctx.worstContract.margin}% margin.`);
+    }
+    let topMove;
+    if (ctx.claims.highRisk > 0 && ctx.claims.topClaim) {
+      topMove = `Review the ${ctx.claims.topClaim.type} claim (${money(ctx.claims.topClaim.amount)}) — you have ${ctx.claims.highRisk} high-risk claim${ctx.claims.highRisk > 1 ? "s" : ""} and ${money(ctx.claims.exposure)} open exposure. Generate a dispute letter if it's contestable.`;
+    } else if (ctx.worstContract && ctx.worstContract.margin < 20) {
+      topMove = `Dig into ${ctx.worstContract.name}'s costs — at ${ctx.worstContract.margin}% margin it's dragging your blended profit. Check fuel and labor per stop.`;
+    } else if (ctx.teams.missingPhotos > 0) {
+      topMove = `Chase the ${ctx.teams.missingPhotos} team${ctx.teams.missingPhotos > 1 ? "s" : ""} missing today's photo check-in before they roll — missing proof is how claims turn into losses.`;
+    } else if (!ctx.trend) {
+      topMove = `Save a few days of snapshots so I can spot trends and tell you what's moving your margin.`;
+    } else {
+      topMove = `Hold the line — log today's numbers and keep claims current. Nothing is bleeding margin right now.`;
+    }
+    const signals = [`${money(ctx.profit)} profit · ${ctx.margin}% margin`];
+    if (ctx.claims.open) signals.push(`${ctx.claims.open} open claim${ctx.claims.open > 1 ? "s" : ""} · ${money(ctx.claims.exposure)} exposure`);
+    if (ctx.worstContract) signals.push(`Thinnest: ${ctx.worstContract.name} (${ctx.worstContract.margin}%)`);
+    if (ctx.teams.atRisk) signals.push(`${ctx.teams.atRisk} team${ctx.teams.atRisk > 1 ? "s" : ""} at risk`);
+    return { headline, summary: parts.join(" "), topMove, signals: signals.slice(0, 4), sentiment, confidence: "Medium", source: "Computed (offline)" };
+  };
+
+  const [marginBrief, setMarginBrief] = useState(null);
+  const [marginBriefStatus, setMarginBriefStatus] = useState("idle"); // idle | loading | ready
+  const briefCacheKeyRef = useRef("");
+
+  const generateMarginBrief = async (force = false) => {
+    const ctx = marginBriefContext;
+    if (!ctx.hasData) {
+      setMarginBrief(null);
+      setMarginBriefStatus("idle");
+      return;
+    }
+    const cacheKey = `${new Date().toISOString().slice(0, 10)}-${ctx.period}`;
+    if (!force) {
+      try {
+        const cached = JSON.parse(localStorage.getItem("finalMileMarginBrief") || "null");
+        if (cached && cached.key === cacheKey && cached.brief) {
+          setMarginBrief(cached.brief);
+          setMarginBriefStatus("ready");
+          briefCacheKeyRef.current = cacheKey;
+          return;
+        }
+      } catch {
+        /* ignore cache parse errors */
+      }
+    }
+    setMarginBriefStatus("loading");
+    const fallback = buildFallbackBrief(ctx);
+    let brief;
+    try {
+      const response = await fetch("/api/margin-brief", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ context: ctx }),
+      });
+      if (!response.ok) throw new Error("AI unavailable");
+      const result = await response.json().catch(() => ({}));
+      if (!result || !result.summary) throw new Error("No brief returned");
+      brief = {
+        headline: result.headline || fallback.headline,
+        summary: result.summary,
+        topMove: result.topMove || fallback.topMove,
+        signals: Array.isArray(result.signals) ? result.signals.slice(0, 4) : fallback.signals,
+        sentiment: ["positive", "neutral", "negative"].includes(result.sentiment) ? result.sentiment : "neutral",
+        confidence: ["High", "Medium", "Low"].includes(result.confidence) ? result.confidence : "Medium",
+        source: "AI generated",
+      };
+    } catch {
+      brief = fallback;
+    }
+    setMarginBrief(brief);
+    setMarginBriefStatus("ready");
+    briefCacheKeyRef.current = cacheKey;
+    try {
+      localStorage.setItem("finalMileMarginBrief", JSON.stringify({ key: cacheKey, brief }));
+    } catch {
+      /* ignore quota errors */
+    }
+  };
+
+  // Proactively generate once per day + period (cached), so the brief feels live without spamming the API.
+  useEffect(() => {
+    if (!marginBriefContext.hasData) return;
+    const cacheKey = `${new Date().toISOString().slice(0, 10)}-${marginBriefContext.period}`;
+    if (briefCacheKeyRef.current === cacheKey) return;
+    generateMarginBrief(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marginBriefContext.period, marginBriefContext.hasData]);
+
   const setupStepOrder = ["contract", "team", "expenses", "data", "preview"];
   const updateContractDraft = (key, value) => {
     setContractDraft((current) => ({ ...current, [key]: value }));
@@ -942,6 +1102,67 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           )}
         </div>
       </div>
+
+      {marginBriefContext.hasData && (
+        <div data-tour="dashboard-ai-brief" className={isDark ? "rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-indigo-500/5 p-5 shadow-card" : "rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50/40 p-5 shadow-sm"}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600/15 text-blue-600">
+                <Sparkles className="h-5 w-5" />
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className={`text-base font-black ${titleText}`}>AI Margin Brief</h2>
+                  <span className="rounded-full bg-blue-600/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-blue-600">AI</span>
+                </div>
+                <p className={`text-xs font-semibold ${mutedText}`}>Your daily read on what's moving the numbers.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => generateMarginBrief(true)}
+              disabled={marginBriefStatus === "loading"}
+              className={isDark ? "flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-bold text-slate-300 hover:bg-white/5 disabled:opacity-50" : "flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-white disabled:opacity-50"}
+            >
+              <RotateCcw className={`h-3.5 w-3.5 ${marginBriefStatus === "loading" ? "animate-spin" : ""}`} /> Refresh
+            </button>
+          </div>
+
+          {marginBriefStatus === "loading" && !marginBrief && (
+            <div className="mt-4 space-y-2">
+              <div className="skeleton h-5 w-2/3 rounded"></div>
+              <div className="skeleton h-4 w-full rounded"></div>
+              <div className="skeleton h-4 w-5/6 rounded"></div>
+              <div className="skeleton mt-1 h-14 w-full rounded-xl"></div>
+            </div>
+          )}
+
+          {marginBrief && (
+            <div className="mt-4 space-y-3">
+              <p className={`text-lg font-black leading-snug ${titleText}`}>{marginBrief.headline}</p>
+              <p className={`text-sm leading-6 ${isDark ? "text-slate-300" : "text-slate-600"}`}>{marginBrief.summary}</p>
+
+              <div className={isDark ? "rounded-xl border border-blue-500/30 bg-blue-500/10 p-3.5" : "rounded-xl border border-blue-200 bg-white/70 p-3.5"}>
+                <p className="text-[11px] font-black uppercase tracking-wide text-blue-600">Your next move</p>
+                <p className={`mt-1 text-sm font-bold leading-6 ${titleText}`}>{marginBrief.topMove}</p>
+              </div>
+
+              {marginBrief.signals?.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {marginBrief.signals.map((signal) => (
+                    <span key={signal} className={isDark ? "rounded-full bg-white/5 px-2.5 py-1 text-xs font-bold text-slate-300" : "rounded-full bg-white px-2.5 py-1 text-xs font-bold text-slate-600 shadow-sm"}>{signal}</span>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 pt-0.5 text-[11px] font-semibold text-slate-500">
+                <span className={marginBrief.sentiment === "positive" ? "inline-block h-2 w-2 rounded-full bg-emerald-500" : marginBrief.sentiment === "negative" ? "inline-block h-2 w-2 rounded-full bg-red-500" : "inline-block h-2 w-2 rounded-full bg-amber-500"}></span>
+                <span>{marginBrief.source} · confidence {marginBrief.confidence}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* SECONDARY ROW — revenue, cost, margin, and team readiness */}
       <div data-tour="dashboard-kpis" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

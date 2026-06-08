@@ -1,4 +1,4 @@
-import { analyzeIntakeWithOpenAI, askBusinessWithOpenAI, generateDisputeLetterWithOpenAI } from "./openaiCore.js";
+import { analyzeIntakeWithOpenAI, askBusinessWithOpenAI, generateDisputeLetterWithOpenAI, generateMarginBriefWithOpenAI } from "./openaiCore.js";
 
 const readJsonBody = (req) =>
   new Promise((resolve, reject) => {
@@ -46,6 +46,12 @@ export async function handleAiApi(req, res, next) {
 
     if (req.url.startsWith("/api/dispute-letter")) {
       const result = await generateDisputeLetterWithOpenAI({ claim: body.claim });
+      sendJson(res, result.ok ? 200 : result.status, result.payload);
+      return;
+    }
+
+    if (req.url.startsWith("/api/margin-brief")) {
+      const result = await generateMarginBriefWithOpenAI({ context: body.context });
       sendJson(res, result.ok ? 200 : result.status, result.payload);
       return;
     }

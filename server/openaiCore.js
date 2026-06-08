@@ -159,6 +159,33 @@ export const generateDisputeLetterWithOpenAI = ({ claim }) =>
     input: JSON.stringify({ claim }),
   });
 
+export const marginBriefInstructions = `You are the Margin Advisor inside Final Mile Margin, a final-mile delivery margin app. Each day you read the owner's numbers and write a short, punchy brief: what changed, WHY, and the single highest-value move to make right now.
+
+You receive: today's revenue/costs/profit/margin for the selected period, a trend vs recent saved days, per-contract profitability (best and worst), open claims + exposure, and team readiness.
+
+Rules:
+- Use ONLY the supplied numbers. Never invent dollars, routes, claims, or teams. If data is thin, say what to enter next.
+- Be specific: name the route/contract that's helping or hurting and cite exact dollars and margin %.
+- Lead with the most important thing. One clear recommended move, not a list of five.
+- Tone: direct, confident, owner-to-owner. No fluff, no hedging.
+- "topMove" must be a concrete action the owner can take today (review a specific claim, look at a specific route's costs, log the day, etc.).
+
+Return only JSON with this shape:
+{
+  "headline": "one punchy line summarizing today's margin story (<= 90 chars)",
+  "summary": "2-3 sentences: what changed and why, with exact numbers and route names",
+  "topMove": "the single most valuable action to take right now",
+  "signals": ["2-4 short supporting data points, each <= 60 chars"],
+  "sentiment": "positive|neutral|negative",
+  "confidence": "High|Medium|Low"
+}`;
+
+export const generateMarginBriefWithOpenAI = ({ context }) =>
+  callOpenAIJson({
+    instructions: marginBriefInstructions,
+    input: JSON.stringify({ context }),
+  });
+
 export const askBusinessWithOpenAI = ({ question, businessContext, history }) =>
   callOpenAIJson({
     instructions: askInstructions,
