@@ -932,6 +932,48 @@ export default function App() {
     toast({ tone: "success", title: "Snapshot saved", description: `${snapshot.label || "Today"} saved to your daily history.` });
   };
 
+  const pendingDayLogSaveRef = useRef(false);
+  const applyDayLog = ({ formPatch, claims: claimDrafts } = {}) => {
+    if (Array.isArray(claimDrafts) && claimDrafts.length) {
+      const normalized = claimDrafts
+        .filter((draft) => draft && (draft.type || draft.amount))
+        .map((draft, index) => ({
+          id: draft.id || `CLM-${Date.now()}-${index}`,
+          category: draft.category || "Property",
+          type: draft.type || "Reported damage",
+          driver: draft.driver || "",
+          team: draft.team || "",
+          route: draft.route || formPatch?.scenarioName || "",
+          amount: Number(draft.amount || 0),
+          status: draft.status || "Open",
+          preventable: draft.preventable || "Maybe",
+          date: draft.date || "Today",
+          risk: draft.risk || "Medium",
+        }));
+      if (normalized.length) setClaims((current) => [...normalized, ...current]);
+    }
+    const cleanPatch = {};
+    if (formPatch && typeof formPatch === "object") {
+      Object.entries(formPatch).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === "") return;
+        if (!Object.prototype.hasOwnProperty.call(defaultForm, key)) return;
+        cleanPatch[key] = typeof defaultForm[key] === "number" ? Number(value) : value;
+      });
+    }
+    if (Object.keys(cleanPatch).length) {
+      setForm((current) => ({ ...current, ...cleanPatch }));
+      pendingDayLogSaveRef.current = true; // save the snapshot once results recompute from the new form
+    }
+    return { appliedFields: Object.keys(cleanPatch), claimsAdded: Array.isArray(claimDrafts) ? claimDrafts.length : 0 };
+  };
+
+  useEffect(() => {
+    if (!pendingDayLogSaveRef.current) return;
+    pendingDayLogSaveRef.current = false;
+    saveCurrentDay();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results]);
+
   const saveIntakeToDay = (intakeDraft) => {
     const snapshot = {
       ...getDaySnapshot(globalDateRange, { savedBy: "intake" }),
@@ -1381,7 +1423,7 @@ export default function App() {
             <ErrorBoundary key={activeTab} variant="page">
             <Suspense fallback={<PageFallback />}>
             {activeTab === "Dashboard" ? (
-              <DashboardHome key={tourActive ? "dash-tour" : "dash-live"} teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} ownerName={ownerName} />
+              <DashboardHome key={tourActive ? "dash-tour" : "dash-live"} teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} onApplyDayLog={applyDayLog} ownerName={ownerName} />
             ) : activeTab === "Intake" ? (
               <AiQuickIntake
                 teams={teams}
@@ -1463,7 +1505,7 @@ export default function App() {
                 isDemoMode={isDemoMode}
               />
             ) : (
-              <DashboardHome key={tourActive ? "dash-tour" : "dash-live"} teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} ownerName={ownerName} />
+              <DashboardHome key={tourActive ? "dash-tour" : "dash-live"} teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} onApplyDayLog={applyDayLog} ownerName={ownerName} />
             )}
             </Suspense>
             </ErrorBoundary>

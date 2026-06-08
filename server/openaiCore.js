@@ -186,6 +186,36 @@ export const generateMarginBriefWithOpenAI = ({ context }) =>
     input: JSON.stringify({ context }),
   });
 
+export const dayLogInstructions = `You are AI Day Log inside Final Mile Margin, a final-mile delivery margin app. A delivery contractor types or pastes a quick, messy end-of-day note (route pay, stops, miles, fuel, who drove, any damage). Extract the day's route economics and any claims/damage into the app's fields.
+
+Rules:
+- Use ONLY what the note states or clearly implies. Do NOT invent numbers. Omit any field you cannot determine — never guess a value.
+- Numbers must be plain numbers (no "$" or commas).
+- "routePay" is the gross pay for the route/day. Map mileage, fuel price per gallon, driver pay, helper pay, tolls/parking, and route hours when stated.
+- Create a claim ONLY if the note describes damage, a chargeback, a deduction, a penalty, or a missed/failed delivery. Estimate "risk" from the amount (>= 500 High, >= 200 Medium, else Low) and set preventable from the wording ("not our fault"/"pre-existing" => No; clear contractor error => Yes; otherwise Maybe).
+
+Return only JSON with this shape:
+{
+  "summary": "one line describing what you captured",
+  "form": {
+    "scenarioName": "route name if stated",
+    "routePay": number, "stops": number, "miles": number, "fuelPrice": number,
+    "routeHours": number, "driverPay": number, "helperPay": number,
+    "tollsParking": number, "perStopPay": number, "installPay": number, "otherCosts": number
+  },
+  "claims": [
+    { "category": "Property|Cargo|Penalty", "type": "short claim type", "amount": number, "driver": "name if stated", "route": "route/customer if stated", "preventable": "Yes|No|Maybe", "risk": "Low|Medium|High", "date": "Today" }
+  ],
+  "confidence": "High|Medium|Low"
+}
+Include in "form" only the keys you could extract. Return an empty "claims" array if no damage/penalty is mentioned.`;
+
+export const parseDayLogWithOpenAI = ({ text }) =>
+  callOpenAIJson({
+    instructions: dayLogInstructions,
+    input: JSON.stringify({ note: text }),
+  });
+
 export const askBusinessWithOpenAI = ({ question, businessContext, history }) =>
   callOpenAIJson({
     instructions: askInstructions,

@@ -39,7 +39,7 @@ import ExpenseModal from "../components/dashboard/ExpenseModal";
 import ImportModal from "../components/dashboard/ImportModal";
 import SetupWizard from "../components/dashboard/SetupWizard";
 
-function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDark, appSettings, savedDaySnapshot, savedDays = [], isBlankDemo = false, isDemoMode = false, onSaveSnapshot, ownerName = "" }) {
+function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDark, appSettings, savedDaySnapshot, savedDays = [], isBlankDemo = false, isDemoMode = false, onSaveSnapshot, onApplyDayLog, ownerName = "" }) {
   const defaultDashboardOrder = defaultSettings.dashboardWidgetOrder || Object.keys(defaultSettings.dashboardWidgets);
   const dashboardWidgetOrder = [
     ...new Set([...(appSettings?.dashboardWidgetOrder || []), ...defaultDashboardOrder]),
@@ -532,6 +532,118 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marginBriefContext.period, marginBriefContext.hasData]);
 
+  // ---- AI Day Log (Pillar 3): natural-language note -> daily numbers + claims ----
+  const parseDayLogFallback = (text) => {
+    const note = text || "";
+    const form = {};
+    const grab = (regex) => {
+      const match = note.match(regex);
+      return match ? Number(match[1].replace(/,/g, "")) : undefined;
+    };
+    const stops = grab(/(\d+)\s*stops?\b/i);
+    if (stops !== undefined) form.stops = stops;
+    const miles = grab(/(\d[\d,]*)\s*mi(?:les)?\b/i);
+    if (miles !== undefined) form.miles = miles;
+    const hours = note.match(/(\d+(?:\.\d+)?)\s*(?:hrs?|hours)\b/i);
+    if (hours) form.routeHours = Number(hours[1]);
+    const fuel = note.match(/\$?(\d\.\d{2})\s*(?:\/?\s*gal|per gal|a gallon|gas|diesel|fuel)/i);
+    if (fuel) form.fuelPrice = Number(fuel[1]);
+    const driver = note.match(/driver(?:'s)?(?:\s*pay)?\s*\$?(\d[\d,]*)/i);
+    if (driver) form.driverPay = Number(driver[1].replace(/,/g, ""));
+    const helper = note.match(/helper(?:'s)?(?:\s*pay)?\s*\$?(\d[\d,]*)/i);
+    if (helper) form.helperPay = Number(helper[1].replace(/,/g, ""));
+    const tolls = note.match(/tolls?(?:\s*(?:and|&)?\s*parking)?\s*\$?(\d[\d,]*)/i);
+    if (tolls) form.tollsParking = Number(tolls[1].replace(/,/g, ""));
+    const pay = note.match(/(?:route\s*pay|paid|got paid|made|gross|pay(?:out)?|earned)\D{0,8}\$?(\d[\d,]{2,})/i);
+    if (pay) form.routePay = Number(pay[1].replace(/,/g, ""));
+    const claims = [];
+    if (/(damage|damaged|broke|broken|scratch|scratched|dent|dented|chargeback|charge-back|deduction|claim|missed delivery|late delivery)/i.test(note)) {
+      const amountMatch =
+        note.match(/(?:damage|chargeback|charge-back|deduction|claim|charged)\D{0,12}\$?(\d[\d,]+)/i) ||
+        note.match(/\$?(\d[\d,]+)\D{0,12}(?:damage|chargeback|deduction|claim)/i) ||
+        note.match(/(?:about|around|~|approx\.?|says?|worth|estimat\w*|roughly|maybe)\s*\$?(\d[\d,]+)/i) ||
+        note.match(/(?:scratch|dent|broke|broken|wall|floor|door)\D{0,24}\$?(\d[\d,]+)/i);
+      const amount = amountMatch ? Number(amountMatch[1].replace(/,/g, "")) : 0;
+      const category = /scratch|dent|wall|floor|door|property/i.test(note) ? "Property" : /missed|late|window|penalty/i.test(note) ? "Penalty" : "Cargo";
+      const type = /scratch/i.test(note) ? "Surface scratch" : /wall/i.test(note) ? "Wall damage" : /floor/i.test(note) ? "Floor damage" : /missed|late|window/i.test(note) ? "Missed delivery window" : "Reported damage";
+      claims.push({
+        category,
+        type,
+        amount,
+        preventable: /(not our fault|pre-existing|already damaged|wasn'?t us)/i.test(note) ? "No" : "Maybe",
+        risk: amount >= 500 ? "High" : amount >= 200 ? "Medium" : "Low",
+        date: "Today",
+      });
+    }
+    return { summary: "Parsed from your note (offline).", form, claims, confidence: Object.keys(form).length ? "Medium" : "Low", source: "Parsed (offline)" };
+  };
+
+  const emptyDayLog = { summary: "", form: {}, claims: [], confidence: "", source: "" };
+  const [showDayLog, setShowDayLog] = useState(false);
+  const [dayLogText, setDayLogText] = useState("");
+  const [dayLogStatus, setDayLogStatus] = useState("idle"); // idle | parsing | review
+  const [dayLogResult, setDayLogResult] = useState(emptyDayLog);
+
+  const openDayLog = () => {
+    setShowDayLog(true);
+    setDayLogText("");
+    setDayLogStatus("idle");
+    setDayLogResult(emptyDayLog);
+  };
+
+  const parseDayLog = async () => {
+    const text = dayLogText.trim();
+    if (!text) return;
+    setDayLogStatus("parsing");
+    const fallback = parseDayLogFallback(text);
+    let parsed;
+    try {
+      const response = await fetch("/api/parse-daylog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!response.ok) throw new Error("AI unavailable");
+      const result = await response.json().catch(() => ({}));
+      if (!result || (!result.form && !result.claims)) throw new Error("No parse returned");
+      parsed = {
+        summary: result.summary || "Captured from your note.",
+        form: result.form && typeof result.form === "object" ? result.form : {},
+        claims: Array.isArray(result.claims) ? result.claims : [],
+        confidence: ["High", "Medium", "Low"].includes(result.confidence) ? result.confidence : "Medium",
+        source: "AI parsed",
+      };
+    } catch {
+      parsed = fallback;
+    }
+    setDayLogResult(parsed);
+    setDayLogStatus("review");
+  };
+
+  const applyDayLogResult = () => {
+    onApplyDayLog?.({ formPatch: dayLogResult.form, claims: dayLogResult.claims });
+    setShowDayLog(false);
+  };
+
+  const dayLogFieldLabels = {
+    scenarioName: "Route name",
+    routePay: "Route pay",
+    stops: "Stops",
+    miles: "Miles",
+    fuelPrice: "Fuel $/gal",
+    routeHours: "Route hours",
+    driverPay: "Driver pay",
+    helperPay: "Helper pay",
+    tollsParking: "Tolls / parking",
+    perStopPay: "Per-stop pay",
+    installPay: "Install pay",
+    otherCosts: "Other costs",
+  };
+  const moneyFields = ["routePay", "driverPay", "helperPay", "tollsParking", "perStopPay", "installPay", "otherCosts"];
+  const formatDayLogValue = (key, value) =>
+    moneyFields.includes(key) ? currency.format(Number(value || 0)) : key === "fuelPrice" ? `$${Number(value || 0).toFixed(2)}` : String(value);
+  const dayLogFieldEntries = Object.entries(dayLogResult.form || {}).filter(([key]) => Object.prototype.hasOwnProperty.call(dayLogFieldLabels, key));
+
   const setupStepOrder = ["contract", "team", "expenses", "data", "preview"];
   const updateContractDraft = (key, value) => {
     setContractDraft((current) => ({ ...current, [key]: value }));
@@ -1012,6 +1124,13 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           </div>
 
           <button
+            onClick={openDayLog}
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 sm:w-auto"
+          >
+            <Sparkles className="h-4 w-4" /> AI Day Log
+          </button>
+
+          <button
             data-tour="dashboard-open-operations"
             onClick={() => setActiveTab("Operations")}
             className="w-full rounded-xl border border-blue-500/40 px-4 py-2 text-sm font-bold text-blue-600 hover:bg-blue-500/10 sm:w-auto"
@@ -1022,6 +1141,97 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
       </div>
 
 
+
+      {showDayLog && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" onClick={() => setShowDayLog(false)}>
+          <div onClick={(event) => event.stopPropagation()} className={isDark ? "max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-white/10 bg-slate-950 p-6 shadow-2xl" : "max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600/15 text-blue-600"><Sparkles className="h-5 w-5" /></span>
+                <div>
+                  <h2 className={`text-xl font-black ${titleText}`}>AI Day Log</h2>
+                  <p className={`text-xs font-semibold ${mutedText}`}>Type your day in plain English — I'll fill the numbers.</p>
+                </div>
+              </div>
+              <button onClick={() => setShowDayLog(false)} className={isDark ? "rounded-lg border border-white/10 px-2.5 py-1 text-sm text-slate-300 hover:bg-white/5" : "rounded-lg border border-slate-200 px-2.5 py-1 text-sm text-slate-600 hover:bg-slate-50"}>Close</button>
+            </div>
+
+            {dayLogStatus !== "review" && (
+              <div className="mt-4 space-y-3">
+                <textarea
+                  value={dayLogText}
+                  onChange={(event) => setDayLogText(event.target.value)}
+                  rows={6}
+                  placeholder="e.g. Lowe's route today, got paid $1,240 for 22 stops, ran 130 miles, diesel $3.95/gal, paid the driver $230 and helper $170, $30 in tolls. One wall scratch at the last stop, customer says about $300."
+                  className={isDark ? "w-full rounded-xl border border-white/10 bg-slate-950/70 p-3 text-sm leading-6 text-slate-100 outline-none transition focus:border-blue-500" : "w-full rounded-xl border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-800 outline-none transition focus:border-blue-500"}
+                />
+                <div className="flex justify-end">
+                  <button
+                    onClick={parseDayLog}
+                    disabled={!dayLogText.trim() || dayLogStatus === "parsing"}
+                    className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500 disabled:opacity-50"
+                  >
+                    {dayLogStatus === "parsing" ? "Reading…" : "Parse with AI"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {dayLogStatus === "review" && (
+              <div className="mt-4 space-y-4">
+                <p className={`text-sm ${mutedText}`}>{dayLogResult.summary}</p>
+
+                {dayLogFieldEntries.length > 0 ? (
+                  <div>
+                    <p className={`mb-2 text-[11px] font-black uppercase tracking-wide ${mutedText}`}>Today's numbers</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {dayLogFieldEntries.map(([key, value]) => (
+                        <div key={key} className={isDark ? "rounded-xl border border-white/10 bg-white/5 p-3" : "rounded-xl border border-slate-200 bg-slate-50 p-3"}>
+                          <p className={`text-[11px] font-semibold uppercase tracking-wide ${mutedText}`}>{dayLogFieldLabels[key]}</p>
+                          <p className={`mt-0.5 text-sm font-black ${titleText}`}>{formatDayLogValue(key, value)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className={`text-sm ${mutedText}`}>No route numbers detected — try including pay, stops, and miles.</p>
+                )}
+
+                {dayLogResult.claims?.length > 0 && (
+                  <div>
+                    <p className={`mb-2 text-[11px] font-black uppercase tracking-wide ${mutedText}`}>Claims to log ({dayLogResult.claims.length})</p>
+                    <div className="space-y-2">
+                      {dayLogResult.claims.map((claim, index) => (
+                        <div key={index} className={isDark ? "flex items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3" : "flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3"}>
+                          <div className="min-w-0">
+                            <p className={`truncate text-sm font-black ${titleText}`}>{claim.type}</p>
+                            <p className={`truncate text-xs ${mutedText}`}>{claim.category} · {claim.preventable} preventable · {claim.risk} risk</p>
+                          </div>
+                          <span className="shrink-0 text-sm font-black text-red-500">{currency.format(Number(claim.amount || 0))}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <span className={`text-[11px] font-semibold ${mutedText}`}>{dayLogResult.source} · confidence {dayLogResult.confidence}</span>
+                  <div className="flex gap-2">
+                    <button onClick={() => setDayLogStatus("idle")} className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-bold text-slate-300 hover:bg-white/5" : "rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"}>Back</button>
+                    <button
+                      onClick={applyDayLogResult}
+                      disabled={dayLogFieldEntries.length === 0 && (!dayLogResult.claims || dayLogResult.claims.length === 0)}
+                      className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500 disabled:opacity-50"
+                    >
+                      Apply to today
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* PRIMARY ROW — net profit with trend, and what needs attention today */}
       <div className="grid items-start gap-4 xl:grid-cols-[1.5fr_1fr]">
