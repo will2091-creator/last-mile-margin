@@ -108,7 +108,11 @@ Return only JSON with this shape:
   "action": null
 }
 
-Set "action" to {"type":"draftDisputes","label":"Draft all disputes"} ONLY when the most useful next step is to draft dispute letters for the owner's contestable claims (high-value, open, disputable). Otherwise leave "action" as null. Never invent other action types.
+The "action" field lets you DO something for the owner, not just answer. Set it to AT MOST ONE of these when it is clearly the most useful next step; otherwise leave it null. Never invent action types or fields beyond these:
+- {"type":"draftDisputes","label":"Draft all disputes"} — when the best next step is to draft dispute letters for the owner's contestable claims (high-value, open, disputable).
+- {"type":"openClaim","label":"Open the claim","claimId":"<id from openClaimsList>"} — when the owner should review one specific claim. Use a claimId from the supplied openClaimsList; omit claimId to open the most pressing one.
+- {"type":"logDay","label":"Log today"} — when the owner should capture today's route (e.g. data is missing or stale). This opens the AI Day Log.
+- {"type":"addReminder","label":"Add reminder","text":"<the follow-up, e.g. 'Follow up on the Lowe\\'s claim'>","due":"YYYY-MM-DD"} — when the owner asks to be reminded, or a clear follow-up should be tracked. Put the reminder content in "text"; "due" is optional.
 
 Break-even rules:
 - Break-even revenue equals totalCost.

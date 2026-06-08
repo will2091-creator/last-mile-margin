@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { currency, Sparkles, X } from "../shared";
+import { useToast } from "./Toast";
+import { addReminder } from "../lib/reminders";
 
 const SUGGESTIONS = {
   Dashboard: ["What should I focus on today?", "Why did my margin change?", "Which route is least profitable?"],
@@ -18,6 +20,7 @@ export default function AskCopilot({ isDark, activeTab, navigateToTab, teams = [
   const [status, setStatus] = useState("idle"); // idle | loading
   const [messages, setMessages] = useState([]);
   const scrollRef = useRef(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -37,6 +40,11 @@ export default function AskCopilot({ isDark, activeTab, navigateToTab, teams = [
       claimExposure: Math.round(exposure),
       highRiskClaims: openClaims.filter((claim) => claim.risk === "High").length,
       topClaim: topClaim ? { type: topClaim.type, amount: Number(topClaim.amount || 0), preventable: topClaim.preventable, route: topClaim.route } : null,
+      openClaimsList: openClaims
+        .slice()
+        .sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0))
+        .slice(0, 5)
+        .map((claim) => ({ id: claim.id, type: claim.type, amount: Number(claim.amount || 0), risk: claim.risk, route: claim.route })),
       teams: teams.map((team) => ({ name: team.name, status: team.status, complianceScore: Number(team.complianceScore || 0), photo: team.photoStatus })),
       atRiskTeams: teams.filter((team) => team.status === "At Risk").length,
       missingPhotos: teams.filter((team) => team.photoStatus !== "Uploaded").length,
@@ -80,9 +88,10 @@ export default function AskCopilot({ isDark, activeTab, navigateToTab, teams = [
     }
     return {
       title: "Add your numbers first",
-      summary: "I work best with live data. Add a contract, a team, and a saved snapshot, then ask me what's helping or hurting your margin.",
-      actions: ["Add a contract"],
+      summary: "I work best with live data. Log today's route in plain English and I'll fill in the numbers — then ask me what's helping or hurting your margin.",
+      actions: ["Log today's numbers"],
       tab: "Dashboard",
+      action: { type: "logDay", label: "Log today" },
       confidence: "Low",
       source: "offline",
     };
@@ -122,11 +131,43 @@ export default function AskCopilot({ isDark, activeTab, navigateToTab, teams = [
     setStatus("idle");
   };
 
+  // Pick the claim an "openClaim" action should land on: the AI's choice if valid,
+  // else the largest high-risk open claim, else the largest open claim.
+  const resolveTargetClaimId = (preferredId) => {
+    if (preferredId && claims.some((claim) => claim.id === preferredId)) return preferredId;
+    const open = claims.filter((claim) => claim.status !== "Closed");
+    const pool = open.filter((claim) => claim.risk === "High");
+    const ranked = (pool.length ? pool : open).slice().sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0));
+    return ranked[0]?.id || null;
+  };
+
   const runCopilotAction = (action) => {
     if (!action) return;
     if (action.type === "draftDisputes") {
       navigateToTab?.("Claims");
       window.setTimeout(() => window.dispatchEvent(new CustomEvent("fmm:draft-disputes")), 500);
+      setOpen(false);
+      return;
+    }
+    if (action.type === "openClaim") {
+      const claimId = resolveTargetClaimId(action.claimId);
+      navigateToTab?.("Claims");
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent("fmm:open-claim", { detail: { claimId } })), 500);
+      setOpen(false);
+      return;
+    }
+    if (action.type === "logDay") {
+      navigateToTab?.("Dashboard");
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent("fmm:open-daylog")), 500);
+      setOpen(false);
+      return;
+    }
+    if (action.type === "addReminder") {
+      const created = addReminder({ text: action.text || action.reminder || action.label, due: action.due });
+      if (created) {
+        toast({ title: "Reminder added", description: created.text, tone: "success" });
+        navigateToTab?.("Dashboard");
+      }
       setOpen(false);
       return;
     }

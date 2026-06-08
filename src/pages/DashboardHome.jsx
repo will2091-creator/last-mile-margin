@@ -32,6 +32,7 @@ import {
 import NextActionCard from "../components/NextActionCard";
 import WatchdogPanel from "../components/WatchdogPanel";
 import ForecastPanel from "../components/ForecastPanel";
+import RemindersCard from "../components/RemindersCard";
 import { InlineEmpty } from "../components/EmptyState";
 import { getNextBestSetupAction, getSetupStatus } from "../lib/onboarding";
 import { useCountUp } from "../hooks/useCountUp";
@@ -595,6 +596,13 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     setDayLogStatus("idle");
     setDayLogResult(emptyDayLog);
   };
+
+  // Let the Ask copilot open the Day Log from anywhere ("log my day").
+  useEffect(() => {
+    const handler = () => openDayLog();
+    window.addEventListener("fmm:open-daylog", handler);
+    return () => window.removeEventListener("fmm:open-daylog", handler);
+  }, []);
 
   const parseDayLog = async () => {
     const text = dayLogText.trim();
@@ -1399,6 +1407,8 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           appSettings={appSettings}
         />
       )}
+
+      <RemindersCard isDark={isDark} />
 
       {/* SECONDARY ROW — revenue, cost, margin, and team readiness */}
       <div data-tour="dashboard-kpis" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

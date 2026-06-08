@@ -828,6 +828,22 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claims]);
 
+  // Let the Ask copilot open one specific claim ("open my biggest claim").
+  useEffect(() => {
+    const handler = (event) => {
+      const wantedId = event?.detail?.claimId;
+      const open = claims.filter((claim) => claim.status !== "Closed");
+      const target =
+        (wantedId && claims.find((claim) => claim.id === wantedId)) ||
+        open.slice().sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0))[0] ||
+        claims[0];
+      if (target) openClaimReview(target);
+    };
+    window.addEventListener("fmm:open-claim", handler);
+    return () => window.removeEventListener("fmm:open-claim", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claims]);
+
   const copyDisputeLetter = async () => {
     try {
       await navigator.clipboard.writeText(disputeLetterBody);
