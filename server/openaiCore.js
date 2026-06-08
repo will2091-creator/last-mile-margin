@@ -205,12 +205,14 @@ Rules:
 - Tone: direct, confident, owner-to-owner. No fluff, no hedging.
 - "topMove" must be a concrete action the owner can take today (review a specific claim, look at a specific route's costs, log the day, etc.).
 
+Be terse — the owner scans this in 5 seconds. If only one prior saved day exists, say "vs yesterday", never "1-day average".
+
 Return only JSON with this shape:
 {
-  "headline": "one punchy line summarizing today's margin story (<= 90 chars)",
-  "summary": "2-3 sentences: what changed and why, with exact numbers and route names",
-  "topMove": "the single most valuable action to take right now",
-  "signals": ["2-4 short supporting data points, each <= 60 chars"],
+  "headline": "one punchy line, the margin story (<= 70 chars)",
+  "summary": "ONE short sentence (may be hidden in the UI)",
+  "topMove": "ONE concrete action, one sentence",
+  "signals": ["2-3 short data points, each <= 40 chars"],
   "sentiment": "positive|neutral|negative",
   "confidence": "High|Medium|Low"
 }`;
@@ -338,12 +340,14 @@ Write a short, proactive briefing:
 - If there are no anomalies, say plainly that things look healthy and what to keep doing.
 - Tone: direct, calm, owner-to-owner. No fluff.
 
+Be terse — the alert list below the headline already shows the details, so DON'T restate them. The headline carries the synthesis; the weekly digest is the only prose.
+
 Return only JSON with this shape:
 {
-  "headline": "one punchy line on the state of the business (<= 90 chars)",
-  "summary": "2-3 sentences synthesizing the most important alerts, with exact numbers/names",
-  "weeklyDigest": "3-4 sentence look back at the week + focus for the week ahead",
-  "topMove": "the single most important action to take first",
+  "headline": "one punchy line connecting the top alerts (<= 80 chars)",
+  "summary": "ONE short sentence (may be hidden in the UI)",
+  "weeklyDigest": "1-2 short sentences: the week's takeaway + the focus ahead. Do not repeat the alert list.",
+  "topMove": "the single most important action, one sentence",
   "sentiment": "positive|neutral|negative"
 }`;
 

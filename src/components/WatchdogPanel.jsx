@@ -145,10 +145,7 @@ export default function WatchdogPanel({ isDark, navigateToTab, savedDays = [], c
         <div className="mt-4 space-y-3">
           <div className="flex items-start gap-2">
             {anomalies.length === 0 ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" /> : <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />}
-            <div>
-              <p className={`text-lg font-black leading-snug ${title}`}>{brief.headline}</p>
-              <p className={`mt-1 text-sm leading-6 ${isDark ? "text-slate-300" : "text-slate-600"}`}>{brief.summary}</p>
-            </div>
+            <p className={`text-lg font-black leading-snug ${title}`}>{brief.headline}</p>
           </div>
 
           {anomalies.length > 0 && (

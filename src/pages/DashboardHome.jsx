@@ -436,8 +436,9 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     const money = (value) => currency.format(Math.round(Number(value || 0)));
     const dir = ctx.trend ? (ctx.trend.deltaProfit >= 0 ? "up" : "down") : null;
     const sentiment = ctx.trend ? (ctx.trend.deltaProfit >= 0 ? "positive" : "negative") : "neutral";
+    const trendLabel = ctx.trend ? (ctx.trend.daysCompared === 1 ? "vs yesterday" : `vs your ${ctx.trend.daysCompared}-day average`) : "";
     const headline = ctx.trend
-      ? `Net profit ${dir} ${money(Math.abs(ctx.trend.deltaProfit))} vs your ${ctx.trend.daysCompared}-day average`
+      ? `Net profit ${dir} ${money(Math.abs(ctx.trend.deltaProfit))} ${trendLabel}`
       : `${money(ctx.profit)} net profit at ${ctx.margin}% margin`;
     const parts = [`You're at ${money(ctx.profit)} net profit on ${money(ctx.revenue)} revenue (${ctx.margin}% margin) this ${ctx.period.toLowerCase()}.`];
     if (ctx.trend) parts.push(`That's ${dir} ${money(Math.abs(ctx.trend.deltaProfit))} versus your recent ${ctx.trend.daysCompared}-day average of ${money(ctx.trend.avgProfit)}.`);
@@ -1351,7 +1352,6 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           {marginBrief && (
             <div className="mt-4 space-y-3">
               <p className={`text-lg font-black leading-snug ${titleText}`}>{marginBrief.headline}</p>
-              <p className={`text-sm leading-6 ${isDark ? "text-slate-300" : "text-slate-600"}`}>{marginBrief.summary}</p>
 
               <div className={isDark ? "rounded-xl border border-blue-500/30 bg-blue-500/10 p-3.5" : "rounded-xl border border-blue-200 bg-white/70 p-3.5"}>
                 <p className="text-[11px] font-black uppercase tracking-wide text-blue-600">Your next move</p>
