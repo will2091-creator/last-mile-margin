@@ -94,12 +94,6 @@ const METRICS = [
 function BrowserFrame({ src, alt, children, className = "" }) {
   return (
     <div className={`overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/50 ${className}`}>
-      <div className="flex items-center gap-1.5 border-b border-white/10 bg-slate-950/80 px-4 py-2.5">
-        <span className="h-3 w-3 rounded-full bg-red-400/80" aria-hidden="true" />
-        <span className="h-3 w-3 rounded-full bg-amber-400/80" aria-hidden="true" />
-        <span className="h-3 w-3 rounded-full bg-emerald-400/80" aria-hidden="true" />
-        <span className="ml-3 hidden truncate rounded-md bg-white/5 px-3 py-1 text-xs font-semibold text-slate-400 sm:block">app.lastmilemargin.com</span>
-      </div>
       {src ? (
         <img src={src} alt={alt} className="block w-full" loading="lazy" />
       ) : (
