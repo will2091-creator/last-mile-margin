@@ -74,6 +74,10 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   const [disputePacketClaim, setDisputePacketClaim] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
   const [showClaimLog, setShowClaimLog] = useState(false);
+  const [disputeLetter, setDisputeLetter] = useState(null);
+  const [disputeLetterStatus, setDisputeLetterStatus] = useState("idle"); // idle | loading | ready
+  const [disputeLetterBody, setDisputeLetterBody] = useState("");
+  const [copyState, setCopyState] = useState("idle"); // idle | copied
   const claimActionPanelRef = useRef(null);
   const riskThresholds = {
     medium: Number(appSettings?.claimRiskThresholds?.medium ?? 200),
@@ -583,6 +587,108 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     if (isLikelyWorthDisputing(claim)) return "Send the packet to retailer claims review and request deduction reversal.";
     return "Keep this claim documented and monitor for repeat pattern by route, driver, or claim type.";
   };
+
+  const companyName = appSettings?.companyName || "our company";
+  const buildDisputeClaimContext = (claim) => ({
+    id: claim.id,
+    type: claim.type,
+    category: claim.category,
+    amount: Number(claim.amount || 0),
+    amountFormatted: currency.format(Number(claim.amount || 0)),
+    route: claim.route || "",
+    date: claim.date || "",
+    driver: getClaimDriver(claim),
+    team: getClaimTeam(claim),
+    status: claim.status,
+    preventable: claim.preventable || "Unknown",
+    risk: claim.risk || "",
+    evidencePresent: getEvidenceChecklist(claim).filter((item) => item.present).map((item) => item.label),
+    evidenceMissing: getMissingEvidence(claim),
+    recommendedAngle: getRecommendedDisputeAngle(claim),
+    senderCompany: companyName,
+    highValueThreshold: riskThresholds.high,
+  });
+
+  const buildFallbackDisputeLetter = (claim) => {
+    const ctx = buildDisputeClaimContext(claim);
+    const paragraphs = [
+      `Re: Dispute of claim ${ctx.id} — ${ctx.type} (${ctx.amountFormatted})`,
+      `To whom it may concern,`,
+      `We are writing to formally dispute the deduction of ${ctx.amountFormatted} associated with claim ${ctx.id}${ctx.route ? ` on the ${ctx.route} route` : ""}${ctx.date ? `, dated ${ctx.date}` : ""}.`,
+      ctx.preventable === "No"
+        ? `This incident was not preventable on our part. We ask that you provide documentation tying the reported damage directly to this delivery before any deduction is applied.`
+        : `We do not believe this claim has been sufficiently substantiated to justify the deduction at this time.`,
+      ctx.evidenceMissing.length
+        ? `The following supporting documentation has not been provided and is required to validate responsibility: ${ctx.evidenceMissing.join(", ")}.`
+        : `Our delivery records — including ${ctx.evidencePresent.slice(0, 3).join(", ") || "route and delivery details"} — support our position.`,
+      `We respectfully request that the deduction of ${ctx.amountFormatted} be reversed, or that you share the supporting evidence above so we can review it promptly.`,
+      `Thank you for your attention to this matter.`,
+      `Sincerely,\n${ctx.senderCompany}`,
+    ];
+    return {
+      subject: `Dispute of claim ${ctx.id} — ${ctx.type} (${ctx.amountFormatted})`,
+      recipient: "Retailer Claims Department",
+      letter: paragraphs.join("\n\n"),
+      strongestArgument: ctx.recommendedAngle,
+      evidenceCited: ctx.evidencePresent.slice(0, 5),
+      requestedItems: ctx.evidenceMissing.length
+        ? [`Provide: ${ctx.evidenceMissing.join(", ")}`, `Reverse the ${ctx.amountFormatted} deduction`]
+        : [`Reverse the ${ctx.amountFormatted} deduction`],
+      confidence: "Medium",
+      source: "Template (offline)",
+    };
+  };
+
+  const generateDisputeLetter = async (claim) => {
+    if (!claim) return;
+    setDisputeLetterStatus("loading");
+    setCopyState("idle");
+    const fallback = buildFallbackDisputeLetter(claim);
+    try {
+      const response = await fetch("/api/dispute-letter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ claim: buildDisputeClaimContext(claim) }),
+      });
+      if (!response.ok) throw new Error("AI unavailable");
+      const result = await response.json().catch(() => ({}));
+      if (!result || !result.letter) throw new Error("No letter returned");
+      const letter = {
+        subject: result.subject || fallback.subject,
+        recipient: result.recipient || fallback.recipient,
+        letter: result.letter,
+        strongestArgument: result.strongestArgument || fallback.strongestArgument,
+        evidenceCited: Array.isArray(result.evidenceCited) ? result.evidenceCited : fallback.evidenceCited,
+        requestedItems: Array.isArray(result.requestedItems) ? result.requestedItems : fallback.requestedItems,
+        confidence: ["High", "Medium", "Low"].includes(result.confidence) ? result.confidence : "Medium",
+        source: "AI generated",
+      };
+      setDisputeLetter(letter);
+      setDisputeLetterBody(letter.letter);
+    } catch {
+      setDisputeLetter(fallback);
+      setDisputeLetterBody(fallback.letter);
+    }
+    setDisputeLetterStatus("ready");
+  };
+
+  const copyDisputeLetter = async () => {
+    try {
+      await navigator.clipboard.writeText(disputeLetterBody);
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 2000);
+    } catch {
+      setCopyState("idle");
+    }
+  };
+
+  // Reset the letter whenever the dispute packet opens a different claim (or closes).
+  useEffect(() => {
+    setDisputeLetter(null);
+    setDisputeLetterBody("");
+    setDisputeLetterStatus("idle");
+    setCopyState("idle");
+  }, [disputePacketClaim?.id]);
 
   const preventablePercentage = filteredClaims.length
     ? Math.round((filteredClaims.filter((claim) => claim.preventable === "Yes").length / filteredClaims.length) * 100)
@@ -1752,7 +1858,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Generated Dispute Packet</p>
                 <h2 className={`mt-1 text-2xl font-black ${titleText}`}>{disputePacketClaim.id} · {disputePacketClaim.type}</h2>
-                <p className={`mt-2 text-sm ${mutedText}`}>Mock packet summary for claims review. This does not create a real PDF yet.</p>
+                <p className={`mt-2 text-sm ${mutedText}`}>Review the evidence, then generate a ready-to-send dispute letter to contest this deduction.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {/* TODO: connect PDF export here once server-side document generation is available. */}
@@ -1843,6 +1949,88 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                     <p className={isDark ? "mt-3 text-sm font-black leading-6 text-blue-100" : "mt-3 text-sm font-black leading-6 text-blue-800"}>{getDisputeNextAction(disputePacketClaim)}</p>
                   </div>
                 </div>
+              </div>
+
+              <div className={isDark ? "mt-5 rounded-2xl border border-blue-500/30 bg-blue-500/5 p-5" : "mt-5 rounded-2xl border border-blue-200 bg-blue-50/60 p-5"}>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className={`text-lg font-bold ${titleText}`}>AI Dispute Letter</h3>
+                      <span className="rounded-full bg-blue-600/15 px-2 py-0.5 text-[11px] font-black uppercase tracking-wide text-blue-600">AI</span>
+                    </div>
+                    <p className={`mt-1 text-sm ${mutedText}`}>A ready-to-send letter contesting this deduction, built from the claim facts and evidence above.</p>
+                  </div>
+                  {disputeLetterStatus !== "loading" && (
+                    <button
+                      type="button"
+                      onClick={() => generateDisputeLetter(disputePacketClaim)}
+                      className="shrink-0 rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500"
+                    >
+                      {disputeLetter ? "Regenerate" : "Generate dispute letter"}
+                    </button>
+                  )}
+                </div>
+
+                {disputeLetterStatus === "idle" && (
+                  <p className={`mt-4 text-sm ${mutedText}`}>Click generate to draft a letter you can copy straight into your retailer claims portal or email.</p>
+                )}
+
+                {disputeLetterStatus === "loading" && (
+                  <div className="mt-4 space-y-2">
+                    <div className="skeleton h-4 w-3/4 rounded"></div>
+                    <div className="skeleton h-4 w-full rounded"></div>
+                    <div className="skeleton h-4 w-11/12 rounded"></div>
+                    <div className="skeleton h-4 w-2/3 rounded"></div>
+                    <p className={`pt-1 text-xs ${mutedText}`}>Drafting your dispute letter…</p>
+                  </div>
+                )}
+
+                {disputeLetterStatus === "ready" && disputeLetter && (
+                  <div className="mt-4 space-y-4">
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-wide">
+                      <span className={disputeLetter.confidence === "High" ? "rounded-full bg-emerald-500/15 px-2.5 py-1 text-emerald-600" : disputeLetter.confidence === "Low" ? "rounded-full bg-red-500/15 px-2.5 py-1 text-red-600" : "rounded-full bg-amber-500/15 px-2.5 py-1 text-amber-600"}>
+                        Confidence: {disputeLetter.confidence}
+                      </span>
+                      <span className={isDark ? "rounded-full bg-white/10 px-2.5 py-1 text-slate-300" : "rounded-full bg-slate-100 px-2.5 py-1 text-slate-600"}>{disputeLetter.source}</span>
+                    </div>
+
+                    <div>
+                      <p className={`text-[11px] font-semibold uppercase tracking-wide ${mutedText}`}>Subject</p>
+                      <p className={`mt-1 text-sm font-bold ${titleText}`}>{disputeLetter.subject}</p>
+                    </div>
+
+                    <div>
+                      <p className={`mb-1 text-[11px] font-semibold uppercase tracking-wide ${mutedText}`}>Letter (editable)</p>
+                      <textarea
+                        value={disputeLetterBody}
+                        onChange={(event) => setDisputeLetterBody(event.target.value)}
+                        rows={14}
+                        className={isDark ? "w-full rounded-xl border border-white/10 bg-slate-950/70 p-4 text-sm leading-6 text-slate-100 outline-none transition focus:border-blue-500" : "w-full rounded-xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-800 outline-none transition focus:border-blue-500"}
+                      />
+                    </div>
+
+                    {disputeLetter.strongestArgument && (
+                      <p className={`text-xs ${mutedText}`}><span className="font-bold">Angle:</span> {disputeLetter.strongestArgument}</p>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={copyDisputeLetter}
+                        className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500"
+                      >
+                        {copyState === "copied" ? "Copied!" : "Copy letter"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => generateDisputeLetter(disputePacketClaim)}
+                        className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/5" : "rounded-xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
+                      >
+                        Regenerate
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -130,6 +130,35 @@ Return only JSON with this shape:
 }
 Create multiple drafts only when the source truly contains multiple business objects. Contract language about claims packets is not itself a claim. Route sheets with delivery windows are not claims unless damage/chargeback/deduction is present.`;
 
+export const disputeLetterInstructions = `You are the Dispute Engine inside Final Mile Margin, a final-mile delivery margin app. You write professional chargeback/claim dispute letters that a delivery contractor sends to a retailer's (or 3PL's) claims department to contest a deduction.
+
+You will receive one claim with its details, an evidence checklist (what proof exists vs is missing), and a recommended dispute angle. Write a letter that maximizes the contractor's chance of getting the deduction reversed.
+
+Hard rules:
+- Use ONLY the supplied facts. Never invent dates, amounts, names, photos, signatures, or evidence that was not provided. If a useful piece of evidence is missing, do not claim it exists — instead request that the retailer provide their proof, or note the contractor will supply it.
+- Professional, firm, courteous business tone. Concise — a claims adjuster should be able to read it in under a minute.
+- Be specific: cite the claim id, amount, route/customer, delivery date, driver/team, and claim type where supplied.
+- Make the strongest legitimate argument based on preventability and the evidence gaps. If preventable is "No", press that the contractor is not responsible and the retailer must prove the damage occurred during this delivery. If evidence is missing on the retailer's side, argue the claim is not yet substantiated and the deduction is premature.
+- Always make a clear ask: reverse/refund the deduction (state the dollar amount) and a path to provide or exchange evidence.
+- Do not promise outcomes, admit fault, or offer settlement amounts.
+
+Return only JSON with this shape:
+{
+  "subject": "email subject line referencing the claim id and amount",
+  "recipient": "who this is addressed to, e.g. 'Retailer Claims Department'",
+  "letter": "the full letter body as ready-to-send plain text, including greeting and sign-off. Use the company name from context as the sender. Use line breaks (\\n) between paragraphs.",
+  "strongestArgument": "one sentence naming the core argument used",
+  "evidenceCited": ["2-5 specific facts/evidence the letter leans on"],
+  "requestedItems": ["1-4 things the letter asks the retailer to provide or do"],
+  "confidence": "High|Medium|Low"
+}`;
+
+export const generateDisputeLetterWithOpenAI = ({ claim }) =>
+  callOpenAIJson({
+    instructions: disputeLetterInstructions,
+    input: JSON.stringify({ claim }),
+  });
+
 export const askBusinessWithOpenAI = ({ question, businessContext, history }) =>
   callOpenAIJson({
     instructions: askInstructions,
