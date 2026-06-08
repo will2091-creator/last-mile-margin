@@ -3,7 +3,7 @@
 // actionable items. Pure + dependency-free (besides the shared claims predicate) so it runs
 // identically client-side and in tests. It does NOT recompute signals — callers pass the
 // already-computed inputs (getSetupStatus / detectAnomalies / loadReminders / computeForecast).
-import { isLikelyWorthDisputing } from "./claims.js";
+import { isLikelyWorthDisputing, draftDisputesPhrase } from "./claims.js";
 
 const SEVERITY_WEIGHT = { high: 300, medium: 150, low: 60 };
 const SOURCE_TIE = { claim: 6, anomaly: 4, reminder: 3, setup: 2, forecast: 1 };
@@ -79,11 +79,11 @@ export function buildActionFeed({
         id: "claim:draft-all",
         source: "claim",
         severity: "high",
-        title: `Draft all ${contestable.length} disputes`,
+        title: `Draft ${draftDisputesPhrase(contestable.length)}`,
         detail: `${money(exposure)} in contestable exposure across ${contestable.length} claims.`,
         tab: "Claims",
         impact: exposure,
-        action: { type: "draftDisputes", label: `Draft ${contestable.length} disputes` },
+        action: { type: "draftDisputes", label: `Draft ${contestable.length === 2 ? "both" : `all ${contestable.length}`}` },
         icon: "Sparkles",
       });
     }

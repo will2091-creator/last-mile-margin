@@ -5,6 +5,10 @@
 
 const HIGH_DEFAULT = 500;
 
+// Grammatical quantity for the "Draft …" dispute CTA:
+// 1 → "the dispute", 2 → "both disputes", 3+ → "all N disputes".
+export const draftDisputesPhrase = (n) => (Number(n) === 1 ? "the dispute" : Number(n) === 2 ? "both disputes" : `all ${n} disputes`);
+
 export function getEvidenceChecklist(claim, { resolveTeam, riskThresholds } = {}) {
   const high = Number(riskThresholds?.high ?? HIGH_DEFAULT);
   const team = resolveTeam ? resolveTeam(claim) : null;

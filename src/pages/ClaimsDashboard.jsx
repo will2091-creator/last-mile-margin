@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getEvidenceChecklist as sharedEvidenceChecklist, getMissingEvidence as sharedMissingEvidence, isLikelyWorthDisputing as sharedIsLikelyWorthDisputing } from "../lib/claims";
+import { getEvidenceChecklist as sharedEvidenceChecklist, getMissingEvidence as sharedMissingEvidence, isLikelyWorthDisputing as sharedIsLikelyWorthDisputing, draftDisputesPhrase } from "../lib/claims";
 import {
   AlertTriangle,
   BarChart3,
@@ -1058,7 +1058,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
               onClick={generateAllDisputes}
               className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
             >
-              <Sparkles className="h-4 w-4" /> Draft all disputes ({contestableClaims.length})
+              <Sparkles className="h-4 w-4" /> Draft {draftDisputesPhrase(contestableClaims.length)}
             </button>
           )}
           <input ref={damagePhotoInputRef} type="file" accept="image/*" capture="environment" onChange={handleDamagePhoto} className="hidden" />
