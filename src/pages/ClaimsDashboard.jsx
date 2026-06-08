@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   BarChart3,
+  Camera,
   claimTypeOptions,
   currency,
   DollarSign,
@@ -9,6 +10,7 @@ import {
   Truck,
 } from "../shared";
 import EmptyState, { InlineEmpty } from "../components/EmptyState";
+import { fileToCompressedImage } from "../lib/imagePrep";
 
 function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backendStatus, navigateToTab }) {
   const unassignedDriverLabel = "Unassigned";
@@ -78,6 +80,9 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   const [disputeLetterStatus, setDisputeLetterStatus] = useState("idle"); // idle | loading | ready
   const [disputeLetterBody, setDisputeLetterBody] = useState("");
   const [copyState, setCopyState] = useState("idle"); // idle | copied
+  const [visionStatus, setVisionStatus] = useState("idle"); // idle | reading
+  const [visionNote, setVisionNote] = useState("");
+  const damagePhotoInputRef = useRef(null);
   const claimActionPanelRef = useRef(null);
   const riskThresholds = {
     medium: Number(appSettings?.claimRiskThresholds?.medium ?? 200),
@@ -405,6 +410,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
 
   const openAddForm = () => {
     setEditingId(null);
+    setVisionNote("");
     setShowImport(false);
     setActiveReviewId(null);
     setReviewClaim(null);
@@ -418,6 +424,70 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     });
     setShowForm(true);
     scrollToClaimActionPanel();
+  };
+
+  // Snap the vision model's free-text damage type to the closest allowed claim type.
+  const snapClaimType = (category, visionType) => {
+    const options = claimTypeOptions[category] || [];
+    if (!options.length) return visionType || "";
+    const value = (visionType || "").toLowerCase();
+    const exact = options.find((option) => option.toLowerCase() === value);
+    if (exact) return exact;
+    const valueWords = new Set(value.split(/\W+/).filter(Boolean));
+    let best = options[0];
+    let bestScore = 0;
+    options.forEach((option) => {
+      const score = option.toLowerCase().split(/\W+/).filter((word) => valueWords.has(word)).length;
+      if (score > bestScore) {
+        bestScore = score;
+        best = option;
+      }
+    });
+    return best;
+  };
+
+  const handleDamagePhoto = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    setVisionStatus("reading");
+    try {
+      const { base64, contentType } = await fileToCompressedImage(file);
+      const response = await fetch("/api/vision-claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64, contentType }),
+      });
+      if (!response.ok) throw new Error("Vision unavailable");
+      const result = await response.json().catch(() => ({}));
+      if (!result || !result.type) throw new Error("No result");
+      const category = ["Property", "Cargo", "Penalty"].includes(result.category) ? result.category : "Property";
+      setEditingId(null);
+      setShowImport(false);
+      setReviewClaim(null);
+      setActiveReviewId(null);
+      setClaimForm({
+        ...blankClaim,
+        id: getNextClaimId(),
+        category,
+        type: snapClaimType(category, result.type),
+        driver: driverOptions[0]?.name || unassignedDriverLabel,
+        team: driverOptions[0]?.team || "Unassigned",
+        route: driverOptions[0]?.route || "",
+        amount: result.amount ? String(result.amount) : "",
+        preventable: ["Yes", "No", "Maybe"].includes(result.preventable) ? result.preventable : "Maybe",
+        risk: ["Low", "Medium", "High"].includes(result.risk) ? result.risk : "Medium",
+        date: "Today",
+      });
+      setShowForm(true);
+      setVisionNote(result.description ? `Scanned: ${result.description}${result.amount ? "" : " (no amount visible — enter it manually)"}` : "Scanned from photo — review and save.");
+      scrollToClaimActionPanel();
+    } catch {
+      openAddForm();
+      setVisionNote("Couldn't read that photo automatically — enter the claim manually.");
+    } finally {
+      setVisionStatus("idle");
+    }
   };
 
   const openEditForm = (claim) => {
@@ -890,6 +960,14 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
         </div>
 
         <div className="flex flex-wrap gap-3">
+          <input ref={damagePhotoInputRef} type="file" accept="image/*" capture="environment" onChange={handleDamagePhoto} className="hidden" />
+          <button
+            onClick={() => damagePhotoInputRef.current?.click()}
+            disabled={visionStatus === "reading"}
+            className={isDark ? "flex items-center gap-1.5 rounded-xl border border-blue-500/40 bg-blue-500/10 px-4 py-2 text-sm font-bold text-blue-200 hover:bg-blue-500/15 disabled:opacity-60" : "flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 shadow-sm hover:bg-blue-100 disabled:opacity-60"}
+          >
+            <Camera className="h-4 w-4" /> {visionStatus === "reading" ? "Reading photo…" : "Scan damage photo"}
+          </button>
           <button
             onClick={() => {
               setShowImport(true);
@@ -1558,6 +1636,11 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
             <div>
               <h2 className={`text-lg font-bold ${titleText}`}>{editingId ? "Edit Claim" : "Add Claim"}</h2>
               <p className={`text-sm ${mutedText}`}>Assign claims to drivers so exposure follows the person responsible.</p>
+              {visionNote && (
+                <div className={isDark ? "mt-2 flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs font-semibold text-blue-200" : "mt-2 flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700"}>
+                  <Camera className="h-3.5 w-3.5 shrink-0" /> {visionNote}
+                </div>
+              )}
             </div>
             <button onClick={() => setShowForm(false)} className={isDark ? "rounded-lg bg-white/10 px-3 py-1 text-xs font-bold hover:bg-white/15" : "rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50"}>
               Cancel

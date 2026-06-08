@@ -216,6 +216,65 @@ export const parseDayLogWithOpenAI = ({ text }) =>
     input: JSON.stringify({ note: text }),
   });
 
+export const damagePhotoInstructions = `You are the Vision Claim Assessor inside Final Mile Margin, a final-mile delivery margin app. A delivery contractor photographs damage — to a delivered product (appliance, furniture), to a customer's property (wall, floor, door, railing), or to cargo. Assess what you can SEE and draft a claim.
+
+Rules:
+- Describe only what is visibly present. Do NOT invent a dollar amount. If the cost is not visually determinable, set amount to 0 and say so in notes.
+- Category: "Property" for damage to the customer's home/building; "Cargo" for damage to the product/goods being delivered; "Penalty" does not apply to physical damage.
+- Severity reflects the visible extent of damage. Risk reflects likely dispute cost (High if severe/large item).
+- preventable: "No" if it plausibly pre-existed or isn't the contractor's fault; "Yes" if clearly a handling error; otherwise "Maybe".
+
+Return only JSON with this shape:
+{
+  "category": "Property|Cargo|Penalty",
+  "type": "short damage type, e.g. Wall scratch, Dented refrigerator",
+  "severity": "Low|Medium|High",
+  "amount": number,
+  "preventable": "Yes|No|Maybe",
+  "risk": "Low|Medium|High",
+  "description": "one sentence on what is visible",
+  "notes": "evidence details; note if amount is an estimate or unknown",
+  "confidence": 0-100
+}`;
+
+export const complianceDocInstructions = `You read business compliance documents for a final-mile delivery contractor: insurance certificates (COI), DOT inspections, business licenses, vehicle registrations, driver's licenses, DOT medical cards. Extract the document's identity and key dates from the image.
+
+Rules:
+- Use only text printed on the document. Dates must be YYYY-MM-DD. If a field is not visible, return an empty string for it.
+- Pick the closest "type" from the allowed list.
+
+Return only JSON with this shape:
+{
+  "type": "Auto Liability Insurance|Cargo Insurance|General Liability Insurance|Workers' Comp Insurance|DOT Inspection|Business License|Vehicle Registration|Driver's License|DOT Medical Card|Other",
+  "label": "short human label, e.g. Auto Liability — Progressive",
+  "issuer": "insurer or issuing agency",
+  "issueDate": "YYYY-MM-DD or empty",
+  "expiry": "YYYY-MM-DD or empty",
+  "confidence": 0-100
+}`;
+
+const visionInput = (text, imageBase64, contentType) => [
+  {
+    role: "user",
+    content: [
+      { type: "input_text", text },
+      { type: "input_image", image_url: `data:${contentType || "image/jpeg"};base64,${imageBase64}` },
+    ],
+  },
+];
+
+export const analyzeDamagePhotoWithOpenAI = ({ imageBase64, contentType, note }) =>
+  callOpenAIJson({
+    instructions: damagePhotoInstructions,
+    input: visionInput(note ? `Assess this delivery damage and draft a claim. Context from the contractor: ${note}` : "Assess this delivery damage and draft a claim.", imageBase64, contentType),
+  });
+
+export const analyzeComplianceDocWithOpenAI = ({ imageBase64, contentType }) =>
+  callOpenAIJson({
+    instructions: complianceDocInstructions,
+    input: visionInput("Extract the document type, issuer, and dates from this compliance document.", imageBase64, contentType),
+  });
+
 export const askBusinessWithOpenAI = ({ question, businessContext, history }) =>
   callOpenAIJson({
     instructions: askInstructions,

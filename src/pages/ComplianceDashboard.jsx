@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Area,
@@ -53,6 +53,7 @@ import {
   YAxis,
 } from "../shared";
 import EmptyState, { InlineEmpty } from "../components/EmptyState";
+import { fileToCompressedImage } from "../lib/imagePrep";
 
 const DOC_TYPES = [
   "Auto Liability Insurance",
@@ -118,6 +119,8 @@ function ComplianceDashboard({ teams, claims, isDark, navigateToTab }) {
   const [showDocForm, setShowDocForm] = useState(false);
   const [editingDocId, setEditingDocId] = useState(null);
   const [docForm, setDocForm] = useState(EMPTY_DOC);
+  const [docScanStatus, setDocScanStatus] = useState("idle"); // idle | reading
+  const docPhotoInputRef = useRef(null);
 
   const openDocForm = (doc) => {
     if (doc) {
@@ -145,6 +148,36 @@ function ComplianceDashboard({ teams, claims, isDark, navigateToTab }) {
     closeDocForm();
   };
   const removeDoc = (id) => setDocs(docs.filter((doc) => doc.id !== id));
+
+  const handleDocPhoto = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    setDocScanStatus("reading");
+    try {
+      const { base64, contentType } = await fileToCompressedImage(file);
+      const response = await fetch("/api/vision-doc", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64, contentType }),
+      });
+      if (!response.ok) throw new Error("Vision unavailable");
+      const result = await response.json().catch(() => ({}));
+      if (!result || (!result.type && !result.expiry)) throw new Error("No result");
+      setDocForm((current) => ({
+        ...current,
+        type: DOC_TYPES.includes(result.type) ? result.type : current.type,
+        label: result.label || current.label,
+        issuer: result.issuer || current.issuer,
+        issueDate: result.issueDate || current.issueDate,
+        expiry: result.expiry || current.expiry,
+      }));
+    } catch {
+      /* leave the form for manual entry on failure */
+    } finally {
+      setDocScanStatus("idle");
+    }
+  };
 
   // Sort: most urgent first (expired, then soonest expiry, then no-expiry).
   const sortedDocs = [...docs].sort((a, b) => {
@@ -408,6 +441,16 @@ function ComplianceDashboard({ teams, claims, isDark, navigateToTab }) {
               </div>
               <button onClick={closeDocForm} className="rounded-lg border border-white/10 px-2.5 py-1 text-sm text-slate-400 hover:bg-white/5">Close</button>
             </div>
+
+            <input ref={docPhotoInputRef} type="file" accept="image/*" capture="environment" onChange={handleDocPhoto} className="hidden" />
+            <button
+              type="button"
+              onClick={() => docPhotoInputRef.current?.click()}
+              disabled={docScanStatus === "reading"}
+              className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-blue-400/40 bg-blue-500/5 px-4 py-3 text-sm font-bold text-blue-600 hover:bg-blue-500/10 disabled:opacity-60"
+            >
+              <Camera className="h-4 w-4" /> {docScanStatus === "reading" ? "Reading document…" : "Scan document with AI"}
+            </button>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">

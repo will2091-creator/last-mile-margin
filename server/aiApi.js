@@ -1,11 +1,11 @@
-import { analyzeIntakeWithOpenAI, askBusinessWithOpenAI, generateDisputeLetterWithOpenAI, generateMarginBriefWithOpenAI, parseDayLogWithOpenAI } from "./openaiCore.js";
+import { analyzeComplianceDocWithOpenAI, analyzeDamagePhotoWithOpenAI, analyzeIntakeWithOpenAI, askBusinessWithOpenAI, generateDisputeLetterWithOpenAI, generateMarginBriefWithOpenAI, parseDayLogWithOpenAI } from "./openaiCore.js";
 
 const readJsonBody = (req) =>
   new Promise((resolve, reject) => {
     let body = "";
     req.on("data", (chunk) => {
       body += chunk;
-      if (body.length > 1_000_000) {
+      if (body.length > 12_000_000) {
         reject(new Error("Request body is too large."));
       }
     });
@@ -58,6 +58,18 @@ export async function handleAiApi(req, res, next) {
 
     if (req.url.startsWith("/api/parse-daylog")) {
       const result = await parseDayLogWithOpenAI({ text: body.text });
+      sendJson(res, result.ok ? 200 : result.status, result.payload);
+      return;
+    }
+
+    if (req.url.startsWith("/api/vision-claim")) {
+      const result = await analyzeDamagePhotoWithOpenAI({ imageBase64: body.imageBase64, contentType: body.contentType, note: body.note });
+      sendJson(res, result.ok ? 200 : result.status, result.payload);
+      return;
+    }
+
+    if (req.url.startsWith("/api/vision-doc")) {
+      const result = await analyzeComplianceDocWithOpenAI({ imageBase64: body.imageBase64, contentType: body.contentType });
       sendJson(res, result.ok ? 200 : result.status, result.payload);
       return;
     }
