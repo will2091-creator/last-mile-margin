@@ -2,6 +2,7 @@ import { useState } from "react";
 import loginRoadLakeTruck from "../assets/login-road-lake-truck-branded.jpg";
 import lastMileMarginLogo from "../assets/last-mile-margin-logo-transparent.svg";
 import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-transparent-dark.svg";
+import FeatureShowcase from "./FeatureShowcase";
 import {
   ArrowRight,
   Eye,
@@ -10,6 +11,7 @@ import {
   Mail,
   Moon,
   ShieldCheck,
+  Sparkles,
   Sun,
 } from "lucide-react";
 
@@ -20,6 +22,7 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
     remember: false,
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showFeatures, setShowFeatures] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -56,6 +59,10 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
     }));
   };
 
+  if (showFeatures) {
+    return <FeatureShowcase isDark={isDark} onClose={() => setShowFeatures(false)} />;
+  }
+
   return (
     <div
       className="relative min-h-screen overflow-hidden bg-slate-950 bg-cover bg-center text-white"
@@ -88,6 +95,13 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
             <p className={isDark ? "mt-2 text-sm font-semibold text-slate-400" : "mt-2 text-sm font-semibold text-slate-600"}>
               Sign in to manage profit, claims, contracts, and daily history.
             </p>
+            <button
+              type="button"
+              onClick={() => setShowFeatures(true)}
+              className="mx-auto mt-4 flex items-center gap-1.5 rounded-full border border-blue-500/40 bg-blue-500/10 px-4 py-2 text-xs font-black uppercase tracking-wide text-blue-600 transition hover:bg-blue-500/20"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> See what's inside
+            </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
