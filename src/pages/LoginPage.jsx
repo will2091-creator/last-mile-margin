@@ -77,12 +77,45 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
             : "absolute right-5 top-5 rounded-xl border border-white/50 bg-white/80 p-2.5 text-slate-700 shadow-sm backdrop-blur hover:bg-white"
         }
         title="Toggle theme"
+        aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
       >
         {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
       </button>
 
-      <main className="relative z-10 mx-auto flex min-h-screen max-w-lg items-center px-5 py-10 lg:px-8">
-        <section className={`w-full rounded-2xl border p-6 ${panelClass}`}>
+      <main className="relative z-10 mx-auto flex min-h-screen max-w-lg items-center px-5 py-10 lg:max-w-5xl lg:px-8">
+        <div className="grid w-full items-center gap-10 lg:grid-cols-2">
+          {/* Desktop product teaser — sign-in stays the clear focus; hidden on mobile so the page never feels cluttered */}
+          <div className="hidden lg:block">
+            <p className="text-xs font-black uppercase tracking-wide text-blue-300">Inside</p>
+            <h2 className="mt-3 text-3xl font-black leading-tight text-white">
+              Profit, claims, contracts, routes, and reports — in one place.
+            </h2>
+            <p className="mt-3 max-w-md text-sm font-semibold text-slate-200">
+              Know where the money went, catch profit leaks, and decide before the route — not after.
+            </p>
+            <div className="mt-6 grid grid-cols-3 gap-3">
+              {[
+                ["Today's Profit", "$356.03", "text-emerald-400"],
+                ["Claims Exposure", "$2,600", "text-red-400"],
+                ["Demo Margin", "26.5%", "text-emerald-400"],
+              ].map(([label, value, tone]) => (
+                <div key={label} className="rounded-xl border border-white/10 bg-white/10 p-3 backdrop-blur">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-300">{label}</p>
+                  <p className={`mt-1 text-lg font-black ${tone}`}>{value}</p>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowFeatures(true)}
+              className="mt-6 inline-flex items-center gap-1.5 rounded-xl border border-blue-400/40 bg-blue-500/15 px-4 py-2.5 text-sm font-black text-white backdrop-blur transition hover:bg-blue-500/25"
+            >
+              <Sparkles className="h-4 w-4" /> See what's inside
+            </button>
+            <p className="mt-3 text-[11px] font-semibold text-slate-400">Example demo numbers, not a guarantee.</p>
+          </div>
+
+          <section className={`w-full rounded-2xl border p-6 ${panelClass}`}>
           <div className="mb-7 text-center">
             <img
               src={isDark ? lastMileMarginLogoDark : lastMileMarginLogo}
@@ -106,10 +139,11 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className={isDark ? "mb-2 block text-sm font-black text-white" : "mb-2 block text-sm font-black text-slate-950"}>Username or Email</label>
+              <label htmlFor="login-identifier" className={isDark ? "mb-2 block text-sm font-black text-white" : "mb-2 block text-sm font-black text-slate-950"}>Username or Email</label>
               <div className="relative">
                 <Mail className={isDark ? "absolute left-4 top-3.5 h-5 w-5 text-slate-400" : "absolute left-4 top-3.5 h-5 w-5 text-slate-500"} />
                 <input
+                  id="login-identifier"
                   value={loginForm.identifier}
                   onChange={(event) => setLoginForm((current) => ({ ...current, identifier: event.target.value }))}
                   className={inputClass}
@@ -121,10 +155,11 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
             </div>
 
             <div>
-              <label className={isDark ? "mb-2 block text-sm font-black text-white" : "mb-2 block text-sm font-black text-slate-950"}>Password</label>
+              <label htmlFor="login-password" className={isDark ? "mb-2 block text-sm font-black text-white" : "mb-2 block text-sm font-black text-slate-950"}>Password</label>
               <div className="relative">
                 <Lock className={isDark ? "absolute left-4 top-3.5 h-5 w-5 text-slate-400" : "absolute left-4 top-3.5 h-5 w-5 text-slate-500"} />
                 <input
+                  id="login-password"
                   value={loginForm.password}
                   onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
                   className={`${inputClass} pr-12`}
@@ -135,6 +170,8 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
                 <button
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
                   className={isDark ? "absolute right-4 top-3.5 text-slate-400" : "absolute right-4 top-3.5 text-slate-500"}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -162,7 +199,14 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
             </div>
 
             {loginError && (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-600">
+              <div
+                role="alert"
+                className={
+                  isDark
+                    ? "rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm font-bold text-red-300"
+                    : "rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-600"
+                }
+              >
                 {loginError}
               </div>
             )}
@@ -197,6 +241,7 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
             </a>
           </p>
         </section>
+        </div>
       </main>
 
       </div>
