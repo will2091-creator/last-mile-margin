@@ -54,14 +54,6 @@ export const setupSteps = [
     tab: "Intake",
     actionLabel: "Open Intake",
   },
-  {
-    id: "snapshot",
-    label: "Snapshot",
-    title: "Save first snapshot",
-    outcome: "Creates report history for weekly and monthly review.",
-    tab: "Dashboard",
-    actionLabel: "Save Snapshot",
-  },
 ];
 
 const safeArray = (value) => (Array.isArray(value) ? value : []);
@@ -274,8 +266,8 @@ export function getNextBestSetupAction(status) {
       actionLabel: "Open Receipts",
     },
     reports: {
-      title: "Save a snapshot",
-      detail: "Snapshots create the history Reports needs for trend and PDF exports.",
+      title: "Daily history is building",
+      detail: "Your days are captured automatically — Reports fill in once you've worked a day or two.",
       tab: "Reports",
       actionLabel: "Open Reports",
     },
@@ -284,12 +276,6 @@ export function getNextBestSetupAction(status) {
       detail: "Ask gets sharper once it can see contracts, teams, claims, and receipts.",
       tab: "Ask",
       actionLabel: "Open Ask",
-    },
-    snapshot: {
-      title: "Save your first snapshot",
-      detail: "Save today once contract, team, and cost basics are in place so Reports can build history.",
-      tab: "Dashboard",
-      actionLabel: "Save Snapshot",
     },
   };
 
@@ -387,11 +373,10 @@ export function getPageEmptyStateConfig(pageName, status) {
     },
     reports: {
       eyebrow: "Reports readiness",
-      title: "Save your first day to generate a report",
-      description: "Reports are built from saved daily snapshots. Add a contract, run a route profit check, and save a snapshot — then daily, weekly, claims, and team reports become available to export.",
+      title: "Reports build from your daily history",
+      description: "Each workday is saved automatically. Add a contract and run a route profit check — then daily, weekly, claims, and team reports become available to export as your history fills in.",
       primaryAction: { label: "Finish Setup", tab: next.tab },
       secondaryActions: [
-        { label: "Save Snapshot", tab: "Dashboard" },
         { label: "Open Dashboard", tab: "Dashboard" },
       ],
     },

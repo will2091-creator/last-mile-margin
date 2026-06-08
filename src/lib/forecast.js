@@ -61,7 +61,7 @@ export function computeForecast({ savedDays = [], appSettings = {}, horizonDays 
       ready: false,
       daysOfHistory,
       needed: MIN_HISTORY,
-      reason: `Save ${MIN_HISTORY - daysOfHistory} more daily snapshot${MIN_HISTORY - daysOfHistory === 1 ? "" : "s"} to unlock your margin forecast.`,
+      reason: `${MIN_HISTORY - daysOfHistory} more day${MIN_HISTORY - daysOfHistory === 1 ? "" : "s"} of history will unlock your margin forecast.`,
       targetMargin,
     };
   }

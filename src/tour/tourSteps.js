@@ -12,9 +12,9 @@ export const tourSteps = [
   {
     id: "toolbar",
     tab: "Dashboard",
-    anchor: "dashboard-save-snapshot",
+    anchor: "dashboard-daily-history",
     title: "Your daily controls",
-    body: "Save a snapshot of today's numbers, reopen any saved day, or change the date range — all from up here.",
+    body: "Every workday is saved automatically. Reopen any past day from Daily History, or change the date range — all from up here.",
   },
   {
     id: "workflow",

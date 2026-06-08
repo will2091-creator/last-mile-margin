@@ -409,7 +409,7 @@ function SettingsDashboard({
       label: "Export readiness",
       done: true,
       detail: "Reports generate owner-ready PDF files from available route, claims, team, and snapshot data.",
-      next: "Save snapshots for richer reports",
+      next: "Daily history builds automatically",
     },
     {
       label: "Mobile review",

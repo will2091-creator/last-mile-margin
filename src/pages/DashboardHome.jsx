@@ -835,18 +835,6 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
       skipped: Boolean(setupWizard.skipped.data),
       tone: "amber",
     },
-    {
-      id: "snapshot",
-      shortLabel: "Snapshot",
-      title: "Save first snapshot",
-      detail: "Save today’s baseline so Reports can show history, trends, and owner-ready exports.",
-      cta: "Save Snapshot",
-      Icon: Save,
-      onClick: () => onSaveSnapshot?.(),
-      complete: savedDays.length > 0,
-      skipped: false,
-      tone: "green",
-    },
   ];
   const setupCompleteCount = setupSteps.filter((step) => step.complete).length;
   const setupSkippedCount = setupSteps.filter((step) => step.skipped && !step.complete).length;

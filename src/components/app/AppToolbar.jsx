@@ -1,11 +1,10 @@
 import React from "react";
-import { currency, FileText, Save } from "../../shared";
+import { currency, FileText } from "../../shared";
 
 export default function AppToolbar({
   isDark,
   isDemoMode,
   canManageBusiness,
-  savedDayFlash,
   savedDays,
   showSavedDays,
   setShowSavedDays,
@@ -23,7 +22,6 @@ export default function AppToolbar({
   selectToday,
   selectThisWeek,
   loadSavedDay,
-  saveCurrentDay,
   formatDateLabel,
   formatDateRangeLabel,
 }) {
@@ -35,23 +33,6 @@ export default function AppToolbar({
 
   return (
     <div className="mx-auto mb-3 grid max-w-[1600px] grid-cols-1 gap-2 sm:mb-5 sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
-      {canManageBusiness && (
-        <button
-          data-tour="dashboard-save-snapshot"
-          onClick={saveCurrentDay}
-          className={
-            savedDayFlash
-              ? "flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-sm sm:w-auto"
-              : isDark
-                ? "flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-500/15 sm:w-auto"
-                : "flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 shadow-sm hover:bg-emerald-100 sm:w-auto"
-          }
-        >
-          <Save className="h-4 w-4" />
-          {savedDayFlash ? "Snapshot Saved" : "Save Snapshot"}
-        </button>
-      )}
-
       {canManageBusiness && <div className="relative w-full sm:w-auto">
         <button
           data-tour="dashboard-daily-history"
@@ -82,7 +63,7 @@ export default function AppToolbar({
 
             {savedDays.length === 0 ? (
               <div className={isDark ? "rounded-xl border border-white/10 bg-white/5 p-4 text-sm font-semibold text-slate-400" : "rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-500"}>
-                No daily history yet. Save a snapshot when you want an extra checkpoint for the current workday.
+                No daily history yet — each workday is saved automatically and will show up here as you go.
               </div>
             ) : (
               <div className="max-h-80 space-y-2 overflow-y-auto">
