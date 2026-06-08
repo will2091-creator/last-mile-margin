@@ -4,6 +4,10 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
+  /* Display font for headings (Inter stays for body/UI/numbers). */
+  --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
   /*
     Refined, layered card shadows. A tight contact shadow grounds the card,
     while a soft, wide ambient shadow gives depth without the heavy single-cast
@@ -24,6 +28,14 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings use the display font (Plus Jakarta Sans). Body/UI/numbers stay Inter. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
 }
 
 /* Smooth state changes on interactive elements for a more polished feel. */
