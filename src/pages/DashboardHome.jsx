@@ -30,6 +30,7 @@ import {
   YAxis,
 } from "../shared";
 import NextActionCard from "../components/NextActionCard";
+import WatchdogPanel from "../components/WatchdogPanel";
 import { InlineEmpty } from "../components/EmptyState";
 import { getNextBestSetupAction, getSetupStatus } from "../lib/onboarding";
 import { useCountUp } from "../hooks/useCountUp";
@@ -1372,6 +1373,19 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
             </div>
           )}
         </div>
+      )}
+
+      {marginBriefContext.hasData && (
+        <WatchdogPanel
+          isDark={isDark}
+          navigateToTab={setActiveTab}
+          savedDays={savedDays}
+          claims={claims}
+          teams={teams}
+          contracts={quickContracts}
+          today={{ profit: todayProfit, revenue: dashboardRevenue, margin }}
+          appSettings={appSettings}
+        />
       )}
 
       {/* SECONDARY ROW — revenue, cost, margin, and team readiness */}
