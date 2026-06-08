@@ -57,7 +57,7 @@ export function detectAnomalies({ savedDays = [], claims = [], teams = [], contr
     const top = [...highRisk].sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0))[0];
     anomalies.push({ id: "high-risk-claims", kind: "claims", severity: "high", title: `${highRisk.length} high-risk open claim${highRisk.length > 1 ? "s" : ""}`, detail: `Largest: ${top.type || "claim"} at ${money(top.amount)}${top.preventable ? ` (${top.preventable} preventable)` : ""}. ${money(openExposure)} total open exposure.`, tab: "Claims" });
   }
-  const reserve = Number(appSettings?.claimReserveTarget ?? appSettings?.claimReserve ?? 0);
+  const reserve = Number(appSettings?.profitabilityBenchmarks?.claimsReserveTarget ?? appSettings?.claimReserveTarget ?? appSettings?.claimReserve ?? 0);
   if (reserve > 0 && openExposure > reserve) {
     anomalies.push({ id: "reserve-under", kind: "claims", severity: "medium", title: "Open exposure exceeds your reserve", detail: `${money(openExposure)} open vs a ${money(reserve)} reserve target.`, tab: "Claims" });
   }
@@ -81,12 +81,12 @@ export function detectAnomalies({ savedDays = [], claims = [], teams = [], contr
   if (atRisk.length) anomalies.push({ id: "teams-at-risk", kind: "teams", severity: "medium", title: `${atRisk.length} team${atRisk.length > 1 ? "s" : ""} flagged at risk`, detail: `${atRisk.map((t) => t.name).slice(0, 3).join(", ")} — review before dispatch.`, tab: "Teams" });
   if (missingPhotos.length) anomalies.push({ id: "missing-photos", kind: "teams", severity: missingPhotos.length > 1 ? "medium" : "low", title: `${missingPhotos.length} team${missingPhotos.length > 1 ? "s" : ""} missing today's route photo`, detail: `Missing proof is how claims become losses.`, tab: "Teams" });
 
-  // ---- Pace to monthly target ----
-  const target = Number(appSettings?.monthlyProfitTarget ?? 0);
-  if (target > 0 && history.length >= 3) {
-    const avg = history.reduce((s, d) => s + Number(d.profit || 0), 0) / history.length;
-    const projected = avg * 30;
-    if (projected < target * 0.9) anomalies.push({ id: "pace-target", kind: "pace", severity: "medium", title: "Behind pace on the monthly target", detail: `At your recent daily average you'd clear ~${money(projected)} this month vs a ${money(target)} target.`, tab: "Dashboard" });
+  // ---- Margin below the owner's target ----
+  const targetMargin = Number(appSettings?.profitabilityBenchmarks?.targetMargin ?? 0);
+  const todayMargin = today ? normMargin(today.margin) : latest ? normMargin(latest.margin) : null;
+  if (targetMargin > 0 && todayMargin != null && (today?.revenue || latest?.revenue) && todayMargin < targetMargin - 3) {
+    const gap = Math.round(targetMargin - todayMargin);
+    anomalies.push({ id: "below-target-margin", kind: "margin", severity: gap >= 8 ? "high" : "medium", title: `Margin is ${gap} pts under your ${Math.round(targetMargin)}% target`, detail: `Running at ${Math.round(todayMargin)}% vs your ${Math.round(targetMargin)}% target margin.`, tab: "Profitability" });
   }
 
   return anomalies.sort((a, b) => (SEV_RANK[b.severity] || 0) - (SEV_RANK[a.severity] || 0));

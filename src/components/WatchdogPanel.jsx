@@ -44,7 +44,8 @@ export default function WatchdogPanel({ isDark, navigateToTab, savedDays = [], c
     if (!force) {
       try {
         const cached = JSON.parse(localStorage.getItem("finalMileWatchdog") || "null");
-        if (cached && cached.key === cacheKey && cached.brief) {
+        // Only trust a cached briefing that came from real AI — retry if the cache holds an offline fallback.
+        if (cached && cached.key === cacheKey && cached.brief && cached.brief.source === "AI") {
           setBrief(cached.brief);
           setStatus("ready");
           cacheKeyRef.current = cacheKey;

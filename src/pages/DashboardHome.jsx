@@ -481,7 +481,9 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     if (!force) {
       try {
         const cached = JSON.parse(localStorage.getItem("finalMileMarginBrief") || "null");
-        if (cached && cached.key === cacheKey && cached.brief) {
+        // Only trust a cached brief that came from real AI — never pin a stale offline
+        // fallback for the day (e.g. cached before the API key went live). Retry otherwise.
+        if (cached && cached.key === cacheKey && cached.brief && cached.brief.source === "AI generated") {
           setMarginBrief(cached.brief);
           setMarginBriefStatus("ready");
           briefCacheKeyRef.current = cacheKey;
