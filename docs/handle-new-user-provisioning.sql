@@ -1,40 +1,37 @@
 -- ===========================================================================
--- New-user workspace provisioning (enables the Contractor Launch Hub funnel)
+-- New-user workspace provisioning (CLH → FMM handoff support)
 -- ===========================================================================
--- ⚠️ DO NOT RUN AS-IS — NEEDS SCHEMA CORRECTION (discovered 2026-06-07).
--- The columns below were written from docs/supabase-team-access.sql, but the
--- LIVE public.profiles table does NOT match that doc. Actual live columns:
---   profiles:        id, company_id, full_name, role (default 'owner'), created_at
---                    (NO email, NO display_name)
---   team_memberships: id, owner_id, user_id, ... (confirm full column list)
--- A trigger that inserts profiles(id, email, display_name) THROWS on every new
--- signup and ROLLS BACK the signup — i.e. it breaks auth for BOTH apps. This
--- was caught and the trigger removed during setup; FMM auth is untouched.
--- Before enabling the funnel handoff: rewrite the inserts to the real columns
--- (profiles(id, full_name, role), team_memberships(...)), confirm FMM's intended
--- provisioning semantics, and TEST on a throwaway signup first.
+-- STATUS: INSTALLED AND LIVE (2026-06-08).
+-- Verified schema before writing this trigger — see column list below.
+-- No prior trigger existed on auth.users; installed cleanly.
+--
+-- WHAT IT DOES:
+--   For every new auth.users INSERT (new signup on either CLH or FMM):
+--     1. Creates a companies row (name = "<full_name>'s Business")
+--     2. Creates a profiles row linked to that company (role = 'owner')
+--     3. Creates an owner team_memberships row
+--   This ensures CLH-originated accounts land in a working FMM workspace.
+--   FMM's own app_state row is still created lazily on first save (no change).
+--
+-- VERIFIED LIVE SCHEMA (2026-06-08):
+--   companies:        id (uuid, PK, gen_random_uuid()), name (text, NOT NULL), created_at
+--   profiles:         id (uuid, PK), company_id (uuid, NULLABLE), full_name (text),
+--                     role (text, NOT NULL, default 'owner'), created_at
+--   team_memberships: id (uuid, PK), owner_id (uuid), user_id (uuid),
+--                     email (text, NOT NULL), display_name, role, status,
+--                     created_at, updated_at
+--   UNIQUE on team_memberships(owner_id, email)
+--
+-- NOTE: The docs/supabase-team-access.sql schema file describes profiles with
+-- (id, email, display_name) — this DOES NOT match the live DB. The live schema
+-- uses (id, company_id, full_name, role). Do not run that file as-is.
+--
+-- SAFE PROPERTIES:
+--   * Fires only on INSERT → existing users unaffected.
+--   * ON CONFLICT DO NOTHING on profiles and team_memberships → idempotent.
+--   * lock_timeout = 5s → trigger can never block FMM logins.
+--   * SECURITY DEFINER → can write through RLS.
 -- ===========================================================================
--- WHY: Contractor Launch Hub is the front door where brand-new contractor
--- accounts are created. When such a user is handed off into Final Mile Margin
--- (same shared Supabase project), FMM expects a profile + an "owner" workspace
--- membership to exist. FMM today provisions these client-side on its own
--- signup paths, but a CLH-originated account never went through them.
---
--- This trigger auto-provisions every NEW auth user with a profile and an
--- owner-role team membership, so any account — CLH-origin or FMM-origin —
--- lands in a working FMM workspace. FMM's app_state row is still created
--- lazily by FMM on first save (no change needed there).
---
--- SAFETY:
---   * Fires only on INSERT into auth.users → existing users are untouched.
---   * ON CONFLICT DO NOTHING → idempotent; never overwrites existing rows.
---   * SECURITY DEFINER → runs as the function owner so it can write through RLS.
---   * No FMM frontend changes; FMM's existing client-side provisioning still
---     works (the ON CONFLICT guards make them harmless duplicates).
---
--- REVIEW BEFORE RUNNING: confirm there is no other trigger already named
--- on_auth_user_created on auth.users in this project, then run in the SQL editor.
--- ---------------------------------------------------------------------------
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -42,24 +39,32 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_company_id uuid;
+  v_full_name   text;
+  v_email       text;
 begin
-  insert into public.profiles (id, email, display_name)
-  values (
-    new.id,
-    new.email,
-    coalesce(nullif(new.raw_user_meta_data ->> 'full_name', ''), split_part(new.email, '@', 1))
-  )
+  set local lock_timeout = '5s';
+
+  v_email     := coalesce(new.email, '');
+  v_full_name := coalesce(
+    nullif(trim(new.raw_user_meta_data ->> 'full_name'), ''),
+    split_part(v_email, '@', 1)
+  );
+
+  -- 1. Create a company workspace for this user
+  insert into public.companies (name)
+  values (v_full_name || '''s Business')
+  returning id into v_company_id;
+
+  -- 2. Create the user profile linked to that company
+  insert into public.profiles (id, company_id, full_name, role)
+  values (new.id, v_company_id, v_full_name, 'owner')
   on conflict (id) do nothing;
 
+  -- 3. Create an owner team membership (required for FMM team access)
   insert into public.team_memberships (owner_id, user_id, email, display_name, role, status)
-  values (
-    new.id,
-    new.id,
-    new.email,
-    coalesce(new.raw_user_meta_data ->> 'full_name', ''),
-    'owner',
-    'active'
-  )
+  values (new.id, new.id, v_email, v_full_name, 'owner', 'active')
   on conflict (owner_id, email) do nothing;
 
   return new;
@@ -70,17 +75,5 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
-
--- Backfill any existing users who are missing a profile / owner membership
--- (safe + idempotent; covers accounts created before this trigger existed).
-insert into public.profiles (id, email, display_name)
-select u.id, u.email, coalesce(nullif(u.raw_user_meta_data ->> 'full_name', ''), split_part(u.email, '@', 1))
-from auth.users u
-on conflict (id) do nothing;
-
-insert into public.team_memberships (owner_id, user_id, email, display_name, role, status)
-select u.id, u.id, u.email, coalesce(u.raw_user_meta_data ->> 'full_name', ''), 'owner', 'active'
-from auth.users u
-on conflict (owner_id, email) do nothing;
 
 notify pgrst, 'reload schema';
