@@ -175,6 +175,8 @@ Hard rules:
 - Always make a clear ask: reverse/refund the deduction (state the dollar amount) and a path to provide or exchange evidence.
 - Do not promise outcomes, admit fault, or offer settlement amounts.
 
+LEARN FROM HISTORY: the context may include "pastOutcomes" — prior disputes for this contractor with their result (won/lost/partial) and the angle used, most-relevant first (same route/retailer or claim type). Lean on the framing and arguments that WON for similar claims; steer away from angles that LOST. If a closely matching past dispute won, mirror its winning approach. Never mention the past outcomes or this learning in the letter itself — just let it shape the strongest argument.
+
 Return only JSON with this shape:
 {
   "subject": "email subject line referencing the claim id and amount",

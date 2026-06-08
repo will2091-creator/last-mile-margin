@@ -660,6 +660,30 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   };
 
   const companyName = appSettings?.companyName || "our company";
+
+  // The learning loop: past decided disputes, most-relevant first (same route/retailer, then same type).
+  const getDisputeHistory = (forClaim) =>
+    claims
+      .filter((c) => ["won", "lost", "partial"].includes(c.disputeOutcome) && c.id !== forClaim?.id)
+      .map((c) => ({
+        c,
+        relevance:
+          (forClaim && (getClaimTeam(c) === getClaimTeam(forClaim) || (c.route && c.route === forClaim.route)) ? 2 : 0) +
+          (forClaim && c.type === forClaim.type ? 1 : 0) +
+          (forClaim && c.category === forClaim.category ? 1 : 0),
+      }))
+      .sort((a, b) => b.relevance - a.relevance)
+      .slice(0, 10)
+      .map(({ c }) => ({
+        route: c.route || getClaimTeam(c),
+        type: c.type,
+        category: c.category,
+        preventable: c.preventable || "Unknown",
+        outcome: c.disputeOutcome,
+        recovered: Number(c.disputeRecovered || 0),
+        angleUsed: getRecommendedDisputeAngle(c),
+      }));
+
   const buildDisputeClaimContext = (claim) => ({
     id: claim.id,
     type: claim.type,
@@ -678,6 +702,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     recommendedAngle: getRecommendedDisputeAngle(claim),
     senderCompany: companyName,
     highValueThreshold: riskThresholds.high,
+    pastOutcomes: getDisputeHistory(claim),
   });
 
   const buildFallbackDisputeLetter = (claim) => {
@@ -745,6 +770,17 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     setDisputeLetter(letter);
     setDisputeLetterBody(letter.letter);
     setDisputeLetterStatus("ready");
+  };
+
+  // ---- Dispute outcome loop ----
+  const updateClaimDispute = (claimId, outcome, recovered) => {
+    const patch = { disputeOutcome: outcome, disputeRecovered: Number(recovered || 0) };
+    setClaims((current) => current.map((c) => (c.id === claimId ? { ...c, ...patch } : c)));
+    setDisputePacketClaim((current) => (current && current.id === claimId ? { ...current, ...patch } : current));
+  };
+  const markDisputeOutcome = (claim, outcome) => {
+    const recovered = outcome === "lost" ? 0 : outcome === "won" ? Number(claim.amount || 0) : Number(claim.disputeRecovered || claim.amount || 0);
+    updateClaimDispute(claim.id, outcome, recovered);
   };
 
   // ---- Agentic: batch-draft dispute letters for every contestable claim ----
@@ -851,6 +887,10 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   const highestPropertyTeam = teamRiskRows.slice().sort((a, b) => b.propertyExposure - a.propertyExposure)[0] || highestRiskTeam;
   const propertyExposureShare = propertyTotal ? Math.round((highestPropertyTeam.propertyExposure / propertyTotal) * 100) : 0;
   const missingPhotoTeams = teams.filter((team) => team.photoStatus === "Missing").map((team) => team.name);
+  const decidedDisputes = claims.filter((claim) => ["won", "lost", "partial"].includes(claim.disputeOutcome));
+  const disputeWins = decidedDisputes.filter((claim) => claim.disputeOutcome === "won" || claim.disputeOutcome === "partial").length;
+  const disputeWinRate = decidedDisputes.length ? Math.round((disputeWins / decidedDisputes.length) * 100) : null;
+  const disputeRecovered = claims.reduce((sum, claim) => sum + (["won", "partial"].includes(claim.disputeOutcome) ? Number(claim.disputeRecovered || 0) : 0), 0);
   const intelligenceMetrics = [
     ["Open claim exposure", currency.format(openClaimExposure), `${openClaims} open claim${openClaims === 1 ? "" : "s"}`, "text-red-600"],
     ["Preventable %", `${preventablePercentage}%`, "Claims marked preventable", preventablePercentage >= 50 ? "text-amber-600" : "text-emerald-700"],
@@ -859,6 +899,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     ["Costliest claim type", mostExpensiveClaimType.name, currency.format(mostExpensiveClaimType.exposure), titleText],
     ["Missing evidence", missingEvidenceCount, "Checklist gaps found", missingEvidenceCount ? "text-amber-600" : "text-emerald-700"],
     ["Worth disputing", likelyDisputeClaims.length, "High-value claims to review", likelyDisputeClaims.length ? "text-blue-600" : "text-emerald-700"],
+    ["Dispute win rate", disputeWinRate === null ? "—" : `${disputeWinRate}%`, decidedDisputes.length ? `${currency.format(disputeRecovered)} recovered · ${decidedDisputes.length} decided` : "Log outcomes to track wins", disputeWinRate === null ? mutedText : disputeWinRate >= 50 ? "text-emerald-700" : "text-amber-600"],
   ];
   const intelligenceInsights = [
     {
@@ -2171,6 +2212,39 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                       </button>
                     </div>
                   </div>
+                )}
+              </div>
+
+              <div className={isDark ? "mt-5 rounded-2xl border border-white/10 bg-slate-900/80 p-5" : "mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5"}>
+                <h3 className={`text-lg font-bold ${titleText}`}>Dispute outcome</h3>
+                <p className={`mt-1 text-sm ${mutedText}`}>Log the result — the AI learns which arguments win and leans on them for similar claims.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[["won", "Won"], ["partial", "Partial"], ["lost", "Lost"]].map(([val, label]) => {
+                    const active = disputePacketClaim.disputeOutcome === val;
+                    const activeClass = val === "won" ? "bg-emerald-600 text-white" : val === "partial" ? "bg-amber-500 text-white" : "bg-red-600 text-white";
+                    return (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => markDisputeOutcome(disputePacketClaim, val)}
+                        className={active ? `rounded-xl px-4 py-2 text-sm font-black ${activeClass}` : isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-bold text-slate-200 hover:bg-white/5" : "rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {(disputePacketClaim.disputeOutcome === "won" || disputePacketClaim.disputeOutcome === "partial") && (
+                  <div className="mt-3 max-w-xs">
+                    <label className={`mb-1 block text-xs font-semibold ${mutedText}`}>Amount recovered</label>
+                    <input type="number" value={disputePacketClaim.disputeRecovered ?? ""} onChange={(event) => updateClaimDispute(disputePacketClaim.id, disputePacketClaim.disputeOutcome, event.target.value)} className={inputClass} />
+                  </div>
+                )}
+                {disputePacketClaim.disputeOutcome && (
+                  <p className={`mt-3 text-xs font-semibold ${disputePacketClaim.disputeOutcome === "lost" ? "text-red-500" : "text-emerald-600"}`}>
+                    Logged as {disputePacketClaim.disputeOutcome}
+                    {["won", "partial"].includes(disputePacketClaim.disputeOutcome) ? ` · ${currency.format(Number(disputePacketClaim.disputeRecovered || 0))} recovered` : ""} — the AI will factor this into future letters for similar claims.
+                  </p>
                 )}
               </div>
             </div>
