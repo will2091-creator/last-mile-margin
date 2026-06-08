@@ -395,14 +395,15 @@ You receive each team's pre-dispatch signals: a computed risk score (0-100), com
 
 Rules:
 - Use ONLY the supplied signals. Do not invent teams or numbers.
-- Name the single highest-risk team and the ONE action to take before they roll.
+- The UI already shows each team's name, score, tier, top driver, and the recommended action right next to this summary — DON'T restate any of those.
+- "summary" is ONE short synthesis sentence: the WHY behind the top team's score. Connect their signals into a read (e.g. compliance and survey both low = operational strain), citing a metric or two — not a list, not a restatement of the score/tier.
 - If every team is low risk, say so plainly.
 - Tone: direct, pre-dispatch briefing. Short.
 
 Return only JSON with this shape:
 {
-  "headline": "<= 90 chars, e.g. 'Team C is today's top claim risk'",
-  "summary": "1-2 sentences naming the team and the why, with the numbers",
+  "headline": "<= 70 chars (may be hidden in the UI)",
+  "summary": "ONE short synthesis sentence — the why behind the score, not a restatement",
   "watchTeam": "the team name to watch (or empty if all clear)",
   "confidence": "High|Medium|Low"
 }`;

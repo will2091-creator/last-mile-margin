@@ -31,6 +31,18 @@ function scoreTeam(team, teamClaims) {
   return { score, tier, topDriver, action, openExposure };
 }
 
+// One-line synthesis of WHY a team scores high — the supporting numbers, not a restatement
+// of the name/score/tier (those are shown in the row).
+function buildWhy(row) {
+  const comp = Number(row.team.complianceScore || 0);
+  const surv = Number(row.team.surveyAvg || 0);
+  const bits = [];
+  if (comp) bits.push(`${comp}% compliance`);
+  if (surv) bits.push(`a ${surv} survey average`);
+  if (row.openExposure > 0) bits.push(`${currency.format(row.openExposure)} in open claims`);
+  return bits.length ? `${bits.slice(0, 3).join(", ")} are stacking up today.` : "Pre-dispatch signals are stacking up for this team.";
+}
+
 export default function RiskForecast({ isDark, teams = [], claims = [] }) {
   const getClaimDriver = (claim) => claim.driver || teams.find((team) => team.name === claim.team)?.lead || "";
   const getTeamClaims = (team) =>
@@ -54,7 +66,7 @@ export default function RiskForecast({ isDark, teams = [], claims = [] }) {
     const fallback =
       !top || top.tier === "Low"
         ? { headline: "All teams cleared for dispatch", summary: "No team is showing elevated claim risk right now. Keep photos and compliance current.", watchTeam: "", source: "Computed" }
-        : { headline: `${top.team.name} is today's top claim risk`, summary: `${top.team.name} scores ${top.score}/100 — driven by ${top.topDriver.toLowerCase()}. ${top.action}`, watchTeam: top.team.name, source: "Computed" };
+        : { headline: `${top.team.name} is today's top claim risk`, summary: buildWhy(top), watchTeam: top.team.name, source: "Computed" };
 
     const run = async () => {
       try {
@@ -94,6 +106,8 @@ export default function RiskForecast({ isDark, teams = [], claims = [] }) {
   const card = isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-card" : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
   const title = isDark ? "text-white" : "text-slate-950";
   const muted = isDark ? "text-slate-400" : "text-slate-500";
+  const tierText = (tier) => (tier === "High" ? "text-red-500" : tier === "Elevated" ? "text-amber-500" : "text-emerald-500");
+  const showHero = ranked[0] && ranked[0].tier !== "Low";
 
   return (
     <div className={card}>
@@ -108,32 +122,49 @@ export default function RiskForecast({ isDark, teams = [], claims = [] }) {
         </div>
       </div>
 
-      {forecast && (
-        <div className={isDark ? "mb-4 rounded-xl border border-blue-500/30 bg-blue-500/10 p-3" : "mb-4 rounded-xl border border-blue-200 bg-blue-50 p-3"}>
-          <p className={`text-sm font-black ${title}`}>{forecast.headline}</p>
-          <p className={`mt-0.5 text-sm leading-6 ${isDark ? "text-slate-300" : "text-slate-600"}`}>{forecast.summary}</p>
+      {!showHero && (
+        <div className={isDark ? "mb-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3" : "mb-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3"}>
+          <p className={`text-sm font-black ${title}`}>All teams cleared for dispatch</p>
+          <p className={`mt-0.5 text-xs ${muted}`}>No team is showing elevated claim risk right now.</p>
         </div>
       )}
 
       <div className="space-y-2">
-        {ranked.map((row) => (
-          <div key={row.team.id || row.team.name} className={isDark ? "rounded-xl border border-white/10 bg-white/5 p-3" : "rounded-xl border border-slate-200 bg-slate-50 p-3"}>
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className={`truncate text-sm font-black ${title}`}>{row.team.name}</p>
-                <p className={`truncate text-xs ${muted}`}>{row.topDriver}{row.openExposure > 0 ? ` · ${currency.format(row.openExposure)} open` : ""}</p>
+        {ranked.map((row, i) => {
+          const hero = showHero && i === 0;
+          return (
+            <div
+              key={row.team.id || row.team.name}
+              className={
+                hero
+                  ? (isDark ? "rounded-xl border border-blue-500/30 bg-blue-500/10 p-3.5" : "rounded-xl border border-blue-200 bg-blue-50 p-3.5")
+                  : (isDark ? "rounded-xl border border-white/10 bg-white/5 p-3" : "rounded-xl border border-slate-200 bg-slate-50 p-3")
+              }
+            >
+              {hero && <p className={`mb-1.5 text-[10px] font-black uppercase tracking-wide ${tierText(row.tier)}`}>Today's top risk</p>}
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className={`truncate font-black ${title} ${hero ? "text-base" : "text-sm"}`}>{row.team.name}</p>
+                  <p className={`truncate text-xs ${muted}`}>{row.topDriver}{row.openExposure > 0 ? ` · ${currency.format(row.openExposure)} open` : ""}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className={`font-black ${title} ${hero ? "text-lg" : "text-sm"}`}>{row.score}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${tierChip(row.tier)}`}>{row.tier}</span>
+                </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <span className={`text-sm font-black ${title}`}>{row.score}</span>
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${tierChip(row.tier)}`}>{row.tier}</span>
+              <div className={isDark ? "mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10" : "mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200"}>
+                <div className={`h-full rounded-full ${barColor(row.tier)}`} style={{ width: `${row.score}%` }}></div>
               </div>
+              <p className={`mt-2 text-xs font-semibold ${muted}`}>→ {row.action}</p>
+              {hero && forecast?.summary && (
+                <p className={`mt-2 flex items-start gap-1.5 text-xs leading-5 ${muted}`}>
+                  <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-blue-500" />
+                  <span>{forecast.summary}</span>
+                </p>
+              )}
             </div>
-            <div className={isDark ? "mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10" : "mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200"}>
-              <div className={`h-full rounded-full ${barColor(row.tier)}`} style={{ width: `${row.score}%` }}></div>
-            </div>
-            <p className={`mt-2 text-xs font-semibold ${muted}`}>→ {row.action}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
