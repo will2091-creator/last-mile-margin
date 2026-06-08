@@ -359,6 +359,10 @@ export const defaultSettings = {
   },
 };
 
+// Whether the daily route/driver photo counts toward team readiness. Controlled by the
+// Employees → "Require Driver Photo" setting; defaults to true (legacy behavior).
+export const routePhotoRequired = (appSettings) => appSettings?.employees?.requireDriverPhoto !== false;
+
 export const accentThemes = {
   blue: {
     name: "Blue",

@@ -77,7 +77,9 @@ export function detectAnomalies({ savedDays = [], claims = [], teams = [], contr
 
   // ---- Team readiness ----
   const atRisk = (teams || []).filter((t) => t.status === "At Risk");
-  const missingPhotos = (teams || []).filter((t) => t.photoStatus !== "Uploaded");
+  // Don't flag missing route photos when the owner has turned the photo requirement off.
+  const requireRoutePhoto = appSettings?.employees?.requireDriverPhoto !== false;
+  const missingPhotos = requireRoutePhoto ? (teams || []).filter((t) => t.photoStatus !== "Uploaded") : [];
   if (atRisk.length) anomalies.push({ id: "teams-at-risk", kind: "teams", severity: "medium", title: `${atRisk.length} team${atRisk.length > 1 ? "s" : ""} flagged at risk`, detail: `${atRisk.map((t) => t.name).slice(0, 3).join(", ")} — review before dispatch.`, tab: "Teams" });
   if (missingPhotos.length) anomalies.push({ id: "missing-photos", kind: "teams", severity: missingPhotos.length > 1 ? "medium" : "low", title: `${missingPhotos.length} team${missingPhotos.length > 1 ? "s" : ""} missing today's route photo`, detail: `Missing proof is how claims become losses.`, tab: "Teams" });
 

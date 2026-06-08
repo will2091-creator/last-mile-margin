@@ -357,18 +357,21 @@ function SettingsDashboard({
     claim: "Claim",
     margin: "Margin",
   };
-  const employeeSettings = appSettings?.employees || {
+  // Merge stored values over the defaults so toggling one setting never blanks the others.
+  const employeeSettings = {
     requireDriverPhoto: true,
     requireHelperPhoto: true,
     trackCompliance: true,
     showClaimsByDriver: true,
+    ...(appSettings?.employees || {}),
   };
-  const notificationSettings = appSettings?.notifications || {
+  const notificationSettings = {
     missingPhoto: true,
     highClaims: true,
     lowMargin: true,
     renewalReminder: true,
     dailySummary: false,
+    ...(appSettings?.notifications || {}),
   };
   const claimRiskThresholds = {
     medium: Number(appSettings?.claimRiskThresholds?.medium ?? 200),
@@ -992,7 +995,7 @@ function SettingsDashboard({
           {activeSettingsTab === "Employees" && (
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               {[
-                ["requireDriverPhoto", "Require Driver Photo", "Driver must upload a daily readiness photo."],
+                ["requireDriverPhoto", "Require Driver Photo", "Daily route photo counts toward team readiness. Turn off to drop it from the readiness score and stop missing-photo alerts."],
                 ["requireHelperPhoto", "Require Helper Photo", "Helper must upload a daily readiness photo."],
                 ["trackCompliance", "Track Compliance", "Show readiness and document status for workers."],
                 ["showClaimsByDriver", "Show Claims by Driver", "Assign claim exposure to individual drivers."],

@@ -12,6 +12,7 @@ import {
   ClipboardCheck,
   currency,
   defaultSettings,
+  routePhotoRequired,
   DollarSign,
   FileDown,
   FileText,
@@ -252,13 +253,18 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     }
     return chronologicalSavedDays[chronologicalSavedDays.length - 1];
   })();
-  const currentReadiness = Math.round((photosUploaded / Math.max(activeTeams, 1)) * 100);
+  // When the route photo isn't required, readiness drops the photo factor and tracks team
+  // status instead (a team is "ready" if it isn't flagged At Risk).
+  const requireRoutePhoto = routePhotoRequired(appSettings);
+  const readyTeamCount = requireRoutePhoto ? photosUploaded : teams.filter((team) => team.status !== "At Risk").length;
+  const currentReadiness = Math.round((readyTeamCount / Math.max(activeTeams, 1)) * 100);
   const previousReadiness = comparisonSnapshot && Number(comparisonSnapshot.teamsCount) > 0
     ? Math.round((Number(comparisonSnapshot.photosUploaded || 0) / Math.max(Number(comparisonSnapshot.teamsCount), 1)) * 100)
     : null;
   const pointChange = (current, previous) =>
     previous === null || previous === undefined || !Number.isFinite(previous) ? null : current - previous;
-  const readinessTrendDelta = previousReadiness !== null ? pointChange(currentReadiness, previousReadiness) : null;
+  // The snapshot-based trend baseline is photo-derived, so only show it while photos are required.
+  const readinessTrendDelta = requireRoutePhoto && previousReadiness !== null ? pointChange(currentReadiness, previousReadiness) : null;
   const comparisonLabel = comparisonSnapshot ? `vs ${comparisonSnapshot.label || "last snapshot"}` : "";
 
   // Profit trend chart series (chronological, most recent 8 snapshots).
@@ -1253,7 +1259,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                 <p className={`safe-number text-3xl font-black ${titleText}`}>{currentReadiness}%</p>
                 {renderTrendChip(readinessTrendDelta, { suffix: " pts", goodIsUp: true })}
               </div>
-              <p className={`mt-1 text-xs font-semibold ${mutedText}`}>{photosUploaded} of {activeTeams} teams ready</p>
+              <p className={`mt-1 text-xs font-semibold ${mutedText}`}>{readyTeamCount} of {activeTeams} teams ready</p>
             </>
           )}
         </button>
@@ -1519,7 +1525,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                 ["Revenue", currency.format(dashboardRevenue), "text-blue-600", BarChart3],
                 ["Costs", currency.format(dashboardCosts), "text-amber-700", Calculator],
                 ["Claims", currency.format(periodClaimsExposure), "text-red-600", ShieldCheck],
-                ["Team Readiness", `${photosUploaded}/${activeTeams}`, "text-emerald-700", Users],
+                ["Team Readiness", `${readyTeamCount}/${activeTeams}`, "text-emerald-700", Users],
               ].map(([label, value, tone, Icon]) => (
                 <div key={label} className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-4" : "rounded-2xl border border-slate-200 bg-slate-50 p-4"}>
                   <div className="flex items-center gap-3">

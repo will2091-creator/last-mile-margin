@@ -234,7 +234,7 @@ export default function OperationsDashboard({
         </div>
       ) : activeSection === "Compliance" ? (
         <div data-tour="operations-active-workflow">
-          <ComplianceDashboard teams={teams} claims={claims} isDark={isDark} navigateToTab={navigateToTab} />
+          <ComplianceDashboard teams={teams} claims={claims} isDark={isDark} navigateToTab={navigateToTab} appSettings={appSettings} />
         </div>
       ) : (
         <div data-tour="operations-active-workflow">

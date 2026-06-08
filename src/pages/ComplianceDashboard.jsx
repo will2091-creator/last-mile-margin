@@ -51,6 +51,7 @@ import {
   Users,
   XAxis,
   YAxis,
+  routePhotoRequired,
 } from "../shared";
 import EmptyState, { InlineEmpty } from "../components/EmptyState";
 import { fileToCompressedImage } from "../lib/imagePrep";
@@ -99,7 +100,7 @@ function formatDocDate(value) {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
-function ComplianceDashboard({ teams, claims, isDark, navigateToTab }) {
+function ComplianceDashboard({ teams, claims, isDark, navigateToTab, appSettings }) {
   const [docs, setDocs] = useState(() => {
     try {
       const raw = localStorage.getItem("finalMileComplianceDocs");
@@ -199,16 +200,18 @@ function ComplianceDashboard({ teams, claims, isDark, navigateToTab }) {
   const openExposure = openClaims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
   const hasComplianceInputs = teams.length > 0 || claims.length > 0 || docs.length > 0;
 
-  // Real readiness: teams that are not flagged At Risk and have today's photo in.
-  const readyTeams = teams.filter((team) => team.status !== "At Risk" && team.photoStatus === "Uploaded").length;
+  // Real readiness: teams not flagged At Risk that also have today's photo in — unless the
+  // owner has turned the route-photo requirement off, in which case photos don't factor in.
+  const requireRoutePhoto = routePhotoRequired(appSettings);
+  const readyTeams = teams.filter((team) => team.status !== "At Risk" && (!requireRoutePhoto || team.photoStatus === "Uploaded")).length;
   const readinessPct = teams.length ? Math.round((readyTeams / teams.length) * 100) : 0;
 
   const complianceStats = [
     { label: "Team Readiness", value: teams.length ? `${readinessPct}%` : "—", note: `${readyTeams} of ${teams.length} teams ready`, color: "text-emerald-400" },
-    { label: "Photos Uploaded", value: `${photosUploaded} / ${teams.length}`, note: "Daily check-in", color: "text-blue-400" },
+    requireRoutePhoto && { label: "Photos Uploaded", value: `${photosUploaded} / ${teams.length}`, note: "Daily check-in", color: "text-blue-400" },
     { label: "At-Risk Teams", value: atRiskTeams, note: "Needs review", color: "text-orange-400" },
     { label: "Open Claim Risk", value: currency.format(openExposure), note: `${openClaims.length} open · ${currency.format(totalClaimsExposure)} total`, color: "text-yellow-400" },
-  ];
+  ].filter(Boolean);
 
   const getClaimDriver = (claim) => {
     if (claim.driver) return claim.driver;
