@@ -11,6 +11,7 @@ import {
   Sparkles,
   Truck,
 } from "../shared";
+import { Mail } from "lucide-react";
 import EmptyState, { InlineEmpty } from "../components/EmptyState";
 import { fileToCompressedImage } from "../lib/imagePrep";
 
@@ -838,6 +839,12 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     } catch {
       setCopyState("idle");
     }
+  };
+
+  const emailDisputeLetter = () => {
+    const subject = disputeLetter?.subject || `Dispute of claim — ${disputePacketClaim?.type || ""}`;
+    const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(disputeLetterBody)}`;
+    window.open(mailto, "_blank", "noopener");
   };
 
   // Reset the letter whenever the dispute packet opens a different claim (or closes).
@@ -2204,6 +2211,14 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                         className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500"
                       >
                         {copyState === "copied" ? "Copied!" : "Copy letter"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={emailDisputeLetter}
+                        className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white hover:bg-emerald-500"
+                      >
+                        <Mail className="h-4 w-4" />
+                        Email letter
                       </button>
                       <button
                         type="button"
