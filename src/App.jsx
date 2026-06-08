@@ -719,8 +719,25 @@ export default function App() {
   const navItems = [
     { name: "Dashboard", icon: LayoutDashboard },
     { name: "Intake", icon: Upload },
-    { name: "Operations", icon: BriefcaseBusiness },
-    { name: "Finance", icon: Calculator },
+    {
+      name: "Operations",
+      icon: BriefcaseBusiness,
+      children: [
+        { name: "Dispatch", tab: "Operations" },
+        { name: "Claims", tab: "Claims" },
+        { name: "Teams", tab: "Teams" },
+        { name: "Compliance", tab: "Compliance" },
+      ],
+    },
+    {
+      name: "Finance",
+      icon: Calculator,
+      children: [
+        { name: "Profitability", tab: "Profitability" },
+        { name: "Receipts", tab: "Receipts" },
+        { name: "Contracts", tab: "Contracts" },
+      ],
+    },
     { name: "Reports", icon: ClipboardCheck },
     { name: "Ask", icon: Bot },
     { name: "Settings", icon: Settings },
@@ -1357,6 +1374,8 @@ export default function App() {
           activeAccent={activeAccent}
           visibleNavItems={visibleNavItems}
           activeTab={activeTab}
+          activeOperationsTab={activeOperationsTab}
+          activeFinanceTab={activeFinanceTab}
           appSettings={appSettings}
           isDemoMode={isDemoMode}
           isDemoWorkspace={isDemoWorkspace}

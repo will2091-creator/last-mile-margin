@@ -8,6 +8,8 @@ export default function AppSidebar({
   activeAccent,
   visibleNavItems,
   activeTab,
+  activeOperationsTab,
+  activeFinanceTab,
   appSettings,
   authUser,
   currentUserRole,
@@ -48,25 +50,56 @@ export default function AppSidebar({
       <nav className="space-y-2">
         {visibleNavItems.map((item) => {
           const Icon = item.icon;
+          const isActiveParent = activeTab === item.name;
+          // Which child is "current" when this parent is open (Operations/Finance only).
+          const activeChild = item.name === "Operations" ? activeOperationsTab : item.name === "Finance" ? activeFinanceTab : null;
           return (
-            <button
-              key={item.name}
-              data-tour={item.name === "Ask" ? "ask-assistant" : item.name === "Reports" ? "reports" : item.name === "Dashboard" ? "dashboard-nav" : undefined}
-              data-tour-nav={item.name.toLowerCase()}
-              onClick={() => {
-                navigateToTab(item.name);
-              }}
-              className={`group relative flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold ${
-                activeTab === item.name
-                  ? `${activeAccent.button} text-white`
-                  : isDark
-                  ? "text-slate-400 hover:bg-white/5 hover:text-white"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {item.name}
-            </button>
+            <div key={item.name}>
+              <button
+                data-tour={item.name === "Ask" ? "ask-assistant" : item.name === "Reports" ? "reports" : item.name === "Dashboard" ? "dashboard-nav" : undefined}
+                data-tour-nav={item.name.toLowerCase()}
+                onClick={() => {
+                  navigateToTab(item.name);
+                }}
+                className={`group relative flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold ${
+                  isActiveParent
+                    ? `${activeAccent.button} text-white`
+                    : isDark
+                    ? "text-slate-400 hover:bg-white/5 hover:text-white"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {item.name}
+              </button>
+
+              {item.children && (
+                <div className="mt-1 space-y-0.5">
+                  {item.children.map((child) => {
+                    const childActive = isActiveParent && activeChild === child.name;
+                    return (
+                      <button
+                        key={child.name}
+                        data-tour-nav={child.name.toLowerCase()}
+                        onClick={() => navigateToTab(child.tab)}
+                        className={`flex w-full items-center gap-2 rounded-lg py-2 pl-11 pr-3 text-left text-xs font-bold ${
+                          childActive
+                            ? isDark
+                              ? "bg-white/10 text-white"
+                              : "bg-blue-50 text-blue-700"
+                            : isDark
+                            ? "text-slate-500 hover:bg-white/5 hover:text-slate-200"
+                            : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                        }`}
+                      >
+                        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${childActive ? "bg-blue-500" : isDark ? "bg-slate-600" : "bg-slate-300"}`} />
+                        {child.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>
