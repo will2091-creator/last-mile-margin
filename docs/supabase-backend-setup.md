@@ -179,6 +179,25 @@ After the tables exist, wire the app in this order:
 5. Add activity log entries for claim saves/status changes.
 6. Add document storage bucket and vault file uploads.
 
+## Cash Position (financial system-of-record)
+
+The Cash Position dashboard (Finance → Cash Position) is backed by a separate,
+additive migration: [`supabase-cash-position.sql`](./supabase-cash-position.sql).
+Run it in the Supabase SQL Editor after the tables above exist. It adds:
+
+- `receivables`, `driver_settlements`, `settlement_lines`, and an append-only
+  `financial_events` ledger — all bigint cents, `owner_id = auth.uid()` RLS
+  (matching `claims`), with a `financing_config` table for the early-pay rates.
+- A `cash_position_receivables_aging` view plus `get_cash_position_summary()`
+  and `get_early_pay_preview()` RPCs (preview-only — they move no money).
+- Seed rows so local dev renders immediately.
+
+Until it is run, the dashboard renders from a local mock seed
+(`src/data/cashPositionMockData.js`) via the same graceful-fallback path as
+claims. The file is idempotent and ships with a commented rollback block.
+Reserved `advance_id` columns are where the future payments/advances layer
+attaches.
+
 ## Auth, Storage, and Full MVP Tables
 
 Run this after enabling Supabase Auth. It keeps the current development access working, but adds authenticated owner scoping for the real login and mobile-ready data.

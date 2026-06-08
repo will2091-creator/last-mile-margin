@@ -59,6 +59,7 @@ const tabSlugs = {
   Profitability: "profitability",
   Receipts: "receipts",
   Contracts: "contracts",
+  "Cash Position": "cash-position",
   Compliance: "compliance",
   Claims: "claims",
   Teams: "teams",
@@ -77,6 +78,7 @@ const groupedTabs = {
   Profitability: ["Finance", "Profitability"],
   Receipts: ["Finance", "Receipts"],
   Contracts: ["Finance", "Contracts"],
+  "Cash Position": ["Finance", "Cash Position"],
 };
 
 const normalizeTopTab = (tab) => groupedTabs[tab]?.[0] || tab;
@@ -734,6 +736,7 @@ export default function App() {
       icon: Calculator,
       children: [
         { name: "Profitability", tab: "Profitability" },
+        { name: "Cash Position", tab: "Cash Position" },
         { name: "Receipts", tab: "Receipts" },
         { name: "Contracts", tab: "Contracts" },
       ],

@@ -2,10 +2,11 @@ import { useMemo } from "react";
 import ProfitabilityDashboard from "./ProfitabilityDashboard";
 import ContractsDashboard from "./ContractsDashboard";
 import ReceiptsDashboard from "./ReceiptsDashboard";
+import CashPositionDashboard from "./CashPositionDashboard";
 import SetupProgressPanel from "../components/SetupProgressPanel";
 import { getSetupStatus } from "../lib/onboarding";
 
-const financeTabs = ["Profitability", "Receipts", "Contracts"];
+const financeTabs = ["Profitability", "Cash Position", "Receipts", "Contracts"];
 
 export default function FinanceDashboard({
   activeSection,
@@ -48,7 +49,7 @@ export default function FinanceDashboard({
   };
   const goToAction = (action) => {
     if (!action) return;
-    if (["Profitability", "Receipts", "Contracts"].includes(action.tab)) {
+    if (["Profitability", "Cash Position", "Receipts", "Contracts"].includes(action.tab)) {
       goToFinanceSection(action.tab);
       return;
     }
@@ -91,7 +92,11 @@ export default function FinanceDashboard({
         </div>
       )}
 
-      {activeSection === "Receipts" ? (
+      {activeSection === "Cash Position" ? (
+        <div data-tour="finance-active-workflow">
+          <CashPositionDashboard isDark={isDark} />
+        </div>
+      ) : activeSection === "Receipts" ? (
         <div data-tour="finance-active-workflow">
           <ReceiptsDashboard isDark={isDark} isBlankDemo={isBlankDemo} isDemoMode={isDemoMode} navigateToTab={navigateToTab} />
         </div>
