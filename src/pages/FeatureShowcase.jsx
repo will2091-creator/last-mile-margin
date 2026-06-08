@@ -14,13 +14,18 @@ import {
   DollarSign,
   FileSpreadsheet,
   Gauge,
+  ListChecks,
+  MessageSquare,
   Moon,
   Percent,
   Route,
   Save,
   ShieldAlert,
+  Sparkles,
   Sun,
   TrendingUp,
+  TriangleAlert,
+  Upload,
 } from "lucide-react";
 
 const CLH_URL = "https://contractor-launch-hub.vercel.app";
@@ -157,6 +162,85 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
                   <p className="mt-1 text-xs font-bold text-slate-400">{label}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- AI SECTION ---------- */}
+        <section className="mx-auto max-w-6xl px-5 py-16 lg:px-8 lg:py-24">
+          <div className="relative overflow-hidden rounded-3xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 via-indigo-500/5 to-slate-950 p-8 sm:p-12">
+            {/* Glow */}
+            <div className="pointer-events-none absolute -top-24 left-1/2 h-64 w-96 -translate-x-1/2 rounded-full bg-violet-500/10 blur-3xl" aria-hidden="true" />
+            <div className="relative">
+              <div className="flex items-center justify-center gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/30">
+                  <Sparkles className="h-4.5 w-4.5" />
+                </span>
+                <span className="text-xs font-black uppercase tracking-widest text-violet-400">AI built in, not bolted on</span>
+              </div>
+              <h2 className="mx-auto mt-5 max-w-2xl text-center text-3xl font-black leading-tight tracking-tight sm:text-4xl">
+                Five places AI does the work so you don't have to.
+              </h2>
+              <p className="mx-auto mt-4 max-w-xl text-center text-base font-semibold leading-7 text-slate-400">
+                Every AI feature runs on your actual workspace data — no generic advice, no hallucinated numbers.
+              </p>
+
+              <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {/* 1 */}
+                <div className="flex flex-col gap-4 rounded-2xl border border-white/8 bg-white/[0.03] p-6 backdrop-blur">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300 ring-1 ring-violet-500/20">
+                    <ListChecks className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-base font-black text-white">Ranked action feed</h3>
+                    <p className="mt-2 text-sm font-medium leading-6 text-slate-400">Every open task — disputes, thin-margin routes, missing data, overdue reminders — ranked by dollar impact and urgency into one "Do this now" list. No digging.</p>
+                  </div>
+                </div>
+
+                {/* 2 */}
+                <div className="flex flex-col gap-4 rounded-2xl border border-white/8 bg-white/[0.03] p-6 backdrop-blur">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300 ring-1 ring-violet-500/20">
+                    <Upload className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-base font-black text-white">AI Intake</h3>
+                    <p className="mt-2 text-sm font-medium leading-6 text-slate-400">Drop a claim email, route sheet, or notes. AI reads it, pulls out the fields that matter, and routes the draft to Claims or Expenses for one-tap review — no manual entry.</p>
+                  </div>
+                </div>
+
+                {/* 3 */}
+                <div className="flex flex-col gap-4 rounded-2xl border border-white/8 bg-white/[0.03] p-6 backdrop-blur">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300 ring-1 ring-violet-500/20">
+                    <TriangleAlert className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-base font-black text-white">Claim risk scoring</h3>
+                    <p className="mt-2 text-sm font-medium leading-6 text-slate-400">Each open claim gets an AI risk score based on amount, evidence completeness, and dispute history. High-risk claims surface automatically so the right ones get attention first.</p>
+                  </div>
+                </div>
+
+                {/* 4 */}
+                <div className="flex flex-col gap-4 rounded-2xl border border-white/8 bg-white/[0.03] p-6 backdrop-blur">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300 ring-1 ring-violet-500/20">
+                    <MessageSquare className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-base font-black text-white">Ask the business</h3>
+                    <p className="mt-2 text-sm font-medium leading-6 text-slate-400">Powered by Claude. Ask anything about your profit, claims, or operations in plain English and get a direct answer — grounded in your actual snapshot data, not a generic template.</p>
+                  </div>
+                </div>
+
+                {/* 5 */}
+                <div className="flex flex-col gap-4 rounded-2xl border border-white/8 bg-white/[0.03] p-6 backdrop-blur sm:col-span-2 lg:col-span-1">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300 ring-1 ring-violet-500/20">
+                    <Bot className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-base font-black text-white">AI dispute packets</h3>
+                    <p className="mt-2 text-sm font-medium leading-6 text-slate-400">For claims worth fighting, AI assembles the evidence checklist, flags what's missing, and frames the dispute angle — so you submit once with the right support, not multiple rounds of back-and-forth.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
