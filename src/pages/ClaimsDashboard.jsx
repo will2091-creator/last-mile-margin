@@ -83,6 +83,10 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   const [disputeLetterStatus, setDisputeLetterStatus] = useState("idle"); // idle | loading | ready
   const [disputeLetterBody, setDisputeLetterBody] = useState("");
   const [selectedEvidence, setSelectedEvidence] = useState(() => new Set()); // evidence labels to include in the letter
+  const [recipientEmail, setRecipientEmail] = useState(""); // who the dispute letter emails to (per-claim, editable)
+  const [defaultClaimsEmail, setDefaultClaimsEmail] = useState(() => {
+    try { return localStorage.getItem("finalMileClaimsEmail") || ""; } catch { return ""; }
+  });
   const [copyState, setCopyState] = useState("idle"); // idle | copied
   const [visionStatus, setVisionStatus] = useState("idle"); // idle | reading
   const [visionNote, setVisionNote] = useState("");
@@ -268,6 +272,9 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     const matchedRoute = driverOptions.find((driver) => driver.route && normalized.includes(driver.route.toLowerCase()));
     const dateMatch = text.match(/\b(?:\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}-\d{2}-\d{2})\b/);
     const preventable = normalized.includes("not preventable") || normalized.includes("non-preventable") ? "No" : "Maybe";
+    // Capture the sender's email so a dispute can reply straight to them (prefer a "From:" line).
+    const fromMatch = text.match(/from[:\s]+[^\n]*?([\w.+-]+@[\w-]+\.[\w.-]+)/i);
+    const senderEmail = fromMatch?.[1] || (text.match(/[\w.+-]+@[\w-]+\.[\w.-]+/) || [])[0] || "";
     const risk = amount >= riskThresholds.high ? "High" : amount >= riskThresholds.medium ? "Medium" : "Low";
     const driver = matchedDriver?.name || matchedRoute?.name || driverOptions[0]?.name || unassignedDriverLabel;
     const confidenceSignals = [
@@ -290,6 +297,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       preventable,
       date: dateMatch?.[0] || (normalized.includes("yesterday") ? "Yesterday" : "Today"),
       risk,
+      senderEmail,
     });
     setImportConfidence(Math.round((confidenceSignals / 5) * 100));
   };
@@ -772,13 +780,16 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       return next;
     });
 
-  // When a dispute packet opens, the AI pre-selects all evidence to cite; reset any prior letter.
+  // When a dispute packet opens: AI pre-selects all evidence, pre-fill the recipient
+  // (reply to the claim's sender email, else the saved default), and reset any prior letter.
   useEffect(() => {
     if (!disputePacketClaim) return;
     setSelectedEvidence(new Set(getEvidenceChecklist(disputePacketClaim).map((item) => item.label)));
+    setRecipientEmail(disputePacketClaim.senderEmail || defaultClaimsEmail || "");
     setDisputeLetter(null);
     setDisputeLetterBody("");
     setDisputeLetterStatus("idle");
+    setCopyState("idle");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [disputePacketClaim?.id]);
 
@@ -866,17 +877,16 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
 
   const emailDisputeLetter = () => {
     const subject = disputeLetter?.subject || `Dispute of claim — ${disputePacketClaim?.type || ""}`;
-    const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(disputeLetterBody)}`;
+    const to = (recipientEmail || "").trim();
+    const mailto = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(disputeLetterBody)}`;
     window.open(mailto, "_blank", "noopener");
   };
 
-  // Reset the letter whenever the dispute packet opens a different claim (or closes).
-  useEffect(() => {
-    setDisputeLetter(null);
-    setDisputeLetterBody("");
-    setDisputeLetterStatus("idle");
-    setCopyState("idle");
-  }, [disputePacketClaim?.id]);
+  const saveDefaultClaimsEmail = () => {
+    const email = (recipientEmail || "").trim();
+    try { localStorage.setItem("finalMileClaimsEmail", email); } catch { /* ignore quota */ }
+    setDefaultClaimsEmail(email);
+  };
 
   const preventablePercentage = filteredClaims.length
     ? Math.round((filteredClaims.filter((claim) => claim.preventable === "Yes").length / filteredClaims.length) * 100)
@@ -2247,6 +2257,31 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                     {disputeLetter.strongestArgument && (
                       <p className={`text-xs ${mutedText}`}><span className="font-bold">Angle:</span> {disputeLetter.strongestArgument}</p>
                     )}
+
+                    <div>
+                      <p className={`mb-1 text-[11px] font-semibold uppercase tracking-wide ${mutedText}`}>Email to</p>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input
+                          type="email"
+                          value={recipientEmail}
+                          onChange={(event) => setRecipientEmail(event.target.value)}
+                          placeholder="retailer claims email"
+                          className={isDark ? "min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-blue-500" : "min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-500"}
+                        />
+                        <button
+                          type="button"
+                          onClick={saveDefaultClaimsEmail}
+                          className={isDark ? "shrink-0 rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-slate-200 hover:bg-white/5" : "shrink-0 rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"}
+                        >
+                          {defaultClaimsEmail && defaultClaimsEmail === recipientEmail.trim() ? "Saved as default" : "Save as default"}
+                        </button>
+                      </div>
+                      <p className={`mt-1 text-[11px] ${mutedText}`}>
+                        {disputePacketClaim.senderEmail
+                          ? "Replying to the sender from the claim email — edit if it should go elsewhere."
+                          : "Opens your email app with the letter ready to send. Save a default to reuse it."}
+                      </p>
+                    </div>
 
                     <div className="flex flex-wrap items-center gap-2">
                       <button
