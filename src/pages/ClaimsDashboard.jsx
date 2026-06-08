@@ -11,7 +11,7 @@ import {
   Sparkles,
   Truck,
 } from "../shared";
-import { Mail } from "lucide-react";
+import { Check, Mail } from "lucide-react";
 import EmptyState, { InlineEmpty } from "../components/EmptyState";
 import { fileToCompressedImage } from "../lib/imagePrep";
 
@@ -82,6 +82,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   const [disputeLetter, setDisputeLetter] = useState(null);
   const [disputeLetterStatus, setDisputeLetterStatus] = useState("idle"); // idle | loading | ready
   const [disputeLetterBody, setDisputeLetterBody] = useState("");
+  const [selectedEvidence, setSelectedEvidence] = useState(() => new Set()); // evidence labels to include in the letter
   const [copyState, setCopyState] = useState("idle"); // idle | copied
   const [visionStatus, setVisionStatus] = useState("idle"); // idle | reading
   const [visionNote, setVisionNote] = useState("");
@@ -671,29 +672,33 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
         angleUsed: getRecommendedDisputeAngle(c),
       }));
 
-  const buildDisputeClaimContext = (claim) => ({
-    id: claim.id,
-    type: claim.type,
-    category: claim.category,
-    amount: Number(claim.amount || 0),
-    amountFormatted: currency.format(Number(claim.amount || 0)),
-    route: claim.route || "",
-    date: claim.date || "",
-    driver: getClaimDriver(claim),
-    team: getClaimTeam(claim),
-    status: claim.status,
-    preventable: claim.preventable || "Unknown",
-    risk: claim.risk || "",
-    evidencePresent: getEvidenceChecklist(claim).filter((item) => item.present).map((item) => item.label),
-    evidenceMissing: getMissingEvidence(claim),
-    recommendedAngle: getRecommendedDisputeAngle(claim),
-    senderCompany: companyName,
-    highValueThreshold: riskThresholds.high,
-    pastOutcomes: getDisputeHistory(claim),
-  });
+  // `selection` (a Set of evidence labels) limits what the letter cites/requests. null = include all.
+  const buildDisputeClaimContext = (claim, selection = null) => {
+    const include = (label) => !selection || selection.has(label);
+    return {
+      id: claim.id,
+      type: claim.type,
+      category: claim.category,
+      amount: Number(claim.amount || 0),
+      amountFormatted: currency.format(Number(claim.amount || 0)),
+      route: claim.route || "",
+      date: claim.date || "",
+      driver: getClaimDriver(claim),
+      team: getClaimTeam(claim),
+      status: claim.status,
+      preventable: claim.preventable || "Unknown",
+      risk: claim.risk || "",
+      evidencePresent: getEvidenceChecklist(claim).filter((item) => item.present && include(item.label)).map((item) => item.label),
+      evidenceMissing: getMissingEvidence(claim).filter((label) => include(label)),
+      recommendedAngle: getRecommendedDisputeAngle(claim),
+      senderCompany: companyName,
+      highValueThreshold: riskThresholds.high,
+      pastOutcomes: getDisputeHistory(claim),
+    };
+  };
 
-  const buildFallbackDisputeLetter = (claim) => {
-    const ctx = buildDisputeClaimContext(claim);
+  const buildFallbackDisputeLetter = (claim, selection = null) => {
+    const ctx = buildDisputeClaimContext(claim, selection);
     const paragraphs = [
       `Re: Dispute of claim ${ctx.id} — ${ctx.type} (${ctx.amountFormatted})`,
       `To whom it may concern,`,
@@ -723,13 +728,13 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   };
 
   // Shared: request one dispute letter (AI with graceful template fallback). Returns the letter object.
-  const requestDisputeLetter = async (claim) => {
-    const fallback = buildFallbackDisputeLetter(claim);
+  const requestDisputeLetter = async (claim, selection = null) => {
+    const fallback = buildFallbackDisputeLetter(claim, selection);
     try {
       const response = await fetch("/api/dispute-letter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ claim: buildDisputeClaimContext(claim) }),
+        body: JSON.stringify({ claim: buildDisputeClaimContext(claim, selection) }),
       });
       if (!response.ok) throw new Error("AI unavailable");
       const result = await response.json().catch(() => ({}));
@@ -753,11 +758,29 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     if (!claim) return;
     setDisputeLetterStatus("loading");
     setCopyState("idle");
-    const letter = await requestDisputeLetter(claim);
+    const letter = await requestDisputeLetter(claim, selectedEvidence);
     setDisputeLetter(letter);
     setDisputeLetterBody(letter.letter);
     setDisputeLetterStatus("ready");
   };
+
+  const toggleEvidence = (label) =>
+    setSelectedEvidence((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+
+  // When a dispute packet opens, the AI pre-selects all evidence to cite; reset any prior letter.
+  useEffect(() => {
+    if (!disputePacketClaim) return;
+    setSelectedEvidence(new Set(getEvidenceChecklist(disputePacketClaim).map((item) => item.label)));
+    setDisputeLetter(null);
+    setDisputeLetterBody("");
+    setDisputeLetterStatus("idle");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disputePacketClaim?.id]);
 
   // ---- Dispute outcome loop ----
   const updateClaimDispute = (claimId, outcome, recovered) => {
@@ -2095,16 +2118,37 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
 
                   <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5" : "rounded-2xl border border-slate-200 bg-slate-50 p-5"}>
                     <h3 className={`text-lg font-bold ${titleText}`}>Evidence Checklist</h3>
+                    <p className={`mt-1 text-xs font-semibold ${mutedText}`}>AI pre-selected what to cite. Check or uncheck to control what goes in the letter.</p>
                     {/* TODO: connect uploaded evidence files to these checklist items when backend file storage is connected. */}
                     <div className="mt-4 space-y-2">
-                      {getEvidenceChecklist(disputePacketClaim).map((item) => (
-                        <div key={item.label} className={isDark ? "flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/60 p-3" : "flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3"}>
-                          <span className={`text-sm font-bold ${titleText}`}>{item.label}</span>
-                          <span className={item.present ? "rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-black text-emerald-700" : "rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-black text-red-600"}>
-                            {item.present ? "Ready" : "Missing"}
-                          </span>
-                        </div>
-                      ))}
+                      {getEvidenceChecklist(disputePacketClaim).map((item) => {
+                        const checked = selectedEvidence.has(item.label);
+                        return (
+                          <button
+                            type="button"
+                            key={item.label}
+                            onClick={() => toggleEvidence(item.label)}
+                            aria-pressed={checked}
+                            className={`flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition ${
+                              isDark
+                                ? checked ? "border-blue-500/40 bg-blue-500/10" : "border-white/10 bg-slate-950/60 hover:bg-white/5"
+                                : checked ? "border-blue-300 bg-blue-50" : "border-slate-200 bg-white hover:bg-slate-50"
+                            }`}
+                          >
+                            <span className="flex min-w-0 items-center gap-3">
+                              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition ${
+                                checked ? "border-blue-600 bg-blue-600 text-white" : isDark ? "border-white/30" : "border-slate-300"
+                              }`}>
+                                {checked && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                              </span>
+                              <span className={`text-sm font-bold ${titleText}`}>{item.label}</span>
+                            </span>
+                            <span className={item.present ? "shrink-0 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-black text-emerald-700" : "shrink-0 rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-black text-red-600"}>
+                              {item.present ? "Ready" : "Missing"}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -2149,7 +2193,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                       <h3 className={`text-lg font-bold ${titleText}`}>AI Dispute Letter</h3>
                       <span className="rounded-full bg-blue-600/15 px-2 py-0.5 text-[11px] font-black uppercase tracking-wide text-blue-600">AI</span>
                     </div>
-                    <p className={`mt-1 text-sm ${mutedText}`}>A ready-to-send letter contesting this deduction, built from the claim facts and evidence above.</p>
+                    <p className={`mt-1 text-sm ${mutedText}`}>A ready-to-send letter contesting this deduction, built from the claim facts and the evidence you checked above.</p>
                   </div>
                   {disputeLetterStatus !== "loading" && (
                     <button
