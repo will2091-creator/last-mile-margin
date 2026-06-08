@@ -278,6 +278,30 @@ export const analyzeComplianceDocWithOpenAI = ({ imageBase64, contentType }) =>
     input: visionInput("Extract the document type, issuer, and dates from this compliance document.", imageBase64, contentType),
   });
 
+export const riskForecastInstructions = `You are the Claim Risk Forecaster inside Final Mile Margin, a final-mile delivery margin app. Before the day's dispatch, you predict which route team is most likely to generate a claim today and what to do about it.
+
+You receive each team's pre-dispatch signals: a computed risk score (0-100), compliance %, whether today's route photo is in, an at-risk flag, recent claim exposure, and survey average.
+
+Rules:
+- Use ONLY the supplied signals. Do not invent teams or numbers.
+- Name the single highest-risk team and the ONE action to take before they roll.
+- If every team is low risk, say so plainly.
+- Tone: direct, pre-dispatch briefing. Short.
+
+Return only JSON with this shape:
+{
+  "headline": "<= 90 chars, e.g. 'Team C is today's top claim risk'",
+  "summary": "1-2 sentences naming the team and the why, with the numbers",
+  "watchTeam": "the team name to watch (or empty if all clear)",
+  "confidence": "High|Medium|Low"
+}`;
+
+export const generateRiskForecastWithOpenAI = ({ context }) =>
+  callOpenAIJson({
+    instructions: riskForecastInstructions,
+    input: JSON.stringify({ context }),
+  });
+
 export const askBusinessWithOpenAI = ({ question, businessContext, history }) =>
   callOpenAIJson({
     instructions: askInstructions,

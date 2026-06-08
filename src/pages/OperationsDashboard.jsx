@@ -4,6 +4,7 @@ import TeamsDashboard from "./TeamsDashboard";
 import ComplianceDashboard from "./ComplianceDashboard";
 import { AlertTriangle, Camera, CheckCircle2, ClipboardCheck, currency, FileText, ShieldCheck, Truck, Users } from "../shared";
 import EmptyState from "../components/EmptyState";
+import RiskForecast from "../components/RiskForecast";
 import SetupProgressPanel from "../components/SetupProgressPanel";
 import { getPageEmptyStateConfig, getSetupStatus } from "../lib/onboarding";
 
@@ -220,6 +221,8 @@ export default function OperationsDashboard({
           </div>
         </div>
       </section>
+
+      <RiskForecast isDark={isDark} teams={teams} claims={claims} />
 
       {activeSection === "Dispatch" ? (
         <div data-tour="operations-active-workflow">
