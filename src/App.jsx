@@ -1424,7 +1424,7 @@ export default function App() {
             <ErrorBoundary key={activeTab} variant="page">
             <Suspense fallback={<PageFallback />}>
             {activeTab === "Dashboard" ? (
-              <DashboardHome key={tourActive ? "dash-tour" : "dash-live"} teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} onApplyDayLog={applyDayLog} ownerName={ownerName} />
+              <DashboardHome key={tourActive ? "dash-tour" : "dash-live"} teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} onApplyDayLog={applyDayLog} ownerName={ownerName} canAccess={(tab) => canAccessTab(currentUserRole, tab)} />
             ) : activeTab === "Intake" ? (
               <AiQuickIntake
                 teams={teams}
@@ -1506,7 +1506,7 @@ export default function App() {
                 isDemoMode={isDemoMode}
               />
             ) : (
-              <DashboardHome key={tourActive ? "dash-tour" : "dash-live"} teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} onApplyDayLog={applyDayLog} ownerName={ownerName} />
+              <DashboardHome key={tourActive ? "dash-tour" : "dash-live"} teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} onApplyDayLog={applyDayLog} ownerName={ownerName} canAccess={(tab) => canAccessTab(currentUserRole, tab)} />
             )}
             </Suspense>
             </ErrorBoundary>

@@ -31,12 +31,16 @@ import {
   YAxis,
 } from "../shared";
 import NextActionCard from "../components/NextActionCard";
-import WatchdogPanel from "../components/WatchdogPanel";
+import ActionFeed from "../components/ActionFeed";
 import ForecastPanel from "../components/ForecastPanel";
 import RemindersCard from "../components/RemindersCard";
 import ContractEvaluator from "../components/ContractEvaluator";
 import { InlineEmpty } from "../components/EmptyState";
 import { getNextBestSetupAction, getSetupStatus } from "../lib/onboarding";
+import { buildActionFeed } from "../lib/actionFeed";
+import { detectAnomalies } from "../lib/watchdog";
+import { computeForecast } from "../lib/forecast";
+import { loadReminders, removeReminder, REMINDERS_EVENT } from "../lib/reminders";
 import { useCountUp } from "../hooks/useCountUp";
 import { useSpeechToText } from "../hooks/useSpeechToText";
 import ContractModal from "../components/dashboard/ContractModal";
@@ -45,7 +49,7 @@ import ExpenseModal from "../components/dashboard/ExpenseModal";
 import ImportModal from "../components/dashboard/ImportModal";
 import SetupWizard from "../components/dashboard/SetupWizard";
 
-function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDark, appSettings, savedDaySnapshot, savedDays = [], isBlankDemo = false, isDemoMode = false, onSaveSnapshot, onApplyDayLog, ownerName = "" }) {
+function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDark, appSettings, savedDaySnapshot, savedDays = [], isBlankDemo = false, isDemoMode = false, onSaveSnapshot, onApplyDayLog, ownerName = "", canAccess = () => true }) {
   const defaultDashboardOrder = defaultSettings.dashboardWidgetOrder || Object.keys(defaultSettings.dashboardWidgets);
   const dashboardWidgetOrder = [
     ...new Set([...(appSettings?.dashboardWidgetOrder || []), ...defaultDashboardOrder]),
@@ -323,37 +327,8 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     })
     .slice(0, 6);
 
-  const missingPhotoTeams = teams.filter((team) => team.photoStatus === "Missing");
-  const needsAttention = [
-    missingPhotoTeams.length > 0 && {
-      title: `${missingPhotoTeams[0].name} missing photo`,
-      detail: `${missingPhotoTeams.length} team${missingPhotoTeams.length === 1 ? "" : "s"} still need daily photo proof.`,
-      icon: Camera,
-      tab: "Operations",
-      tone: "red",
-    },
-    openClaims > 0 && {
-      title: "Claims review needed",
-      detail: `${openClaims} open claim${openClaims === 1 ? "" : "s"} require review.`,
-      icon: FileText,
-      tab: "Operations",
-      tone: "amber",
-    },
-    hasQuickContracts && dashboardRevenue > 0 && dashboardCosts / dashboardRevenue > 0.75 && {
-      title: "Cost above target",
-      detail: "Route costs are eating more than 75% of revenue.",
-      icon: AlertTriangle,
-      tab: "Finance",
-      tone: "amber",
-    },
-    periodClaimsExposure > 0 && escrowBalance < periodClaimsExposure * 0.5 && {
-      title: "Reserve under exposure",
-      detail: "Open claim exposure is higher than the current reserve target.",
-      icon: ShieldCheck,
-      tab: "Finance",
-      tone: "red",
-    },
-  ].filter(Boolean);
+  // (Hard-coded "Needs Attention" items were folded into the unified action feed —
+  // see src/lib/actionFeed.js, which reads these same signals via the watchdog detectors.)
 
 
 
@@ -532,14 +507,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     }
   };
 
-  // Proactively generate once per day + period (cached), so the brief feels live without spamming the API.
-  useEffect(() => {
-    if (!marginBriefContext.hasData) return;
-    const cacheKey = `${new Date().toISOString().slice(0, 10)}-${marginBriefContext.period}`;
-    if (briefCacheKeyRef.current === cacheKey) return;
-    generateMarginBrief(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [marginBriefContext.period, marginBriefContext.hasData]);
+  // (The standalone AI Margin Brief card was consolidated into the unified action feed.)
 
   // ---- AI Day Log (Pillar 3): natural-language note -> daily numbers + claims ----
   const parseDayLogFallback = (text) => {
@@ -1077,6 +1045,57 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     if (action.tab) setActiveTab(action.tab);
   };
 
+  // ---- Unified "Do this now" action feed: merge every signal into one ranked list ----
+  const [remindersTick, setRemindersTick] = useState(0);
+  useEffect(() => {
+    const refresh = () => setRemindersTick((t) => t + 1);
+    window.addEventListener(REMINDERS_EVENT, refresh);
+    return () => window.removeEventListener(REMINDERS_EVENT, refresh);
+  }, []);
+  const actionFeedItems = useMemo(() => {
+    let docs = [];
+    try {
+      const raw = JSON.parse(localStorage.getItem("finalMileComplianceDocs") || "[]");
+      docs = Array.isArray(raw) ? raw : [];
+    } catch {
+      docs = [];
+    }
+    const anomalies = detectAnomalies({ savedDays, claims, teams, contracts: quickContracts, docs, appSettings, today: { profit: todayProfit, revenue: dashboardRevenue, margin } });
+    const forecast = computeForecast({ savedDays, appSettings });
+    return buildActionFeed({ setupStatus, anomalies, reminders: loadReminders(), forecast, claims, teams, appSettings, canAccess });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setupStatus, claims, teams, savedDays, quickContracts, appSettings, todayProfit, dashboardRevenue, margin, remindersTick]);
+  // Execute a feed item by reusing the existing copilot event plumbing — no flows rebuilt.
+  const onExecute = (item) => {
+    if (!item) return;
+    if (item.action?.type === "reminderDone" && item.reminderId) {
+      removeReminder(item.reminderId); // fires REMINDERS_EVENT → feed refreshes
+      return;
+    }
+    if (item.setupStepId) {
+      handleSetupStatusAction({ id: item.setupStepId, tab: item.tab });
+      return;
+    }
+    const action = item.action || {};
+    if (action.type === "draftDisputes") {
+      setActiveTab("Claims");
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent("fmm:draft-disputes")), 500);
+      return;
+    }
+    if (action.type === "openClaim") {
+      setActiveTab("Claims");
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent("fmm:open-claim", { detail: { claimId: action.claimId } })), 500);
+      return;
+    }
+    if (action.type === "logDay") {
+      openDayLog();
+      return;
+    }
+    if (action.type === "navigate" && action.tab) {
+      setActiveTab(action.tab);
+    }
+  };
+
   const setupPreviewCards = [
     {
       title: "Profit command center",
@@ -1299,13 +1318,15 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
         appSettings={appSettings}
       />
 
-      {/* PRIMARY ROW — net profit with trend, and what needs attention today */}
-      <div className="grid items-start gap-4 xl:grid-cols-[1.5fr_1fr]">
+      {!isCleanBlankWorkspace && <ActionFeed isDark={isDark} items={actionFeedItems} onExecute={onExecute} />}
+
+      {/* NET PROFIT — the hero number + trend */}
+      <div>
         <button
           type="button"
           data-tour="dashboard-net-profit"
           onClick={() => goToSource("Profitability")}
-          className={isDark ? "rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/60 p-6 text-left shadow-card transition hover:-translate-y-0.5 hover:border-blue-300/40 hover:shadow-card-hover" : "rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"}
+          className={isDark ? "block w-full rounded-2xl border border-blue-400/20 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/60 p-6 text-left shadow-card transition hover:-translate-y-0.5 hover:border-blue-300/40 hover:shadow-card-hover" : "block w-full rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"}
         >
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Net Profit Today</p>
@@ -1341,127 +1362,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
             )}
           </div>
         </button>
-
-        <div data-tour="dashboard-needs-attention" className={cardClass}>
-          <div className="mb-4 flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Needs Attention</p>
-            {needsAttention.length > 0 && (
-              <button onClick={() => setActiveTab("Operations")} className="text-sm font-bold text-blue-600">View all</button>
-            )}
-          </div>
-          {needsAttention.length === 0 ? (
-            <div className={`flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed py-10 text-center ${isDark ? "border-white/10" : "border-slate-200"}`}>
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700">
-                <CheckCircle2 className="h-5 w-5" />
-              </span>
-              <p className={`text-sm font-black ${titleText}`}>All clear</p>
-              <p className={`text-xs font-semibold ${mutedText}`}>No issues need attention right now.</p>
-            </div>
-          ) : (
-            <div className={`divide-y ${isDark ? "divide-white/10" : "divide-slate-200"}`}>
-              {needsAttention.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button key={item.title} onClick={() => goToSource(item.tab)} className={`flex w-full items-center gap-3 py-3 text-left transition ${isDark ? "hover:bg-white/5" : "hover:bg-blue-50/60"}`}>
-                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${toneIcon(item.tone)}`}>
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className={`truncate text-sm font-black ${titleText}`}>{item.title}</p>
-                      <p className={`truncate text-xs font-semibold ${mutedText}`}>{item.detail}</p>
-                    </div>
-                    <span className="text-lg text-slate-400">›</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
       </div>
-
-      {marginBriefContext.hasData && (
-        <div data-tour="dashboard-ai-brief" className={isDark ? "rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-indigo-500/5 p-5 shadow-card" : "rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50/40 p-5 shadow-sm"}>
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600/15 text-blue-600">
-                <Sparkles className="h-5 w-5" />
-              </span>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className={`text-base font-black ${titleText}`}>AI Margin Brief</h2>
-                  <span className="rounded-full bg-blue-600/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-blue-600">AI</span>
-                </div>
-                <p className={`text-xs font-semibold ${mutedText}`}>Your daily read on what's moving the numbers.</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => generateMarginBrief(true)}
-              disabled={marginBriefStatus === "loading"}
-              className={isDark ? "flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-bold text-slate-300 hover:bg-white/5 disabled:opacity-50" : "flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-white disabled:opacity-50"}
-            >
-              <RotateCcw className={`h-3.5 w-3.5 ${marginBriefStatus === "loading" ? "animate-spin" : ""}`} /> Refresh
-            </button>
-          </div>
-
-          {marginBriefStatus === "loading" && !marginBrief && (
-            <div className="mt-4 space-y-2">
-              <div className="skeleton h-5 w-2/3 rounded"></div>
-              <div className="skeleton h-4 w-full rounded"></div>
-              <div className="skeleton h-4 w-5/6 rounded"></div>
-              <div className="skeleton mt-1 h-14 w-full rounded-xl"></div>
-            </div>
-          )}
-
-          {marginBrief && (
-            <div className="mt-4 space-y-3">
-              <p className={`text-lg font-black leading-snug ${titleText}`}>{marginBrief.headline}</p>
-
-              <div className={isDark ? "rounded-xl border border-blue-500/30 bg-blue-500/10 p-3.5" : "rounded-xl border border-blue-200 bg-white/70 p-3.5"}>
-                <p className="text-[11px] font-black uppercase tracking-wide text-blue-600">Your next move</p>
-                <p className={`mt-1 text-sm font-bold leading-6 ${titleText}`}>{marginBrief.topMove}</p>
-              </div>
-
-              {marginBrief.signals?.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {marginBrief.signals.map((signal) => (
-                    <span key={signal} className={isDark ? "rounded-full bg-white/5 px-2.5 py-1 text-xs font-bold text-slate-300" : "rounded-full bg-white px-2.5 py-1 text-xs font-bold text-slate-600 shadow-sm"}>{signal}</span>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex items-center gap-2 pt-0.5 text-[11px] font-semibold text-slate-500">
-                <span className={marginBrief.sentiment === "positive" ? "inline-block h-2 w-2 rounded-full bg-emerald-500" : marginBrief.sentiment === "negative" ? "inline-block h-2 w-2 rounded-full bg-red-500" : "inline-block h-2 w-2 rounded-full bg-amber-500"}></span>
-                <span>{marginBrief.source} · confidence {marginBrief.confidence}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {marginBriefContext.hasData && (
-        <WatchdogPanel
-          isDark={isDark}
-          navigateToTab={setActiveTab}
-          savedDays={savedDays}
-          claims={claims}
-          teams={teams}
-          contracts={quickContracts}
-          today={{ profit: todayProfit, revenue: dashboardRevenue, margin }}
-          appSettings={appSettings}
-        />
-      )}
-
-      {marginBriefContext.hasData && (
-        <ForecastPanel
-          isDark={isDark}
-          navigateToTab={setActiveTab}
-          savedDays={savedDays}
-          appSettings={appSettings}
-        />
-      )}
-
-      <RemindersCard isDark={isDark} />
 
       {/* SECONDARY ROW — revenue, cost, margin, and team readiness */}
       <div data-tour="dashboard-kpis" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -1510,6 +1411,15 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           )}
         </button>
       </div>
+
+      {/* INSIGHTS — forward-looking + reference, demoted below the action surface */}
+      {!isCleanBlankWorkspace && (
+        <div className="space-y-4">
+          <h2 className={`text-sm font-black uppercase tracking-wide ${mutedText}`}>Insights</h2>
+          <ForecastPanel isDark={isDark} navigateToTab={setActiveTab} savedDays={savedDays} appSettings={appSettings} />
+          <RemindersCard isDark={isDark} />
+        </div>
+      )}
 
       {showCompactSetup && (
         <div className={`${cardClass} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
