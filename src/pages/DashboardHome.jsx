@@ -356,159 +356,6 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
   const goToSource = (tabName) => setActiveTab(tabName);
 
-  // ---- AI Margin Brief (Pillar 2) ----
-  const marginBriefContext = useMemo(() => {
-    const profit = Number(todayProfit || 0);
-    const revenue = Number(dashboardRevenue || 0);
-    const costs = Number(dashboardCosts || 0);
-    const marginPct = Number(margin || 0);
-    const normMargin = (m) => (Math.abs(Number(m || 0)) <= 1 ? Number(m || 0) * 100 : Number(m || 0));
-    const history = (Array.isArray(savedDays) ? savedDays : []).slice(0, 7);
-    const avgProfit = history.length ? history.reduce((sum, day) => sum + Number(day.profit || 0), 0) / history.length : null;
-    const avgMargin = history.length ? history.reduce((sum, day) => sum + normMargin(day.margin), 0) / history.length : null;
-    const contractRows = (quickContracts || [])
-      .map((row) => {
-        const rev = Number(row.revenue || 0);
-        const cost =
-          Number(row.labor || 0) + Number(row.fuel || 0) + Number(row.truckInsurance || 0) +
-          Number(row.maintenance || 0) + Number(row.claims || 0) + Number(row.other || 0);
-        const prof = rev - cost;
-        return { name: row.contract || "Unnamed route", revenue: rev, profit: prof, margin: rev ? Math.round((prof / rev) * 100) : 0 };
-      })
-      .filter((row) => row.revenue > 0);
-    const byMargin = [...contractRows].sort((a, b) => a.margin - b.margin);
-    const openClaimsList = (claims || []).filter((claim) => claim.status !== "Closed");
-    const openExposure = openClaimsList.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
-    const highRisk = openClaimsList.filter((claim) => claim.risk === "High").length;
-    const topClaim = openClaimsList.slice().sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0))[0];
-    return {
-      period: dashboardPeriod,
-      revenue,
-      costs,
-      profit,
-      margin: Math.round(marginPct * 10) / 10,
-      trend: avgProfit === null ? null : {
-        avgProfit: Math.round(avgProfit),
-        avgMargin: Math.round(avgMargin * 10) / 10,
-        deltaProfit: Math.round(profit - avgProfit),
-        deltaMargin: Math.round((marginPct - avgMargin) * 10) / 10,
-        daysCompared: history.length,
-      },
-      worstContract: byMargin[0] || null,
-      bestContract: byMargin[byMargin.length - 1] || null,
-      claims: {
-        open: openClaimsList.length,
-        exposure: openExposure,
-        highRisk,
-        topClaim: topClaim ? { type: topClaim.type, amount: Number(topClaim.amount || 0) } : null,
-      },
-      teams: {
-        total: (teams || []).length,
-        atRisk: (teams || []).filter((team) => team.status === "At Risk").length,
-        missingPhotos: (teams || []).filter((team) => team.photoStatus !== "Uploaded").length,
-      },
-      companyName: appSettings?.companyName || "your business",
-      hasData: revenue > 0 || profit !== 0 || contractRows.length > 0,
-    };
-  }, [todayProfit, dashboardRevenue, dashboardCosts, margin, savedDays, quickContracts, claims, teams, dashboardPeriod, appSettings]);
-
-  const buildFallbackBrief = (ctx) => {
-    const money = (value) => currency.format(Math.round(Number(value || 0)));
-    const dir = ctx.trend ? (ctx.trend.deltaProfit >= 0 ? "up" : "down") : null;
-    const sentiment = ctx.trend ? (ctx.trend.deltaProfit >= 0 ? "positive" : "negative") : "neutral";
-    const trendLabel = ctx.trend ? (ctx.trend.daysCompared === 1 ? "vs yesterday" : `vs your ${ctx.trend.daysCompared}-day average`) : "";
-    const headline = ctx.trend
-      ? `Net profit ${dir} ${money(Math.abs(ctx.trend.deltaProfit))} ${trendLabel}`
-      : `${money(ctx.profit)} net profit at ${ctx.margin}% margin`;
-    const parts = [`You're at ${money(ctx.profit)} net profit on ${money(ctx.revenue)} revenue (${ctx.margin}% margin) this ${ctx.period.toLowerCase()}.`];
-    if (ctx.trend) parts.push(`That's ${dir} ${money(Math.abs(ctx.trend.deltaProfit))} versus your recent ${ctx.trend.daysCompared}-day average of ${money(ctx.trend.avgProfit)}.`);
-    if (ctx.worstContract && ctx.bestContract && ctx.worstContract.name !== ctx.bestContract.name) {
-      parts.push(`${ctx.worstContract.name} is your thinnest route at ${ctx.worstContract.margin}% margin; ${ctx.bestContract.name} leads at ${ctx.bestContract.margin}%.`);
-    } else if (ctx.worstContract) {
-      parts.push(`${ctx.worstContract.name} is running at ${ctx.worstContract.margin}% margin.`);
-    }
-    let topMove;
-    if (ctx.claims.highRisk > 0 && ctx.claims.topClaim) {
-      topMove = `Review the ${ctx.claims.topClaim.type} claim (${money(ctx.claims.topClaim.amount)}) — you have ${ctx.claims.highRisk} high-risk claim${ctx.claims.highRisk > 1 ? "s" : ""} and ${money(ctx.claims.exposure)} open exposure. Generate a dispute letter if it's contestable.`;
-    } else if (ctx.worstContract && ctx.worstContract.margin < 20) {
-      topMove = `Dig into ${ctx.worstContract.name}'s costs — at ${ctx.worstContract.margin}% margin it's dragging your blended profit. Check fuel and labor per stop.`;
-    } else if (ctx.teams.missingPhotos > 0) {
-      topMove = `Chase the ${ctx.teams.missingPhotos} team${ctx.teams.missingPhotos > 1 ? "s" : ""} missing today's photo check-in before they roll — missing proof is how claims turn into losses.`;
-    } else if (!ctx.trend) {
-      topMove = `Save a few days of snapshots so I can spot trends and tell you what's moving your margin.`;
-    } else {
-      topMove = `Hold the line — log today's numbers and keep claims current. Nothing is bleeding margin right now.`;
-    }
-    const signals = [`${money(ctx.profit)} profit · ${ctx.margin}% margin`];
-    if (ctx.claims.open) signals.push(`${ctx.claims.open} open claim${ctx.claims.open > 1 ? "s" : ""} · ${money(ctx.claims.exposure)} exposure`);
-    if (ctx.worstContract) signals.push(`Thinnest: ${ctx.worstContract.name} (${ctx.worstContract.margin}%)`);
-    if (ctx.teams.atRisk) signals.push(`${ctx.teams.atRisk} team${ctx.teams.atRisk > 1 ? "s" : ""} at risk`);
-    return { headline, summary: parts.join(" "), topMove, signals: signals.slice(0, 4), sentiment, confidence: "Medium", source: "Computed (offline)" };
-  };
-
-  const [marginBrief, setMarginBrief] = useState(null);
-  const [marginBriefStatus, setMarginBriefStatus] = useState("idle"); // idle | loading | ready
-  const briefCacheKeyRef = useRef("");
-
-  const generateMarginBrief = async (force = false) => {
-    const ctx = marginBriefContext;
-    if (!ctx.hasData) {
-      setMarginBrief(null);
-      setMarginBriefStatus("idle");
-      return;
-    }
-    const cacheKey = `${new Date().toISOString().slice(0, 10)}-${ctx.period}`;
-    if (!force) {
-      try {
-        const cached = JSON.parse(localStorage.getItem("finalMileMarginBrief") || "null");
-        // Only trust a cached brief that came from real AI — never pin a stale offline
-        // fallback for the day (e.g. cached before the API key went live). Retry otherwise.
-        if (cached && cached.key === cacheKey && cached.brief && cached.brief.source === "AI generated") {
-          setMarginBrief(cached.brief);
-          setMarginBriefStatus("ready");
-          briefCacheKeyRef.current = cacheKey;
-          return;
-        }
-      } catch {
-        /* ignore cache parse errors */
-      }
-    }
-    setMarginBriefStatus("loading");
-    const fallback = buildFallbackBrief(ctx);
-    let brief;
-    try {
-      const response = await fetch("/api/margin-brief", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ context: ctx }),
-      });
-      if (!response.ok) throw new Error("AI unavailable");
-      const result = await response.json().catch(() => ({}));
-      if (!result || !result.summary) throw new Error("No brief returned");
-      brief = {
-        headline: result.headline || fallback.headline,
-        summary: result.summary,
-        topMove: result.topMove || fallback.topMove,
-        signals: Array.isArray(result.signals) ? result.signals.slice(0, 4) : fallback.signals,
-        sentiment: ["positive", "neutral", "negative"].includes(result.sentiment) ? result.sentiment : "neutral",
-        confidence: ["High", "Medium", "Low"].includes(result.confidence) ? result.confidence : "Medium",
-        source: "AI generated",
-      };
-    } catch {
-      brief = fallback;
-    }
-    setMarginBrief(brief);
-    setMarginBriefStatus("ready");
-    briefCacheKeyRef.current = cacheKey;
-    try {
-      localStorage.setItem("finalMileMarginBrief", JSON.stringify({ key: cacheKey, brief }));
-    } catch {
-      /* ignore quota errors */
-    }
-  };
-
-  // (The standalone AI Margin Brief card was consolidated into the unified action feed.)
-
   // ---- AI Day Log (Pillar 3): natural-language note -> daily numbers + claims ----
   const parseDayLogFallback = (text) => {
     const note = text || "";
@@ -1428,9 +1275,9 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
               <ClipboardCheck className="h-5 w-5" />
             </span>
             <div className="min-w-0">
-              <p className={`text-sm font-black ${titleText}`}>Finish setting up your workspace</p>
+              <p className={`text-sm font-black ${titleText}`}>Setup progress</p>
               <p className={`mt-0.5 text-xs font-bold ${mutedText}`}>
-                {setupCompleteCount} of {setupSteps.length} steps done · Next: {setupNextStep?.title || "Review setup"}
+                {setupCompleteCount} of {setupSteps.length} steps done · your next step is in the list up top.
               </p>
               <div className={isDark ? "mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-white/10" : "mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-slate-200"}>
                 <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${setupPercent}%` }} />
@@ -1443,12 +1290,6 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
               className={isDark ? "rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-slate-200 hover:bg-white/5" : "rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"}
             >
               View all steps
-            </button>
-            <button
-              onClick={setupNextStep?.onClick}
-              className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-sm shadow-blue-600/20 hover:bg-blue-500"
-            >
-              Continue
             </button>
           </div>
         </div>
