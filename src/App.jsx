@@ -18,6 +18,7 @@ import AppSidebar from "./components/app/AppSidebar";
 import AppToolbar from "./components/app/AppToolbar";
 import AppBottomNav from "./components/app/AppBottomNav";
 import ErrorBoundary from "./components/ErrorBoundary";
+import AskCopilot from "./components/AskCopilot";
 import TourOverlay from "./tour/TourOverlay";
 import { tourSteps } from "./tour/tourSteps";
 import { demoDataset, demoContracts } from "./tour/tourDemoData";
@@ -1532,6 +1533,19 @@ export default function App() {
         onFinish={finishTour}
         navigateToTab={navigateToTab}
       />
+
+      {!tourActive && (
+        <AskCopilot
+          isDark={isDark}
+          activeTab={activeTab}
+          navigateToTab={navigateToTab}
+          teams={teams}
+          claims={claims}
+          savedDays={savedDays}
+          results={results}
+          appSettings={appSettings}
+        />
+      )}
     </div>
   );
 }
