@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -17,6 +19,27 @@ Use Gas for fuel stations and fuel purchases. Use Tools for tool/hardware purcha
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  // Auth gate: require a signed-in Supabase user. The mobile app sends the user's
+  // session token automatically via functions.invoke, so this blocks anonymous /
+  // bot calls (which would burn Anthropic credits) without breaking real users.
+  // JWT-verify is off on this function so the new sb_publishable_ key works; we
+  // verify the session here instead, which is provider-key-format agnostic.
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return json({ error: "Auth is not configured for this function." }, 503);
+  }
+  try {
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: req.headers.get("Authorization") || "" } },
+      auth: { persistSession: false },
+    });
+    const { data: { user } } = await authClient.auth.getUser();
+    if (!user) return json({ error: "Unauthorized — sign in to use receipt scanning." }, 401);
+  } catch {
+    return json({ error: "Unauthorized." }, 401);
   }
 
   try {
