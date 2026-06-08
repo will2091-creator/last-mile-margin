@@ -282,7 +282,7 @@ function SettingsDashboard({
     showNotice("Setup guidance restored. The Dashboard will show onboarding prompts again.");
   };
 
-  const tabs = ["Company", "Team Access", "Margin Factors", "Targets", "Claims", "Accessorials", "Labels", "Employees", "Notifications"];
+  const tabs = ["Company", "Team Access", "Margin Factors", "Targets", "Claims", "Employees", "Notifications"];
 
   const categoryCards = [
     {
@@ -341,28 +341,9 @@ function SettingsDashboard({
     }
   };
 
-  const accessorialSettings = appSettings?.accessorials || {
-    haulAway: 35,
-    stairs: 25,
-    longCarry: 30,
-    install: 25,
-    waitTime: 45,
-    redelivery: 75,
-  };
-  const labelSettings = appSettings?.labels || {
-    contract: "Contract",
-    route: "Route",
-    driver: "Driver",
-    helper: "Helper",
-    claim: "Claim",
-    margin: "Margin",
-  };
   // Merge stored values over the defaults so toggling one setting never blanks the others.
   const employeeSettings = {
     requireDriverPhoto: true,
-    requireHelperPhoto: true,
-    trackCompliance: true,
-    showClaimsByDriver: true,
     ...(appSettings?.employees || {}),
   };
   const notificationSettings = {
@@ -370,7 +351,7 @@ function SettingsDashboard({
     highClaims: true,
     lowMargin: true,
     renewalReminder: true,
-    dailySummary: false,
+    dailySummary: true,
     ...(appSettings?.notifications || {}),
   };
   const claimRiskThresholds = {
@@ -632,8 +613,6 @@ function SettingsDashboard({
                 {activeSettingsTab === "Team Access" && "Invite users and control what each role can access."}
                 {activeSettingsTab === "Dashboard Layout" && "Control which dashboard sections show and the order they appear in."}
                 {activeSettingsTab === "Claims" && "Set claim review rules, including amount thresholds for risk levels."}
-                {activeSettingsTab === "Accessorials" && "Set default add-on charges used by contracts and route math."}
-                {activeSettingsTab === "Labels" && "Rename common app words to match how your business talks."}
                 {activeSettingsTab === "Employees" && "Control driver/helper readiness and accountability settings."}
                 {activeSettingsTab === "Notifications" && "Choose the alerts you want the app to surface."}
               </p>
@@ -944,61 +923,10 @@ function SettingsDashboard({
             </div>
           )}
 
-          {activeSettingsTab === "Accessorials" && (
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {[
-                ["haulAway", "Haul Away", "$"],
-                ["stairs", "Stairs / Long Carry", "$"],
-                ["longCarry", "Long Carry", "$"],
-                ["install", "Install", "$"],
-                ["waitTime", "Wait Time / Hour", "$"],
-                ["redelivery", "Redelivery", "$"],
-              ].map(([key, label, prefix]) => (
-                <div key={key}>
-                  <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{label}</label>
-                  <div className="relative">
-                    <span className={`absolute left-3 top-2.5 text-sm font-black ${mutedText}`}>{prefix}</span>
-                    <input
-                      type="number"
-                      value={accessorialSettings[key]}
-                      onChange={(event) => updateNestedSetting("accessorials", key, Number(event.target.value || 0))}
-                      className={`${inputClass} pl-7`}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeSettingsTab === "Labels" && (
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {[
-                ["contract", "Contract"],
-                ["route", "Route"],
-                ["driver", "Driver"],
-                ["helper", "Helper"],
-                ["claim", "Claim"],
-                ["margin", "Margin"],
-              ].map(([key, fallback]) => (
-                <div key={key}>
-                  <label className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${mutedText}`}>{fallback} Label</label>
-                  <input
-                    value={labelSettings[key]}
-                    onChange={(event) => updateNestedSetting("labels", key, event.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
           {activeSettingsTab === "Employees" && (
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               {[
                 ["requireDriverPhoto", "Require Driver Photo", "Daily route photo counts toward team readiness. Turn off to drop it from the readiness score and stop missing-photo alerts."],
-                ["requireHelperPhoto", "Require Helper Photo", "Helper must upload a daily readiness photo."],
-                ["trackCompliance", "Track Compliance", "Show readiness and document status for workers."],
-                ["showClaimsByDriver", "Show Claims by Driver", "Assign claim exposure to individual drivers."],
               ].map(([key, label, note]) => (
                 <div key={key} className={softCard}>
                   <div className="flex items-center justify-between gap-4">
@@ -1016,11 +944,11 @@ function SettingsDashboard({
           {activeSettingsTab === "Notifications" && (
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               {[
-                ["missingPhoto", "Missing Photo Alerts", "Flag workers or routes missing daily photos."],
-                ["highClaims", "High Claims Alerts", "Flag drivers or contracts with high exposure."],
-                ["lowMargin", "Low Margin Alerts", "Show contracts or routes below target margin."],
-                ["renewalReminder", "Renewal Reminders", "Warn before contract renewal dates."],
-                ["dailySummary", "Daily Summary", "Prepare a simple daily operations summary."],
+                ["missingPhoto", "Missing Photo Alerts", "Surface teams missing today's route photo in your Do-this-now feed."],
+                ["highClaims", "High Claims Alerts", "Surface high-value, contestable claims in your feed."],
+                ["lowMargin", "Low Margin Alerts", "Surface margin drops, thin routes, and the forecast nudge in your feed."],
+                ["renewalReminder", "Renewal Reminders", "Surface expiring insurance, DOT, and license documents in your feed."],
+                ["dailySummary", "Daily Summary", "Show the AI-written summary line at the top of your feed."],
               ].map(([key, label, note]) => (
                 <div key={key} className={softCard}>
                   <div className="flex items-center justify-between gap-4">

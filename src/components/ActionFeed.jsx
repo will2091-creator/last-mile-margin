@@ -7,14 +7,15 @@ const ICONS = { AlertTriangle, BarChart3, ClipboardCheck, FileText, ShieldCheck,
 // The single prioritized "Do this now" feed. Items are produced deterministically by
 // buildActionFeed(); this component only renders + executes them (via onExecute, which reuses
 // the existing copilot event plumbing). The AI line is decorative — it never reorders the list.
-export default function ActionFeed({ isDark, items = [], onExecute }) {
+export default function ActionFeed({ isDark, items = [], onExecute, aiSummary = true }) {
   const counts = feedCounts(items);
   const [ai, setAi] = useState(null);
   const aiKeyRef = useRef("");
 
   // One AI synthesis line per day, grounded in the (deterministic) feed. Reuses /api/watchdog.
+  // Gated by the Notifications → "Daily Summary" setting.
   useEffect(() => {
-    if (!items.length) {
+    if (!items.length || !aiSummary) {
       setAi(null);
       return;
     }
@@ -45,7 +46,7 @@ export default function ActionFeed({ isDark, items = [], onExecute }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [items, counts.high]);
+  }, [items, counts.high, aiSummary]);
 
   const card = isDark ? "rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-indigo-500/5 p-5 shadow-card" : "rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50/40 p-5 shadow-sm";
   const title = isDark ? "text-white" : "text-slate-950";

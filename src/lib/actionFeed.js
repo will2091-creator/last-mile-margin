@@ -33,6 +33,15 @@ export function buildActionFeed({
   const riskThresholds = { high: Number(appSettings?.claimRiskThresholds?.high ?? 500) };
   const resolveTeam = (claim) => teams.find((t) => t.name === claim.team) || null;
   const allow = (tab) => (typeof canAccess === "function" ? canAccess(tab) : true);
+  // Notification preferences (Settings → Notifications) gate which signals surface. Default on.
+  const notify = (key) => appSettings?.notifications?.[key] !== false;
+  const anomalyAllowed = (a) => {
+    if (a.id === "missing-photos") return notify("missingPhoto");
+    if (a.kind === "claims") return notify("highClaims");
+    if (a.kind === "margin" || a.kind === "profit" || a.kind === "contract") return notify("lowMargin");
+    if (a.kind === "compliance") return notify("renewalReminder");
+    return true; // teams-at-risk and anything without a dedicated toggle
+  };
 
   // ---- 1) Setup steps (only while onboarding is incomplete) ----
   if (setupStatus && !setupStatus.isComplete && Array.isArray(setupStatus.items)) {
@@ -59,7 +68,7 @@ export function buildActionFeed({
   const contestable = (claims || [])
     .filter((c) => c.status !== "Closed" && isLikelyWorthDisputing(c, { resolveTeam, riskThresholds }))
     .sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0));
-  if (allow("Claims")) {
+  if (allow("Claims") && notify("highClaims")) {
     contestable.forEach((claim) => {
       items.push({
         id: `claim:${claim.id}`,
@@ -93,6 +102,7 @@ export function buildActionFeed({
   (anomalies || []).forEach((a) => {
     // The "high-risk-claims" anomaly is the aggregate of the claim items already surfaced above.
     if (a.id === "high-risk-claims" && contestable.length) return;
+    if (!anomalyAllowed(a)) return;
     const tab = a.tab || "Dashboard";
     if (!allow(tab)) return;
     const urgency = a.kind === "compliance" ? (String(a.id).startsWith("doc-expired") ? 240 : 140) : 0;
@@ -130,7 +140,7 @@ export function buildActionFeed({
   });
 
   // ---- 5) Forecast nudge (single, low priority) ----
-  if (forecast && forecast.ready && allow("Profitability") && (forecast.projection?.trend === "declining" || forecast.target?.onPace === false)) {
+  if (forecast && forecast.ready && allow("Profitability") && notify("lowMargin") && (forecast.projection?.trend === "declining" || forecast.target?.onPace === false)) {
     const declining = forecast.projection?.trend === "declining";
     items.push({
       id: "forecast:trajectory",

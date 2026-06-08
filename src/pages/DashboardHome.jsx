@@ -1171,7 +1171,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
         appSettings={appSettings}
       />
 
-      {!isCleanBlankWorkspace && <ActionFeed isDark={isDark} items={actionFeedItems} onExecute={onExecute} />}
+      {!isCleanBlankWorkspace && <ActionFeed isDark={isDark} items={actionFeedItems} onExecute={onExecute} aiSummary={appSettings?.notifications?.dailySummary !== false} />}
 
       {/* NET PROFIT — the hero number + trend */}
       <div>
