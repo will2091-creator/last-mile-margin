@@ -20,34 +20,38 @@ export default function AppSidebar({
   signOut,
 }) {
   return (
-    <aside className={isDark ? "sticky top-0 hidden h-screen w-72 shrink-0 overflow-y-auto border-r border-white/10 bg-slate-950 p-5 lg:block" : "sticky top-0 hidden h-screen w-72 shrink-0 overflow-y-auto border-r border-slate-200 bg-white p-5 lg:block"}>
-      <div data-tour="nav-brand" className="mb-6 flex justify-center">
-        <img
-          src={isDark ? lastMileMarginLogoDark : lastMileMarginLogo}
-          alt="Last Mile Margin"
-          className="h-24 w-40 object-contain"
-        />
+    <aside className={isDark ? "sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-white/10 bg-slate-950 p-4 lg:flex" : "sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-slate-200 bg-white p-4 lg:flex"}>
+      {/* Brand + theme — pinned at the top */}
+      <div className="shrink-0">
+        <div data-tour="nav-brand" className="mb-4 flex justify-center">
+          <img
+            src={isDark ? lastMileMarginLogoDark : lastMileMarginLogo}
+            alt="Last Mile Margin"
+            className="h-16 w-32 object-contain"
+          />
+        </div>
+
+        <button
+          data-tour="nav-theme"
+          onClick={toggleThemeMode}
+          className={
+            isDark
+              ? "mb-3 flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/10"
+              : "mb-3 flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-100"
+          }
+        >
+          <span className="flex items-center gap-3">
+            {isDark ? <Sun className="h-4 w-4 text-amber-300" /> : <Moon className="h-4 w-4 text-blue-600" />}
+            {isDark ? "Light Mode" : "Dark Mode"}
+          </span>
+          <span className={isDark ? "rounded-full bg-blue-500 px-2 py-0.5 text-xs text-white" : "rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-600"}>
+            {isDark ? "On" : "Off"}
+          </span>
+        </button>
       </div>
 
-      <button
-        data-tour="nav-theme"
-        onClick={toggleThemeMode}
-        className={
-          isDark
-            ? "mb-6 flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white hover:bg-white/10"
-            : "mb-6 flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100"
-        }
-      >
-        <span className="flex items-center gap-3">
-          {isDark ? <Sun className="h-4 w-4 text-amber-300" /> : <Moon className="h-4 w-4 text-blue-600" />}
-          {isDark ? "Light Mode" : "Dark Mode"}
-        </span>
-        <span className={isDark ? "rounded-full bg-blue-500 px-2 py-0.5 text-xs text-white" : "rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-600"}>
-          {isDark ? "On" : "Off"}
-        </span>
-      </button>
-
-      <nav className="space-y-2">
+      {/* Nav — the only region that scrolls, and only if it must */}
+      <nav className="-mr-2 min-h-0 flex-1 space-y-1 overflow-y-auto pr-2">
         {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const isActiveParent = activeTab === item.name;
@@ -61,7 +65,7 @@ export default function AppSidebar({
                 onClick={() => {
                   navigateToTab(item.name);
                 }}
-                className={`group relative flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold ${
+                className={`group relative flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-left text-sm font-semibold ${
                   isActiveParent
                     ? `${activeAccent.button} text-white`
                     : isDark
@@ -82,7 +86,7 @@ export default function AppSidebar({
                         key={child.name}
                         data-tour-nav={child.name.toLowerCase()}
                         onClick={() => navigateToTab(child.tab)}
-                        className={`flex w-full items-center gap-2 rounded-lg py-2 pl-11 pr-3 text-left text-xs font-bold ${
+                        className={`flex w-full items-center gap-2 rounded-lg py-1.5 pl-11 pr-3 text-left text-xs font-bold ${
                           childActive
                             ? isDark
                               ? "bg-white/10 text-white"
@@ -104,25 +108,28 @@ export default function AppSidebar({
         })}
       </nav>
 
-      {onStartTour && (
-        <button
-          data-tour="nav-take-tour"
-          onClick={onStartTour}
-          className={
-            isDark
-              ? "mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-slate-200 hover:bg-white/10"
-              : "mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-100"
-          }
-        >
-          Take the tour
-        </button>
-      )}
+      {/* Tour + account — pinned at the bottom, always visible */}
+      <div className="shrink-0 pt-3">
+        {onStartTour && (
+          <button
+            data-tour="nav-take-tour"
+            onClick={onStartTour}
+            className={
+              isDark
+                ? "flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-slate-200 hover:bg-white/10"
+                : "flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-100"
+            }
+          >
+            Take the tour
+          </button>
+        )}
 
-      <div className="mt-6 text-sm text-slate-500">
-        <p>{appSettings.companyName}</p>
-        <p>{authUser?.email || "Owner Account"}</p>
-        <p className="mt-1 text-xs font-semibold uppercase tracking-wide">{roleLabel || currentUserRole}</p>
-          <button onClick={signOut} className="mt-3 rounded-lg px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-500/10">Sign Out</button>
+        <div className="mt-3 text-sm text-slate-500">
+          <p className="truncate">{appSettings.companyName}</p>
+          <p className="truncate">{authUser?.email || "Owner Account"}</p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-wide">{roleLabel || currentUserRole}</p>
+          <button onClick={signOut} className="mt-2 rounded-lg px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-500/10">Sign Out</button>
+        </div>
       </div>
     </aside>
   );
