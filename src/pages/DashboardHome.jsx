@@ -15,6 +15,7 @@ import {
   DollarSign,
   FileDown,
   FileText,
+  Mic,
   number,
   ResponsiveContainer,
   RotateCcw,
@@ -36,6 +37,7 @@ import RemindersCard from "../components/RemindersCard";
 import { InlineEmpty } from "../components/EmptyState";
 import { getNextBestSetupAction, getSetupStatus } from "../lib/onboarding";
 import { useCountUp } from "../hooks/useCountUp";
+import { useSpeechToText } from "../hooks/useSpeechToText";
 import ContractModal from "../components/dashboard/ContractModal";
 import TeamModal from "../components/dashboard/TeamModal";
 import ExpenseModal from "../components/dashboard/ExpenseModal";
@@ -604,6 +606,15 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     return () => window.removeEventListener("fmm:open-daylog", handler);
   }, []);
 
+  // Hands-free capture: dictate the day note instead of typing it.
+  const appendDayLogText = (text) => setDayLogText((current) => (current.trim() ? `${current.trim()} ${text}` : text));
+  const { supported: micSupported, listening: micListening, interim: micInterim, error: micError, toggle: toggleMic, stop: stopMic } = useSpeechToText({ onFinalResult: appendDayLogText });
+  // Always release the mic when the Day Log closes.
+  useEffect(() => {
+    if (!showDayLog) stopMic();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showDayLog]);
+
   const parseDayLog = async () => {
     const text = dayLogText.trim();
     if (!text) return;
@@ -1163,7 +1174,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600/15 text-blue-600"><Sparkles className="h-5 w-5" /></span>
                 <div>
                   <h2 className={`text-xl font-black ${titleText}`}>AI Day Log</h2>
-                  <p className={`text-xs font-semibold ${mutedText}`}>Type your day in plain English — I'll fill the numbers.</p>
+                  <p className={`text-xs font-semibold ${mutedText}`}>{micSupported ? "Type or speak your day" : "Type your day in plain English"} — I'll fill the numbers.</p>
                 </div>
               </div>
               <button onClick={() => setShowDayLog(false)} className={isDark ? "rounded-lg border border-white/10 px-2.5 py-1 text-sm text-slate-300 hover:bg-white/5" : "rounded-lg border border-slate-200 px-2.5 py-1 text-sm text-slate-600 hover:bg-slate-50"}>Close</button>
@@ -1178,7 +1189,29 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
                   placeholder="e.g. Lowe's route today, got paid $1,240 for 22 stops, ran 130 miles, diesel $3.95/gal, paid the driver $230 and helper $170, $30 in tolls. One wall scratch at the last stop, customer says about $300."
                   className={isDark ? "w-full rounded-xl border border-white/10 bg-slate-950/70 p-3 text-sm leading-6 text-slate-100 outline-none transition focus:border-blue-500" : "w-full rounded-xl border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-800 outline-none transition focus:border-blue-500"}
                 />
-                <div className="flex justify-end">
+                {micListening && (
+                  <p className="flex items-center gap-2 text-xs font-semibold text-blue-500">
+                    <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-75"></span><span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500"></span></span>
+                    {micInterim ? <span className="truncate italic text-blue-400">{micInterim}…</span> : "Listening — say your route, pay, stops, miles, and any damage."}
+                  </p>
+                )}
+                {micError && <p className="text-xs font-semibold text-red-500">{micError}</p>}
+                <div className="flex items-center justify-between gap-2">
+                  {micSupported ? (
+                    <button
+                      type="button"
+                      onClick={toggleMic}
+                      className={micListening
+                        ? "flex items-center gap-1.5 rounded-xl bg-red-500/15 px-3.5 py-2 text-sm font-black text-red-500 transition hover:bg-red-500/25"
+                        : isDark
+                          ? "flex items-center gap-1.5 rounded-xl border border-white/10 px-3.5 py-2 text-sm font-bold text-slate-300 transition hover:bg-white/5"
+                          : "flex items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"}
+                    >
+                      <Mic className={`h-4 w-4 ${micListening ? "animate-pulse" : ""}`} /> {micListening ? "Stop" : "Speak it"}
+                    </button>
+                  ) : (
+                    <span />
+                  )}
                   <button
                     onClick={parseDayLog}
                     disabled={!dayLogText.trim() || dayLogStatus === "parsing"}
