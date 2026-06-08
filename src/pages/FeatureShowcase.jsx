@@ -140,9 +140,9 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
                 that hangs off the bottom-left corner without covering the screenshot content. */}
             <div className="relative">
               <BrowserFrame src={frameDashboard} alt="Last Mile Margin dashboard showing today's profit, claims exposure, revenue, and margin" />
-              <div className="absolute bottom-4 -left-3 w-[224px] rounded-2xl border border-white/10 bg-slate-900/95 p-3.5 shadow-2xl shadow-black/60 backdrop-blur sm:-left-7">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Owner view</p>
-                <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-2">
+              <div className="absolute -bottom-5 -left-3 w-[196px] rounded-2xl border border-white/10 bg-slate-900/95 p-3 shadow-2xl shadow-black/60 backdrop-blur sm:-left-8">
+                <p className="text-[9px] font-black uppercase tracking-wide text-slate-400">Owner view</p>
+                <div className="mt-2 grid grid-cols-2 gap-x-2.5 gap-y-1.5">
                   <div>
                     <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Profit</p>
                     <p className="text-sm font-black text-emerald-400">$356.03</p>

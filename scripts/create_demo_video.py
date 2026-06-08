@@ -141,7 +141,13 @@ def base(progress=0):
     return img
 
 
+# Captions narrate the demo video; the still screenshots are rendered without them.
+SHOW_CAPTIONS = True
+
+
 def caption(img, title, body):
+    if not SHOW_CAPTIONS:
+        return
     d = ImageDraw.Draw(img)
     rounded(d, (245, H - 122, W - 35, H - 32), 18, "#020617D0", "#1D4ED8", 2)
     text(d, (272, H - 102), title, "sub", TEXT)
