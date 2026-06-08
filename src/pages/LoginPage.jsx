@@ -170,6 +170,18 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
               <p className="mt-2">Enter the email or username connected to your account.</p>
             </div>
           </form>
+
+          <p className="mt-5 text-center text-sm text-slate-500">
+            Just getting started?{" "}
+            <a
+              href="https://contractor-launch-hub.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-blue-600 hover:underline"
+            >
+              Set up your company first →
+            </a>
+          </p>
         </section>
       </main>
 
