@@ -74,8 +74,11 @@ Return only JSON with this shape:
   "missingInfo": ["0-5 missing data items that would make the answer sharper"],
   "confidence": "High|Medium|Low",
   "priority": "High|Normal|Low",
-  "tab": "Dashboard|Ask|Intake|Operations|Finance|Profitability|Contracts|Compliance|Claims|Teams|Reports|Settings|Receipts"
+  "tab": "Dashboard|Ask|Intake|Operations|Finance|Profitability|Contracts|Compliance|Claims|Teams|Reports|Settings|Receipts",
+  "action": null
 }
+
+Set "action" to {"type":"draftDisputes","label":"Draft all disputes"} ONLY when the most useful next step is to draft dispute letters for the owner's contestable claims (high-value, open, disputable). Otherwise leave "action" as null. Never invent other action types.
 
 Break-even rules:
 - Break-even revenue equals totalCost.

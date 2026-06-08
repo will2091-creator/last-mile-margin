@@ -50,9 +50,10 @@ export default function AskCopilot({ isDark, activeTab, navigateToTab, teams = [
     if (ctx.highRiskClaims > 0 && ctx.topClaim) {
       return {
         title: "Tackle your biggest claim first",
-        summary: `You have ${ctx.highRiskClaims} high-risk open claim${ctx.highRiskClaims > 1 ? "s" : ""} and ${money(ctx.claimExposure)} in exposure. The largest is ${ctx.topClaim.type} at ${money(ctx.topClaim.amount)}${ctx.topClaim.preventable ? ` (${ctx.topClaim.preventable} preventable)` : ""} — open it and generate a dispute letter if it's contestable.`,
-        actions: ["Open the claim", "Generate a dispute letter"],
+        summary: `You have ${ctx.highRiskClaims} high-risk open claim${ctx.highRiskClaims > 1 ? "s" : ""} and ${money(ctx.claimExposure)} in exposure. The largest is ${ctx.topClaim.type} at ${money(ctx.topClaim.amount)}${ctx.topClaim.preventable ? ` (${ctx.topClaim.preventable} preventable)` : ""}. I can draft dispute letters for every contestable claim right now.`,
+        actions: ["Draft all contestable disputes", "Review the largest claim"],
         tab: "Operations",
+        action: { type: "draftDisputes", label: "Draft all disputes" },
         confidence: "Medium",
         source: "offline",
       };
@@ -110,6 +111,7 @@ export default function AskCopilot({ isDark, activeTab, navigateToTab, teams = [
         summary: data.summary,
         actions: Array.isArray(data.actions) ? data.actions.slice(0, 4) : [],
         tab: data.tab,
+        action: data.action && typeof data.action === "object" ? data.action : null,
         confidence: ["High", "Medium", "Low"].includes(data.confidence) ? data.confidence : "Medium",
         source: "AI",
       };
@@ -118,6 +120,20 @@ export default function AskCopilot({ isDark, activeTab, navigateToTab, teams = [
     }
     setMessages((current) => [...current, { role: "assistant", ...answer }]);
     setStatus("idle");
+  };
+
+  const runCopilotAction = (action) => {
+    if (!action) return;
+    if (action.type === "draftDisputes") {
+      navigateToTab?.("Claims");
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent("fmm:draft-disputes")), 500);
+      setOpen(false);
+      return;
+    }
+    if (action.type === "navigate" && action.tab) {
+      navigateToTab?.(action.tab);
+      setOpen(false);
+    }
   };
 
   const suggestions = SUGGESTIONS[activeTab] || DEFAULT_SUGGESTIONS;
@@ -191,14 +207,21 @@ export default function AskCopilot({ isDark, activeTab, navigateToTab, teams = [
                   )}
                   <div className="mt-2.5 flex items-center justify-between gap-2">
                     <span className={`text-[10px] font-bold uppercase tracking-wide ${muted}`}>{message.source === "AI" ? "AI" : "Offline"} · {message.confidence}</span>
-                    {message.tab && message.tab !== activeTab && (
+                    {message.action ? (
+                      <button
+                        onClick={() => runCopilotAction(message.action)}
+                        className="rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-black text-white hover:bg-blue-500"
+                      >
+                        {message.action.label || "Do it"} →
+                      </button>
+                    ) : message.tab && message.tab !== activeTab ? (
                       <button
                         onClick={() => { navigateToTab?.(message.tab); setOpen(false); }}
                         className="rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-black text-white hover:bg-blue-500"
                       >
                         Go to {message.tab} →
                       </button>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               )

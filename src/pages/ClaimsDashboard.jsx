@@ -7,6 +7,7 @@ import {
   currency,
   DollarSign,
   FileText,
+  Sparkles,
   Truck,
 } from "../shared";
 import EmptyState, { InlineEmpty } from "../components/EmptyState";
@@ -709,10 +710,8 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     };
   };
 
-  const generateDisputeLetter = async (claim) => {
-    if (!claim) return;
-    setDisputeLetterStatus("loading");
-    setCopyState("idle");
+  // Shared: request one dispute letter (AI with graceful template fallback). Returns the letter object.
+  const requestDisputeLetter = async (claim) => {
     const fallback = buildFallbackDisputeLetter(claim);
     try {
       const response = await fetch("/api/dispute-letter", {
@@ -723,7 +722,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       if (!response.ok) throw new Error("AI unavailable");
       const result = await response.json().catch(() => ({}));
       if (!result || !result.letter) throw new Error("No letter returned");
-      const letter = {
+      return {
         subject: result.subject || fallback.subject,
         recipient: result.recipient || fallback.recipient,
         letter: result.letter,
@@ -733,14 +732,65 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
         confidence: ["High", "Medium", "Low"].includes(result.confidence) ? result.confidence : "Medium",
         source: "AI generated",
       };
-      setDisputeLetter(letter);
-      setDisputeLetterBody(letter.letter);
     } catch {
-      setDisputeLetter(fallback);
-      setDisputeLetterBody(fallback.letter);
+      return fallback;
     }
+  };
+
+  const generateDisputeLetter = async (claim) => {
+    if (!claim) return;
+    setDisputeLetterStatus("loading");
+    setCopyState("idle");
+    const letter = await requestDisputeLetter(claim);
+    setDisputeLetter(letter);
+    setDisputeLetterBody(letter.letter);
     setDisputeLetterStatus("ready");
   };
+
+  // ---- Agentic: batch-draft dispute letters for every contestable claim ----
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [batchStatus, setBatchStatus] = useState("idle"); // idle | running | done
+  const [batchLetters, setBatchLetters] = useState([]);
+  const contestableClaims = claims.filter(isLikelyWorthDisputing);
+
+  const generateAllDisputes = async () => {
+    const targets = claims.filter(isLikelyWorthDisputing);
+    setBatchOpen(true);
+    setBatchStatus("running");
+    setBatchLetters([]);
+    if (!targets.length) {
+      setBatchStatus("done");
+      return;
+    }
+    const collected = [];
+    for (const claim of targets) {
+      // Sequential so we show progress and stay gentle on the API.
+      // eslint-disable-next-line no-await-in-loop
+      const letter = await requestDisputeLetter(claim);
+      collected.push({ claim, letter });
+      setBatchLetters([...collected]);
+    }
+    setBatchStatus("done");
+  };
+
+  const copyAllDisputes = async () => {
+    const text = batchLetters
+      .map(({ claim, letter }) => `===== ${claim.id} · ${claim.type} =====\nSubject: ${letter.subject}\n\n${letter.letter}`)
+      .join("\n\n\n");
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      /* clipboard blocked — no-op */
+    }
+  };
+
+  // Let the Ask copilot trigger the batch from anywhere ("draft all my disputes").
+  useEffect(() => {
+    const handler = () => generateAllDisputes();
+    window.addEventListener("fmm:draft-disputes", handler);
+    return () => window.removeEventListener("fmm:draft-disputes", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claims]);
 
   const copyDisputeLetter = async () => {
     try {
@@ -960,6 +1010,14 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
         </div>
 
         <div className="flex flex-wrap gap-3">
+          {contestableClaims.length > 0 && (
+            <button
+              onClick={generateAllDisputes}
+              className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
+            >
+              <Sparkles className="h-4 w-4" /> Draft all disputes ({contestableClaims.length})
+            </button>
+          )}
           <input ref={damagePhotoInputRef} type="file" accept="image/*" capture="environment" onChange={handleDamagePhoto} className="hidden" />
           <button
             onClick={() => damagePhotoInputRef.current?.click()}
@@ -2115,6 +2173,46 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {batchOpen && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" onClick={() => setBatchOpen(false)}>
+          <div onClick={(event) => event.stopPropagation()} className={isDark ? "max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl" : "max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"}>
+            <div className={isDark ? "flex items-start justify-between gap-3 border-b border-white/10 p-5" : "flex items-start justify-between gap-3 border-b border-slate-200 p-5"}>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Agentic · Dispute Engine</p>
+                <h2 className={`mt-1 text-2xl font-black ${titleText}`}>Batch dispute letters</h2>
+                <p className={`mt-1 text-sm ${mutedText}`}>{batchStatus === "running" ? `Drafting ${batchLetters.length} of ${contestableClaims.length}…` : `${batchLetters.length} letter${batchLetters.length === 1 ? "" : "s"} drafted for your contestable claims.`}</p>
+              </div>
+              <div className="flex gap-2">
+                {batchStatus === "done" && batchLetters.length > 0 && (
+                  <button onClick={copyAllDisputes} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500">Copy all</button>
+                )}
+                <button onClick={() => setBatchOpen(false)} className={isDark ? "rounded-xl bg-white/10 px-4 py-2 text-sm font-black text-white hover:bg-white/15" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}>Close</button>
+              </div>
+            </div>
+            <div className="max-h-[calc(90vh-104px)] space-y-4 overflow-y-auto p-5">
+              {batchStatus !== "running" && batchLetters.length === 0 && (
+                <p className={`text-sm ${mutedText}`}>No contestable claims right now. A claim becomes contestable when it's open, high-value, and either not clearly your fault or missing evidence.</p>
+              )}
+              {batchLetters.map(({ claim, letter }, index) => (
+                <div key={claim.id || index} className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-4" : "rounded-2xl border border-slate-200 bg-slate-50 p-4"}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className={`text-sm font-black ${titleText}`}>{claim.id} · {claim.type}</p>
+                    <span className="text-sm font-black text-red-500">{currency.format(Number(claim.amount || 0))}</span>
+                  </div>
+                  <p className={`mt-1 text-xs ${mutedText}`}>{letter.subject}</p>
+                  <textarea readOnly value={letter.letter} rows={7} className={isDark ? "mt-2 w-full rounded-xl border border-white/10 bg-slate-950/70 p-3 text-xs leading-6 text-slate-100" : "mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 text-xs leading-6 text-slate-800"} />
+                </div>
+              ))}
+              {batchStatus === "running" && (
+                <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-4" : "rounded-2xl border border-slate-200 bg-slate-50 p-4"}>
+                  <div className="space-y-2"><div className="skeleton h-3.5 w-1/2 rounded"></div><div className="skeleton h-3.5 w-full rounded"></div><div className="skeleton h-3.5 w-5/6 rounded"></div></div>
+                </div>
+              )}
             </div>
           </div>
         </div>
