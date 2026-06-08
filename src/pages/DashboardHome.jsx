@@ -34,6 +34,7 @@ import NextActionCard from "../components/NextActionCard";
 import WatchdogPanel from "../components/WatchdogPanel";
 import ForecastPanel from "../components/ForecastPanel";
 import RemindersCard from "../components/RemindersCard";
+import ContractEvaluator from "../components/ContractEvaluator";
 import { InlineEmpty } from "../components/EmptyState";
 import { getNextBestSetupAction, getSetupStatus } from "../lib/onboarding";
 import { useCountUp } from "../hooks/useCountUp";
@@ -587,6 +588,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   };
 
   const emptyDayLog = { summary: "", form: {}, claims: [], confidence: "", source: "" };
+  const [showEvaluator, setShowEvaluator] = useState(false);
   const [showDayLog, setShowDayLog] = useState(false);
   const [dayLogText, setDayLogText] = useState("");
   const [dayLogStatus, setDayLogStatus] = useState("idle"); // idle | parsing | review
@@ -1147,12 +1149,22 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
             ))}
           </div>
 
-          <button
-            onClick={openDayLog}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 sm:w-auto"
-          >
-            <Sparkles className="h-4 w-4" /> AI Day Log
-          </button>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <button
+              onClick={() => setShowEvaluator(true)}
+              className={isDark
+                ? "flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/10 px-4 py-2 text-sm font-bold text-slate-200 hover:bg-white/5 sm:flex-none"
+                : "flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 sm:flex-none"}
+            >
+              <BriefcaseBusiness className="h-4 w-4" /> Evaluate Contract
+            </button>
+            <button
+              onClick={openDayLog}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 sm:flex-none"
+            >
+              <Sparkles className="h-4 w-4" /> AI Day Log
+            </button>
+          </div>
 
           <button
             data-tour="dashboard-open-operations"
@@ -1278,6 +1290,14 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           </div>
         </div>
       )}
+
+      <ContractEvaluator
+        isDark={isDark}
+        open={showEvaluator}
+        onClose={() => setShowEvaluator(false)}
+        contracts={quickContracts}
+        appSettings={appSettings}
+      />
 
       {/* PRIMARY ROW — net profit with trend, and what needs attention today */}
       <div className="grid items-start gap-4 xl:grid-cols-[1.5fr_1fr]">

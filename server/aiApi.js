@@ -1,4 +1,4 @@
-import { analyzeComplianceDocWithOpenAI, analyzeDamagePhotoWithOpenAI, analyzeIntakeWithOpenAI, askBusinessWithOpenAI, generateDisputeLetterWithOpenAI, generateForecastWithOpenAI, generateMarginBriefWithOpenAI, generateRiskForecastWithOpenAI, generateWatchdogWithOpenAI, parseDayLogWithOpenAI } from "./openaiCore.js";
+import { analyzeComplianceDocWithOpenAI, analyzeDamagePhotoWithOpenAI, analyzeIntakeWithOpenAI, askBusinessWithOpenAI, generateContractEvalWithOpenAI, generateDisputeLetterWithOpenAI, generateForecastWithOpenAI, generateMarginBriefWithOpenAI, generateRiskForecastWithOpenAI, generateWatchdogWithOpenAI, parseDayLogWithOpenAI } from "./openaiCore.js";
 
 const readJsonBody = (req) =>
   new Promise((resolve, reject) => {
@@ -58,6 +58,12 @@ export async function handleAiApi(req, res, next) {
 
     if (req.url.startsWith("/api/forecast")) {
       const result = await generateForecastWithOpenAI({ context: body.context });
+      sendJson(res, result.ok ? 200 : result.status, result.payload);
+      return;
+    }
+
+    if (req.url.startsWith("/api/contract-eval")) {
+      const result = await generateContractEvalWithOpenAI({ context: body.context });
       sendJson(res, result.ok ? 200 : result.status, result.payload);
       return;
     }
