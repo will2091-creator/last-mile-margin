@@ -175,8 +175,14 @@ def draw_dashboard(progress=0):
     text(d, (270, 505), "Margin", "small_b", MUTED)
     text(d, (270, 530), "26.5%", "h2", TEXT)
     text(d, (405, 530), "↗ 12.32%", "sub", GREEN_2)
-    points = [(500, 555), (560, 535), (620, 500), (690, 475), (735, 440)]
-    d.line(points, fill=BLUE_2, width=5)
+    # profit sparkline — volatile (up and down) but net upward, finishing at the high
+    spark = [
+        (528, 542), (550, 520), (572, 532), (596, 498), (620, 512),
+        (645, 474), (670, 488), (695, 452), (716, 462), (735, 440), (748, 430),
+    ]
+    d.line(spark, fill=BLUE_2, width=5, joint="curve")
+    ex, ey = spark[-1]
+    d.ellipse((ex - 7, ey - 7, ex + 7, ey + 7), fill=BLUE_2, outline=BG, width=3)
     rounded(d, (790, 350, 1235, 640), 20, PANEL, BORDER)
     text(d, (820, 382), "Needs Attention", "sub", RED)
     items = ["Team C missing photo", "Claims review needed", "Cost above target", "Escrow under target"]
