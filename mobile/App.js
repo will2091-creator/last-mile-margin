@@ -13,6 +13,7 @@ import ClaimsScreen from "./src/screens/ClaimsScreen";
 import CheckInScreen from "./src/screens/CheckInScreen";
 import EvidenceScreen from "./src/screens/EvidenceScreen";
 import ReceiptsScreen from "./src/screens/ReceiptsScreen";
+import CashPositionScreen from "./src/screens/CashPositionScreen";
 import TeamScreen from "./src/screens/TeamScreen";
 import MoreScreen from "./src/screens/MoreScreen";
 import { supabase } from "./src/lib/supabaseClient";
@@ -24,6 +25,7 @@ const tabs = [
   { key: "home", label: "Home", ownerLabel: "Command", modes: ["owner", "driver"] },
   { key: "claims", label: "Claims", modes: ["owner", "driver"] },
   { key: "receipts", label: "Receipts", modes: ["owner", "driver"] },
+  { key: "cash", label: "Cash", modes: ["owner"] },
   { key: "team", label: "Team", modes: ["owner"] },
   { key: "more", label: "More", modes: ["owner"] },
   { key: "checkIn", label: "Check In", modes: ["driver"] },
@@ -174,6 +176,7 @@ function AppShell() {
         {activeTab === "claims" && <ClaimsScreen {...screenProps} />}
         {activeTab === "checkIn" && <CheckInScreen {...screenProps} />}
         {activeTab === "receipts" && <ReceiptsScreen {...screenProps} />}
+        {activeTab === "cash" && <CashPositionScreen {...screenProps} />}
         {activeTab === "evidence" && <EvidenceScreen {...screenProps} />}
         {activeTab === "team" && <TeamScreen {...screenProps} />}
         {activeTab === "more" && <MoreScreen {...screenProps} />}
@@ -228,6 +231,15 @@ function TabIcon({ tabKey, isActive }) {
       <View style={[styles.navIcon, styles.receiptIcon]}>
         <View style={[styles.iconBar, styles.iconBarWide, lineStyle]} />
         <View style={[styles.iconBar, styles.iconBarShort, lineStyle]} />
+      </View>
+    );
+  }
+
+  if (tabKey === "cash") {
+    return (
+      <View style={styles.navIcon}>
+        <View style={[styles.coinDot, dotStyle]} />
+        <View style={[styles.iconBar, styles.iconBarWide, lineStyle]} />
       </View>
     );
   }
@@ -431,6 +443,11 @@ const createStyles = (colors) => StyleSheet.create({
     borderRadius: 4,
     height: 7,
     width: 7,
+  },
+  coinDot: {
+    borderRadius: 999,
+    height: 10,
+    width: 10,
   },
   personDot: {
     borderRadius: 7,

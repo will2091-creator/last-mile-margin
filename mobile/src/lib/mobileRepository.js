@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient";
 import { normalizeRole } from "./roles";
+import { FINANCING_DEFAULTS } from "./cashPosition";
 
 export async function getCurrentUser() {
   const { data, error } = await supabase.auth.getUser();
@@ -389,6 +390,106 @@ export async function uploadExpenseReceipt({
 
   if (recordError) return { ok: false, error: recordError.message };
   return { ok: true, receipt: data };
+}
+
+// --- Cash Position (financial system-of-record) -----------------------------
+// Mirrors the web app's src/lib/cashPositionRepository.js. Every read is
+// best-effort: the cash-position tables may not be deployed to the live DB yet
+// (the schema in docs/supabase-cash-position.sql is run manually), so a missing
+// table / RLS denial / empty set returns { ok: false } and the screen keeps its
+// offline demo seed. Money stays integer cents end-to-end (DB bigint -> Number
+// here -> divide by 100 only at display).
+
+const toCents = (v) => {
+  const n = Math.trunc(Number(v));
+  return Number.isFinite(n) ? n : 0;
+};
+
+const fromReceivable = (row) => ({
+  id: row.id,
+  payerName: row.payer_name || "",
+  sourceContractRef: row.source_contract_ref || null,
+  sourceManifestRef: row.source_manifest_ref || null,
+  sourceRoute: row.source_route || null,
+  amountCents: toCents(row.amount_cents),
+  status: row.status || "pending",
+  expectedPayDate: row.expected_pay_date || null,
+  paidAt: row.paid_at || null,
+  advanceId: row.advance_id || null,
+});
+
+const fromSettlement = (row) => ({
+  id: row.id,
+  driverMemberId: row.driver_member_id || null,
+  driverName: row.driver_name || "",
+  periodStart: row.period_start || null,
+  periodEnd: row.period_end || null,
+  grossCents: toCents(row.gross_cents),
+  deductionsCents: toCents(row.deductions_cents),
+  accessorialsCents: toCents(row.accessorials_cents),
+  netOwedCents: toCents(row.net_owed_cents),
+  status: row.status || "draft",
+  expectedPayDate: row.expected_pay_date || null,
+  advanceId: row.advance_id || null,
+});
+
+// Pick the carrier's financing rates: their own financing_config row if present,
+// else the global default row, else the hardcoded default.
+const pickRates = (rows, ownerId) => {
+  if (!rows || !rows.length) return { ...FINANCING_DEFAULTS };
+  const ownRow = ownerId ? rows.find((r) => r.owner_id === ownerId) : null;
+  const globalRow = rows.find((r) => r.owner_id === null);
+  const row = ownRow || globalRow || rows[0];
+  return {
+    advanceRate: Number.isFinite(Number(row.advance_rate)) ? Number(row.advance_rate) : FINANCING_DEFAULTS.advanceRate,
+    feeRate: Number.isFinite(Number(row.fee_rate)) ? Number(row.fee_rate) : FINANCING_DEFAULTS.feeRate,
+  };
+};
+
+export async function loadCashPosition() {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) return { ok: false, error: userError.message };
+  const user = userData?.user;
+  if (!user) return { ok: false, error: "Sign in first." };
+  const ownerId = await getWorkspaceOwnerId(user);
+
+  // Receivables are the required dataset. safeSelect swallows a missing-table /
+  // RLS error and returns null; an empty workspace returns []. Either way we
+  // fall back to the demo seed (matches the web view's `receivables.length`).
+  const rcvRows = await safeSelect(
+    () => supabase
+      .from("receivables")
+      .select("*")
+      .or(`owner_id.eq.${ownerId},owner_id.is.null`)
+      .order("expected_pay_date", { ascending: true }),
+    null
+  );
+  if (!rcvRows || !rcvRows.length) {
+    return { ok: false, error: "No live cash-position data." };
+  }
+
+  // Settlements + config are best-effort; empty on error.
+  const [settlementRows, configRows] = await Promise.all([
+    safeSelect(
+      () => supabase
+        .from("driver_settlements")
+        .select("*")
+        .or(`owner_id.eq.${ownerId},owner_id.is.null`)
+        .order("created_at", { ascending: false }),
+      []
+    ),
+    safeSelect(
+      () => supabase.from("financing_config").select("owner_id, advance_rate, fee_rate"),
+      []
+    ),
+  ]);
+
+  return {
+    ok: true,
+    receivables: rcvRows.map(fromReceivable),
+    driverSettlements: settlementRows.map(fromSettlement),
+    financingRates: pickRates(configRows, ownerId),
+  };
 }
 
 export async function extractReceiptInfo({ imageBase64, contentType = "image/jpeg" }) {

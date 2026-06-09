@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text } from "react-native";
+import { Platform, StyleSheet, Text } from "react-native";
 
 // Maps a React Native fontWeight to the corresponding loaded Inter variant.
 const WEIGHT_TO_INTER = {
@@ -20,7 +20,15 @@ let applied = false;
 
 // Patches the base <Text> renderer once so every Text in the app is rendered
 // in the Inter variant that matches its fontWeight. Idempotent.
+//
+// NATIVE ONLY. On react-native-web, Text.render returns a real DOM host element
+// (<span>/<div>) whose `style` prop must be a plain object; the cloneElement
+// below replaces it with a style ARRAY, which react-dom rejects with
+// "Indexed property setter is not supported" — crashing every Text on web.
+// Web already loads the Inter fonts via @expo-google-fonts/inter, so we simply
+// skip the monkey-patch there and let RNW resolve fonts through CSS.
 export function applyInterFont() {
+  if (Platform.OS === "web") return;
   if (applied || !Text || typeof Text.render !== "function") return;
   applied = true;
 
