@@ -53,15 +53,15 @@ import {
 } from "./shared";
 import { FolderArchive } from "lucide-react";
 
-const usernameEmailMap = {
-  "william.mckoy": "william.mckoy2@gmail.com",
-};
-
 // Accounts that bypass the subscription paywall entirely (owner / comped /
-// internal). These never see the trial gate regardless of Stripe status.
-const COMP_ACCESS_EMAILS = new Set([
-  "william.mckoy2@gmail.com",
-]);
+// internal). Configured via VITE_COMP_ACCESS_EMAILS (comma-separated) so no
+// addresses live in source or the git history. Empty = nobody bypasses.
+const COMP_ACCESS_EMAILS = new Set(
+  (import.meta.env.VITE_COMP_ACCESS_EMAILS || "")
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean)
+);
 const hasCompAccess = (email) => COMP_ACCESS_EMAILS.has((email || "").trim().toLowerCase());
 
 const tabSlugs = {
@@ -1176,10 +1176,7 @@ export default function App() {
     });
   };
 
-  const normalizeLoginIdentifier = (identifier) => {
-    const cleaned = identifier.trim().toLowerCase();
-    return usernameEmailMap[cleaned] || cleaned;
-  };
+  const normalizeLoginIdentifier = (identifier) => identifier.trim().toLowerCase();
 
   const signInWithSupabase = async ({ identifier, password }) => {
     if (!isSupabaseConfigured || !supabase) {
@@ -1200,7 +1197,13 @@ export default function App() {
       return { ok: false, error: "Supabase Auth is not configured." };
     }
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      // When email confirmation is enabled in Supabase, the verification link
+      // returns the user to the app rather than a stale/localhost default.
+      options: { emailRedirectTo: window.location.origin },
+    });
     if (error) return { ok: false, error: error.message };
 
     // Wipe all cached local data so the new user starts with a clean workspace
@@ -1223,7 +1226,9 @@ export default function App() {
       tourCompleted: false,
     }));
 
-    // Auto-confirm path (email verification disabled in Supabase)
+    // Supabase returns a session immediately only when "Confirm email" is OFF.
+    // With confirmation ON, session is null → fall through to the check-your-email
+    // state below. (Enable confirmation in Supabase → Auth before public launch.)
     if (data.user && data.session) {
       setAuthUser(data.user);
       setIsLoggedIn(true);
