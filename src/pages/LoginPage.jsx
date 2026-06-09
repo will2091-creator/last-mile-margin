@@ -88,7 +88,7 @@ function ComingSoon({ isDark, mutedText, onSignIn }) {
         <p className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-500" : "text-slate-400"}`}>When sign-ups open</p>
         <ul className="mt-3 space-y-2">
           {[
-            "3-day free trial, card required",
+            "3-day free trial",
             "$99/month — locked for your first 12 months",
             "Full AI-powered profit & claims tools",
           ].map((item) => (
