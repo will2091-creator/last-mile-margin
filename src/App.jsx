@@ -1141,6 +1141,45 @@ export default function App() {
     return { ok: true };
   };
 
+  const signUpWithSupabase = async ({ email, password, companyName }) => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { ok: false, error: "Supabase Auth is not configured." };
+    }
+
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) return { ok: false, error: error.message };
+
+    // Wipe all cached local data so the new user starts with a clean workspace
+    const keysToRemove = [
+      "finalMileClaims", "finalMileTeams", "finalMileSavedDays",
+      "finalMileScenarios", "finalMileRollupRows", "finalMileLastSyncedClaims",
+      "finalMileTourSeen", "finalMileComplianceDocs",
+    ];
+    keysToRemove.forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+
+    // Reset React state to empty
+    setClaims([]);
+    setTeams([]);
+    setSavedDays([]);
+    setSavedScenarios([]);
+    setForm(defaultForm);
+    setAppSettings((current) => ({
+      ...current,
+      ...(companyName ? { companyName } : {}),
+      tourCompleted: false,
+    }));
+
+    // Auto-confirm path (email verification disabled in Supabase)
+    if (data.user && data.session) {
+      setAuthUser(data.user);
+      setIsLoggedIn(true);
+      return { ok: true, needsConfirmation: false };
+    }
+
+    // Email confirmation required
+    return { ok: true, needsConfirmation: true, email };
+  };
+
   const signOut = async () => {
     if (supabase) {
       await supabase.auth.signOut();
@@ -1189,6 +1228,7 @@ export default function App() {
     return (
       <LoginPage
         onLogin={signInWithSupabase}
+        onSignUp={signUpWithSupabase}
         isDark={isDark}
         setAppSettings={setAppSettings}
       />

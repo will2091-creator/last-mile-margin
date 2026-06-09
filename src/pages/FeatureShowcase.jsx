@@ -69,7 +69,7 @@ function BrowserFrame({ src, alt, className = "" }) {
   );
 }
 
-export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
+export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isDark }) {
   const [tab, setTab] = useState(0);
   const active = GALLERY[tab];
 
@@ -143,9 +143,15 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
               )}
               <button
                 onClick={onSignIn}
+                className={`hidden rounded-xl border px-4 py-2 text-sm font-bold transition sm:flex ${t.heroSec}`}
+              >
+                Sign in
+              </button>
+              <button
+                onClick={onSignUp}
                 className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-500"
               >
-                Sign in <ArrowRight className="h-4 w-4" />
+                Get started <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -167,19 +173,17 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <button
-                  onClick={onSignIn}
+                  onClick={onSignUp}
                   className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 py-3.5 text-base font-black text-white shadow-xl shadow-blue-600/30 transition hover:-translate-y-0.5 hover:bg-blue-500"
                 >
-                  Sign in to your workspace <ArrowRight className="h-5 w-5" />
+                  Create free account <ArrowRight className="h-5 w-5" />
                 </button>
-                <a
-                  href={CLH_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={onSignIn}
                   className={`flex items-center justify-center gap-2 rounded-xl border px-7 py-3.5 text-base font-bold backdrop-blur transition ${t.heroSec}`}
                 >
-                  Start your company first <ArrowUpRight className="h-5 w-5" />
-                </a>
+                  Sign in
+                </button>
               </div>
             </div>
 
@@ -230,7 +234,7 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
                   Last Mile Margin tracks every open claim, scores it for dispute viability, flags missing evidence, and builds the dispute packet — so you submit once with the right support.
                 </p>
                 <button
-                  onClick={onSignIn}
+                  onClick={onSignUp}
                   className={`mt-7 flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 ${isDark ? "bg-red-600 shadow-red-600/30 hover:bg-red-500" : "bg-red-600 shadow-red-600/20 hover:bg-red-500"}`}
                 >
                   Start recovering claims <ArrowRight className="h-4 w-4" />
@@ -382,19 +386,17 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
             <p className={`mx-auto mt-3 max-w-xl text-base font-semibold ${t.ctaPara}`}>Sign in and let the numbers do the talking while you run the routes.</p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <button
-                onClick={onSignIn}
+                onClick={onSignUp}
                 className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 py-3.5 text-base font-black text-white shadow-xl shadow-blue-600/30 transition hover:-translate-y-0.5 hover:bg-blue-500"
               >
-                Sign in <ArrowRight className="h-5 w-5" />
+                Create free account <ArrowRight className="h-5 w-5" />
               </button>
-              <a
-                href={CLH_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={onSignIn}
                 className={`flex items-center justify-center gap-2 rounded-xl border px-8 py-3.5 text-base font-bold backdrop-blur transition ${t.ctaSec}`}
               >
-                Set up your company first <ArrowUpRight className="h-5 w-5" />
-              </a>
+                Sign in
+              </button>
             </div>
           </div>
           <p className={`mt-8 flex items-center justify-center gap-2 text-center text-xs font-semibold ${t.footer}`}>

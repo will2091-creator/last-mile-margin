@@ -3,15 +3,19 @@ import lastMileMarginLogo from "../assets/last-mile-margin-logo-transparent.svg"
 import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-transparent-dark.svg";
 import loginRoadLakeTruck from "../assets/login-road-lake-truck-branded.jpg";
 import FeatureShowcase from "./FeatureShowcase";
-import { ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck, X } from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, Lock, Mail, ShieldCheck, X } from "lucide-react";
 
-function LoginPage({ onLogin, isDark, setAppSettings }) {
-  const [showLogin, setShowLogin] = useState(false);
+function LoginPage({ onLogin, onSignUp, isDark, setAppSettings }) {
+  const [showModal, setShowModal] = useState(false);
+  const [mode, setMode] = useState("signin"); // "signin" | "signup"
   const [loginForm, setLoginForm] = useState({ identifier: "", password: "", remember: false });
+  const [signupForm, setSignupForm] = useState({ email: "", password: "", confirm: "", companyName: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const [loginError, setLoginError] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const identifierRef = useRef(null);
+  const [signupDone, setSignupDone] = useState(null); // null | { needsConfirmation, email }
+  const firstFieldRef = useRef(null);
   const cardRef = useRef(null);
   const triggerRef = useRef(null);
 
@@ -22,23 +26,30 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
     }));
   };
 
-  const openLogin = () => {
+  const openModal = (startMode = "signin") => {
     triggerRef.current = document.activeElement;
-    setLoginError("");
-    setShowLogin(true);
+    setFormError("");
+    setMode(startMode);
+    setSignupDone(null);
+    setShowModal(true);
   };
-  const closeLogin = () => setShowLogin(false);
+  const closeModal = () => setShowModal(false);
 
-  // While the modal is open: focus the first field, trap Tab inside the dialog, close on
-  // Escape, lock background scroll, and restore focus to the trigger when it closes.
+  const switchMode = (next) => {
+    setFormError("");
+    setSignupDone(null);
+    setShowPassword(false);
+    setShowConfirm(false);
+    setMode(next);
+    setTimeout(() => firstFieldRef.current?.focus(), 60);
+  };
+
+  // Focus trap + Escape + scroll lock
   useEffect(() => {
-    if (!showLogin) return;
-    const focusTimer = setTimeout(() => identifierRef.current?.focus(), 60);
+    if (!showModal) return;
+    const focusTimer = setTimeout(() => firstFieldRef.current?.focus(), 60);
     const onKey = (event) => {
-      if (event.key === "Escape") {
-        setShowLogin(false);
-        return;
-      }
+      if (event.key === "Escape") { closeModal(); return; }
       if (event.key === "Tab" && cardRef.current) {
         const nodes = cardRef.current.querySelectorAll(
           'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
@@ -46,13 +57,8 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
         if (!nodes.length) return;
         const first = nodes[0];
         const last = nodes[nodes.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        }
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
       }
     };
     window.addEventListener("keydown", onKey);
@@ -64,186 +70,349 @@ function LoginPage({ onLogin, isDark, setAppSettings }) {
       document.body.style.overflow = prevOverflow;
       triggerRef.current?.focus?.();
     };
-  }, [showLogin]);
+  }, [showModal]);
 
-  const handleSubmit = async (event) => {
+  const handleSignIn = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
-    setLoginError("");
-
-    const result = await onLogin({
-      identifier: loginForm.identifier,
-      password: loginForm.password,
-    });
-
+    setFormError("");
+    const result = await onLogin({ identifier: loginForm.identifier, password: loginForm.password });
     setIsSubmitting(false);
-
-    if (result?.ok) {
-      return;
-    }
-
-    setLoginError(result?.error || "Could not sign in. Check your username and password.");
+    if (!result?.ok) setFormError(result?.error || "Could not sign in. Check your email and password.");
   };
 
+  const handleSignUp = async (event) => {
+    event.preventDefault();
+    setFormError("");
+    if (signupForm.password !== signupForm.confirm) {
+      setFormError("Passwords don't match.");
+      return;
+    }
+    if (signupForm.password.length < 8) {
+      setFormError("Password must be at least 8 characters.");
+      return;
+    }
+    setIsSubmitting(true);
+    const result = await onSignUp({
+      email: signupForm.email.trim(),
+      password: signupForm.password,
+      companyName: signupForm.companyName.trim(),
+    });
+    setIsSubmitting(false);
+    if (!result?.ok) {
+      setFormError(result?.error || "Could not create account. Please try again.");
+      return;
+    }
+    if (result.needsConfirmation) {
+      setSignupDone({ needsConfirmation: true, email: result.email });
+    }
+    // needsConfirmation: false → App re-renders logged-in automatically
+  };
+
+  // Shared style tokens
   const inputClass = isDark
     ? "w-full rounded-xl border border-white/10 bg-slate-950/70 py-3.5 pl-11 pr-4 text-sm font-semibold text-white outline-none transition focus:border-blue-500"
     : "w-full rounded-xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-500";
+  const inputNoIconClass = isDark
+    ? "w-full rounded-xl border border-white/10 bg-slate-950/70 py-3.5 px-4 text-sm font-semibold text-white outline-none transition focus:border-blue-500"
+    : "w-full rounded-xl border border-slate-200 bg-white py-3.5 px-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-500";
   const cardClass = isDark
     ? "border-white/10 bg-slate-950/95 text-white shadow-2xl shadow-black/60"
     : "border-white/60 bg-white text-slate-950 shadow-2xl shadow-slate-950/30";
+  const labelClass = isDark ? "mb-2 block text-sm font-black text-white" : "mb-2 block text-sm font-black text-slate-950";
+  const mutedText = isDark ? "text-slate-400" : "text-slate-600";
+  const closeBtn = isDark
+    ? "absolute right-4 top-4 rounded-lg border border-white/10 bg-white/5 p-1.5 text-slate-300 transition hover:bg-white/10"
+    : "absolute right-4 top-4 rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 transition hover:bg-slate-100";
 
   return (
     <>
-      {/* The product preview IS the landing page. Sign-in pops up on demand. */}
-      <FeatureShowcase isDark={isDark} onSignIn={openLogin} onToggleTheme={toggleTheme} />
+      <FeatureShowcase isDark={isDark} onSignIn={() => openModal("signin")} onSignUp={() => openModal("signup")} onToggleTheme={toggleTheme} />
 
-      {showLogin && (
+      {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="login-modal-title"
+          aria-labelledby="auth-modal-title"
         >
-          {/* Branded backdrop + dark scrim; click to dismiss */}
           <div
             aria-hidden="true"
-            onClick={closeLogin}
+            onClick={closeModal}
             className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: `linear-gradient(rgba(2,6,23,0.85), rgba(2,6,23,0.9)), url(${loginRoadLakeTruck})` }}
           />
 
           <section ref={cardRef} className={`relative z-10 max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl border p-6 sm:p-7 ${cardClass}`}>
-            <button
-              type="button"
-              onClick={closeLogin}
-              aria-label="Close sign in"
-              className={
-                isDark
-                  ? "absolute right-4 top-4 rounded-lg border border-white/10 bg-white/5 p-1.5 text-slate-300 transition hover:bg-white/10"
-                  : "absolute right-4 top-4 rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 transition hover:bg-slate-100"
-              }
-            >
+            <button type="button" onClick={closeModal} aria-label="Close" className={closeBtn}>
               <X className="h-4 w-4" />
             </button>
 
+            {/* Logo + mode tabs */}
             <div className="mb-6 text-center">
               <img
                 src={isDark ? lastMileMarginLogoDark : lastMileMarginLogo}
                 alt="Last Mile Margin"
                 className="mx-auto h-20 w-44 object-contain sm:h-24 sm:w-52"
               />
-              <h1 id="login-modal-title" className={isDark ? "mt-3 text-2xl font-black tracking-tight text-white" : "mt-3 text-2xl font-black tracking-tight text-slate-950"}>
-                Sign in to your workspace
-              </h1>
-              <p className={isDark ? "mt-1.5 text-sm font-semibold text-slate-400" : "mt-1.5 text-sm font-semibold text-slate-600"}>
-                Manage profit, claims, contracts, and daily history.
-              </p>
-            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="login-identifier" className={isDark ? "mb-2 block text-sm font-black text-white" : "mb-2 block text-sm font-black text-slate-950"}>Username or Email</label>
-                <div className="relative">
-                  <Mail className={isDark ? "absolute left-4 top-3.5 h-5 w-5 text-slate-400" : "absolute left-4 top-3.5 h-5 w-5 text-slate-500"} />
-                  <input
-                    ref={identifierRef}
-                    id="login-identifier"
-                    value={loginForm.identifier}
-                    onChange={(event) => setLoginForm((current) => ({ ...current, identifier: event.target.value }))}
-                    className={inputClass}
-                    placeholder="Enter your username or email"
-                    type="text"
-                    autoComplete="username"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="login-password" className={isDark ? "mb-2 block text-sm font-black text-white" : "mb-2 block text-sm font-black text-slate-950"}>Password</label>
-                <div className="relative">
-                  <Lock className={isDark ? "absolute left-4 top-3.5 h-5 w-5 text-slate-400" : "absolute left-4 top-3.5 h-5 w-5 text-slate-500"} />
-                  <input
-                    id="login-password"
-                    value={loginForm.password}
-                    onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
-                    className={`${inputClass} pr-12`}
-                    placeholder="Enter your password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((current) => !current)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    aria-pressed={showPassword}
-                    className={isDark ? "absolute right-4 top-3.5 text-slate-400" : "absolute right-4 top-3.5 text-slate-500"}
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <label className={isDark ? "flex items-center gap-3 text-sm font-semibold text-slate-400" : "flex items-center gap-3 text-sm font-semibold text-slate-600"}>
-                  <input
-                    checked={loginForm.remember}
-                    onChange={(event) => setLoginForm((current) => ({ ...current, remember: event.target.checked }))}
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-slate-300 accent-blue-600"
-                  />
-                  Remember me
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setLoginError("Password reset can be enabled in Supabase Auth after the production email sender is configured.")}
-                  className={isDark ? "text-sm font-bold text-blue-400" : "text-sm font-bold text-blue-600"}
-                >
-                  Forgot password?
-                </button>
-              </div>
-
-              {loginError && (
-                <div
-                  role="alert"
-                  className={
-                    isDark
-                      ? "rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm font-bold text-red-300"
-                      : "rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-600"
-                  }
-                >
-                  {loginError}
+              {/* Sign in / Create account tabs */}
+              {!signupDone && (
+                <div className={`mt-4 flex rounded-xl p-1 ${isDark ? "bg-white/5" : "bg-slate-100"}`}>
+                  {[["signin", "Sign in"], ["signup", "Create account"]].map(([m, label]) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => switchMode(m)}
+                      className={`flex-1 rounded-lg py-2 text-sm font-black transition ${
+                        mode === m
+                          ? isDark ? "bg-blue-600 text-white shadow" : "bg-white text-slate-950 shadow"
+                          : isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               )}
+            </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-70 ${isDark ? "bg-blue-600 hover:bg-blue-500" : "bg-slate-950 hover:bg-slate-800"}`}
-              >
-                {isSubmitting ? "Signing In..." : "Sign In"}
-                <ArrowRight className="h-4 w-4" />
-              </button>
-
-              <div className={`rounded-xl p-3 text-xs ${isDark ? "bg-white/5 text-slate-400" : "bg-slate-50 text-slate-600"}`}>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                  <p className="font-bold">Secure Supabase login is enabled.</p>
+            {/* ── EMAIL CONFIRMATION STATE ── */}
+            {signupDone?.needsConfirmation && (
+              <div className="text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10">
+                  <CheckCircle2 className="h-7 w-7 text-emerald-500" />
                 </div>
-                <p className="mt-2">Enter the email or username connected to your account.</p>
+                <h2 id="auth-modal-title" className="text-xl font-black">Check your email</h2>
+                <p className={`mt-2 text-sm ${mutedText}`}>
+                  We sent a confirmation link to <span className="font-bold">{signupDone.email}</span>. Click it to activate your account, then come back and sign in.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => switchMode("signin")}
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-black text-white hover:bg-blue-500"
+                >
+                  Go to sign in <ArrowRight className="h-4 w-4" />
+                </button>
               </div>
-            </form>
+            )}
 
-            <p className={isDark ? "mt-5 text-center text-sm text-slate-400" : "mt-5 text-center text-sm text-slate-600"}>
-              Just getting started?{" "}
-              <a
-                href="https://contractor-launch-hub.vercel.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={isDark ? "font-bold text-blue-400 hover:underline" : "font-bold text-blue-600 hover:underline"}
-              >
-                Set up your company first →
-              </a>
-            </p>
+            {/* ── SIGN IN FORM ── */}
+            {!signupDone && mode === "signin" && (
+              <>
+                <h1 id="auth-modal-title" className="sr-only">Sign in to your workspace</h1>
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div>
+                    <label htmlFor="login-identifier" className={labelClass}>Email</label>
+                    <div className="relative">
+                      <Mail className={`absolute left-4 top-3.5 h-5 w-5 ${mutedText}`} />
+                      <input
+                        ref={firstFieldRef}
+                        id="login-identifier"
+                        value={loginForm.identifier}
+                        onChange={(e) => setLoginForm((c) => ({ ...c, identifier: e.target.value }))}
+                        className={inputClass}
+                        placeholder="you@example.com"
+                        type="email"
+                        autoComplete="email"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="login-password" className={labelClass}>Password</label>
+                    <div className="relative">
+                      <Lock className={`absolute left-4 top-3.5 h-5 w-5 ${mutedText}`} />
+                      <input
+                        id="login-password"
+                        value={loginForm.password}
+                        onChange={(e) => setLoginForm((c) => ({ ...c, password: e.target.value }))}
+                        className={`${inputClass} pr-12`}
+                        placeholder="Your password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className={`absolute right-4 top-3.5 ${mutedText}`}
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <label className={`flex items-center gap-3 text-sm font-semibold ${mutedText}`}>
+                      <input
+                        checked={loginForm.remember}
+                        onChange={(e) => setLoginForm((c) => ({ ...c, remember: e.target.checked }))}
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-slate-300 accent-blue-600"
+                      />
+                      Remember me
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setFormError("Password reset can be enabled in Supabase Auth after the production email sender is configured.")}
+                      className={`text-sm font-bold ${isDark ? "text-blue-400" : "text-blue-600"}`}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+
+                  {formError && (
+                    <div role="alert" className={isDark ? "rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm font-bold text-red-300" : "rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-600"}>
+                      {formError}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-70 ${isDark ? "bg-blue-600 hover:bg-blue-500" : "bg-slate-950 hover:bg-slate-800"}`}
+                  >
+                    {isSubmitting ? "Signing in…" : "Sign in"}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+
+                  <div className={`rounded-xl p-3 text-xs ${isDark ? "bg-white/5 text-slate-400" : "bg-slate-50 text-slate-600"}`}>
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                      <p className="font-bold">Secure Supabase login is enabled.</p>
+                    </div>
+                  </div>
+                </form>
+
+                <p className={`mt-5 text-center text-sm ${mutedText}`}>
+                  No account?{" "}
+                  <button type="button" onClick={() => switchMode("signup")} className={`font-bold ${isDark ? "text-blue-400 hover:underline" : "text-blue-600 hover:underline"}`}>
+                    Create one free →
+                  </button>
+                </p>
+              </>
+            )}
+
+            {/* ── SIGN UP FORM ── */}
+            {!signupDone && mode === "signup" && (
+              <>
+                <h1 id="auth-modal-title" className="sr-only">Create your account</h1>
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <div>
+                    <label htmlFor="signup-company" className={labelClass}>Company name <span className={`font-medium ${mutedText}`}>(optional)</span></label>
+                    <div className="relative">
+                      <Building2 className={`absolute left-4 top-3.5 h-5 w-5 ${mutedText}`} />
+                      <input
+                        ref={firstFieldRef}
+                        id="signup-company"
+                        value={signupForm.companyName}
+                        onChange={(e) => setSignupForm((c) => ({ ...c, companyName: e.target.value }))}
+                        className={inputClass}
+                        placeholder="Your company name"
+                        type="text"
+                        autoComplete="organization"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="signup-email" className={labelClass}>Email</label>
+                    <div className="relative">
+                      <Mail className={`absolute left-4 top-3.5 h-5 w-5 ${mutedText}`} />
+                      <input
+                        id="signup-email"
+                        value={signupForm.email}
+                        onChange={(e) => setSignupForm((c) => ({ ...c, email: e.target.value }))}
+                        className={inputClass}
+                        placeholder="you@example.com"
+                        type="email"
+                        autoComplete="email"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="signup-password" className={labelClass}>Password</label>
+                    <div className="relative">
+                      <Lock className={`absolute left-4 top-3.5 h-5 w-5 ${mutedText}`} />
+                      <input
+                        id="signup-password"
+                        value={signupForm.password}
+                        onChange={(e) => setSignupForm((c) => ({ ...c, password: e.target.value }))}
+                        className={`${inputClass} pr-12`}
+                        placeholder="At least 8 characters"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className={`absolute right-4 top-3.5 ${mutedText}`}
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="signup-confirm" className={labelClass}>Confirm password</label>
+                    <div className="relative">
+                      <Lock className={`absolute left-4 top-3.5 h-5 w-5 ${mutedText}`} />
+                      <input
+                        id="signup-confirm"
+                        value={signupForm.confirm}
+                        onChange={(e) => setSignupForm((c) => ({ ...c, confirm: e.target.value }))}
+                        className={`${inputClass} pr-12`}
+                        placeholder="Re-enter your password"
+                        type={showConfirm ? "text" : "password"}
+                        autoComplete="new-password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirm((v) => !v)}
+                        aria-label={showConfirm ? "Hide password" : "Show password"}
+                        className={`absolute right-4 top-3.5 ${mutedText}`}
+                      >
+                        {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {formError && (
+                    <div role="alert" className={isDark ? "rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm font-bold text-red-300" : "rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-600"}>
+                      {formError}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-70 hover:bg-blue-500"
+                  >
+                    {isSubmitting ? "Creating account…" : "Create free account"}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+
+                  <p className={`text-center text-xs ${mutedText}`}>
+                    You'll start with a clean workspace and a guided tour of the app.
+                  </p>
+                </form>
+
+                <p className={`mt-5 text-center text-sm ${mutedText}`}>
+                  Already have an account?{" "}
+                  <button type="button" onClick={() => switchMode("signin")} className={`font-bold ${isDark ? "text-blue-400 hover:underline" : "text-blue-600 hover:underline"}`}>
+                    Sign in →
+                  </button>
+                </p>
+              </>
+            )}
           </section>
         </div>
       )}
