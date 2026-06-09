@@ -1,89 +1,45 @@
 -- ============================================================================
--- PRODUCTION HARDENING — run in Supabase → SQL Editor AFTER reviewing the
--- output of supabase-security-audit.sql. Idempotent (safe to run more than
--- once). This closes the known holes:
---   A) Removes the "Dev anon read" policies that exposed financial data to the
---      public anon key.
---   B) Enables RLS + owner-scoped policies on the core tables (app_state,
---      claims, documents) in case they were never locked down.
--- All three core tables key on `owner_id` (confirmed from the app's
--- repositories). Authenticated users can only touch their own rows.
+-- PRODUCTION HARDENING — APPLIED 2026-06-09 to the live database.
+--
+-- A browser-driven audit (see supabase-security-audit.sql) found that the
+-- core tables had leftover dev policies granting the PUBLIC anon key — and any
+-- authenticated user — full access to all rows. This script is the exact
+-- remediation that was run. Idempotent (drop ... if exists), safe to re-run.
+--
+-- Verified safe before running: app_state and claims already have owner-scoped
+-- policies ("Users can ... own ...") whose with_check is (owner_id = auth.uid()),
+-- so logged-in CRUD is unaffected. The app sets owner_id on every write.
+--
+-- Post-fix verification query returned ZERO rows (no anon policies, no
+-- unconditional `true` policies on these tables remain).
 -- ============================================================================
 
--- ───────────────────────────────────────────────────────────────────────────
--- A) DROP the dev-only anonymous read policies (financial data leak).
--- ───────────────────────────────────────────────────────────────────────────
-drop policy if exists "Dev anon read financing_config"   on public.financing_config;
-drop policy if exists "Dev anon read receivables"        on public.receivables;
-drop policy if exists "Dev anon read driver_settlements" on public.driver_settlements;
-drop policy if exists "Dev anon read settlement_lines"   on public.settlement_lines;
-drop policy if exists "Dev anon read financial_events"   on public.financial_events;
--- Defensive: drop any anon write policies an older draft may have created.
-drop policy if exists "Dev anon write receivables"       on public.receivables;
-drop policy if exists "Dev anon update receivables"      on public.receivables;
-drop policy if exists "Dev anon append financial_events" on public.financial_events;
+-- ── CRITICAL: public, no-login access to all app data via the anon key ──
+drop policy if exists "Dev anon can read app state"   on public.app_state;
+drop policy if exists "Dev anon can insert app state" on public.app_state;
+drop policy if exists "Dev anon can update app state" on public.app_state;
+drop policy if exists "Dev anon can read claims"   on public.claims;
+drop policy if exists "Dev anon can insert claims" on public.claims;
+drop policy if exists "Dev anon can update claims" on public.claims;
+drop policy if exists "Dev anon can delete claims" on public.claims;
 
--- The anon role should not retain table-level grants on business data.
--- (Authenticated grants stay; see supabase-cash-position.sql.)
-revoke select, insert, update, delete on public.receivables        from anon;
-revoke select, insert, update, delete on public.driver_settlements from anon;
-revoke select, insert, update, delete on public.settlement_lines   from anon;
-revoke select, insert, update, delete on public.financing_config   from anon;
-revoke select, insert, update, delete on public.financial_events   from anon;
+-- ── HIGH: cross-tenant leak — any authenticated user could touch ALL claims ──
+-- (These used `using true`; the owner-scoped "Users can ... own claims"
+--  policies remain and correctly restrict to owner_id = auth.uid().)
+drop policy if exists "Allow authenticated users to read claims"   on public.claims;
+drop policy if exists "Allow authenticated users to insert claims" on public.claims;
+drop policy if exists "Allow authenticated users to update claims" on public.claims;
+drop policy if exists "Allow authenticated users to delete claims" on public.claims;
 
--- ───────────────────────────────────────────────────────────────────────────
--- B) Lock down the core business tables (owner-scoped).
--- ───────────────────────────────────────────────────────────────────────────
-
--- app_state — the main per-user data blob (keyed by owner_id).
-alter table public.app_state enable row level security;
-drop policy if exists "app_state_select_own" on public.app_state;
-drop policy if exists "app_state_insert_own" on public.app_state;
-drop policy if exists "app_state_update_own" on public.app_state;
-drop policy if exists "app_state_delete_own" on public.app_state;
-create policy "app_state_select_own" on public.app_state
-  for select to authenticated using (auth.uid() = owner_id);
-create policy "app_state_insert_own" on public.app_state
-  for insert to authenticated with check (auth.uid() = owner_id);
-create policy "app_state_update_own" on public.app_state
-  for update to authenticated using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
-create policy "app_state_delete_own" on public.app_state
-  for delete to authenticated using (auth.uid() = owner_id);
-
--- claims — owner-scoped. The app also reads shared demo rows where owner_id IS
--- NULL, so SELECT allows own rows OR null-owner rows; writes are own-only.
-alter table public.claims enable row level security;
-drop policy if exists "claims_select_own_or_demo" on public.claims;
-drop policy if exists "claims_insert_own" on public.claims;
-drop policy if exists "claims_update_own" on public.claims;
-drop policy if exists "claims_delete_own" on public.claims;
-create policy "claims_select_own_or_demo" on public.claims
-  for select to authenticated using (auth.uid() = owner_id or owner_id is null);
-create policy "claims_insert_own" on public.claims
-  for insert to authenticated with check (auth.uid() = owner_id);
-create policy "claims_update_own" on public.claims
-  for update to authenticated using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
-create policy "claims_delete_own" on public.claims
-  for delete to authenticated using (auth.uid() = owner_id);
-
--- documents — owner-scoped (metadata rows; files live in Storage with their own
--- bucket policies, see team-photo-retention-setup.sql for the pattern).
-alter table public.documents enable row level security;
-drop policy if exists "documents_select_own" on public.documents;
-drop policy if exists "documents_insert_own" on public.documents;
-drop policy if exists "documents_update_own" on public.documents;
-drop policy if exists "documents_delete_own" on public.documents;
-create policy "documents_select_own" on public.documents
-  for select to authenticated using (auth.uid() = owner_id);
-create policy "documents_insert_own" on public.documents
-  for insert to authenticated with check (auth.uid() = owner_id);
-create policy "documents_update_own" on public.documents
-  for update to authenticated using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
-create policy "documents_delete_own" on public.documents
-  for delete to authenticated using (auth.uid() = owner_id);
-
--- ───────────────────────────────────────────────────────────────────────────
--- Re-run supabase-security-audit.sql after this. Query #1 should list every
--- table with rls_enabled = true, and query #2 should show no anon policies
--- other than the intentional waitlist INSERT.
--- ───────────────────────────────────────────────────────────────────────────
+-- ── Remaining policies after this (the correct, owner-scoped set) ──
+--   app_state:  Users can read/insert/update own app state
+--               (owner_id = auth.uid() OR owner_id IS NULL for shared demo rows;
+--                with_check owner_id = auth.uid())
+--   claims:     Users can read/insert/update/delete own claims
+--               (same owner scoping)
+--
+-- NOTE: the financial tables (receivables, driver_settlements, settlement_lines,
+-- financing_config, financial_events) were checked too and had NO anon policies
+-- live — the "Dev anon read" lines in docs/supabase-cash-position.sql were never
+-- applied (or already removed). If you ever re-run that file, delete its
+-- "Dev anon read ..." block first.
