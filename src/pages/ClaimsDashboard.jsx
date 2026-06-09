@@ -11,7 +11,7 @@ import {
   Sparkles,
   Truck,
 } from "../shared";
-import { Check, Mail } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Mail } from "lucide-react";
 import EmptyState, { InlineEmpty } from "../components/EmptyState";
 import { fileToCompressedImage } from "../lib/imagePrep";
 
@@ -577,6 +577,13 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     }
 
     setDraggedClaim(null);
+  };
+
+  // Move a claim one column via the arrow buttons — the touch/keyboard-friendly alternative to drag.
+  const moveClaimDir = (claim, currentBucketTitle, dir) => {
+    const order = ["Needs Review", "In Progress", "Resolved"];
+    const target = order[order.indexOf(currentBucketTitle) + dir];
+    if (target) updateClaimStatus(claim.id, statusForBucket(target));
   };
 
   const deleteClaim = (id) => {
@@ -1318,9 +1325,37 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                           {claim.id} · {claim.date || receivedAt || "No date"}
                         </p>
                       </div>
-                      <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${getRiskClass(claim.risk)}`}>
-                        {claim.risk}
-                      </span>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-black ${getRiskClass(claim.risk)}`}>
+                          {claim.risk}
+                        </span>
+                        {source !== "queue" && (
+                          <div className="flex items-center gap-1">
+                            {bucket.title !== "Needs Review" && (
+                              <button
+                                type="button"
+                                onClick={() => moveClaimDir(claim, bucket.title, -1)}
+                                aria-label="Move to previous column"
+                                title="Move back"
+                                className={isDark ? "rounded-lg border border-white/10 p-1 text-slate-300 hover:bg-white/10" : "rounded-lg border border-slate-200 bg-white p-1 text-slate-500 hover:bg-slate-100"}
+                              >
+                                <ChevronLeft className="h-4 w-4" />
+                              </button>
+                            )}
+                            {bucket.title !== "Resolved" && (
+                              <button
+                                type="button"
+                                onClick={() => moveClaimDir(claim, bucket.title, 1)}
+                                aria-label="Move to next column"
+                                title="Move forward"
+                                className={isDark ? "rounded-lg border border-white/10 p-1 text-slate-300 hover:bg-white/10" : "rounded-lg border border-slate-200 bg-white p-1 text-slate-500 hover:bg-slate-100"}
+                              >
+                                <ChevronRight className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 text-sm">
@@ -1363,11 +1398,6 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                           {claim.status !== "Closed" && (
                             <button onClick={() => updateClaimStatus(claim.id, "Closed")} className={isDark ? "rounded-lg border border-emerald-500/40 px-3 py-2 text-xs font-black text-emerald-200 hover:bg-emerald-500/10" : "rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-50"}>
                               Resolve
-                            </button>
-                          )}
-                          {claim.status === "Under Review" && (
-                            <button onClick={() => updateClaimStatus(claim.id, "Open")} className={isDark ? "rounded-lg bg-white/10 px-3 py-2 text-xs font-black text-white hover:bg-white/15" : "rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"}>
-                              Start
                             </button>
                           )}
                         </>
