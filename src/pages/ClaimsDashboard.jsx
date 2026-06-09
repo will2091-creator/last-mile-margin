@@ -1007,16 +1007,6 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       valueClass: "text-red-600",
     },
     {
-      label: "Penalty Claims",
-      value: currency.format(penaltyTotal),
-      note: "Chargebacks & deductions",
-      icon: DollarSign,
-      accent: "amber",
-      bar: "bg-amber-600",
-      iconClass: isDark ? "bg-amber-500/10 text-amber-300" : "bg-amber-50 text-amber-700",
-      valueClass: "text-amber-700",
-    },
-    {
       label: "Profit Lost / Stop",
       value: currency.format(profitLostPerStop),
       note: "Based on 1,038 stops",
@@ -1965,7 +1955,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         {topStats.map((stat) => {
           const Icon = stat.icon;
           return (

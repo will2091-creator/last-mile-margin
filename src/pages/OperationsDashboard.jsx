@@ -113,7 +113,8 @@ export default function OperationsDashboard({
               Dispatch, claims, team readiness, and compliance — what needs attention before the day starts.
             </p>
           </div>
-          <div data-tour="operations-sections" className="flex flex-wrap gap-2">
+          {/* Hidden on desktop — the left sidebar already has these sub-sections. */}
+          <div data-tour="operations-sections" className="flex flex-wrap gap-2 lg:hidden">
             {operationTabs.map((tab) => (
               <button
                 key={tab.id}

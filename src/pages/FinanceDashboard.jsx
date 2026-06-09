@@ -66,7 +66,8 @@ export default function FinanceDashboard({
               Revenue, costs, margin, receipts, and contracts — everything that affects your bottom line.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          {/* Hidden on desktop — the left sidebar already has these sub-sections. */}
+          <div className="flex flex-wrap gap-2 lg:hidden">
             {financeTabs.map((tab) => (
               <button
                 key={tab}
