@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowRight, CheckCircle2, Lock, LogOut, ShieldCheck } from "lucide-react";
-import lastMileMarginLogo from "../assets/last-mile-margin-logo-transparent.svg";
-import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-transparent-dark.svg";
+import lastMileMarginLogo from "../assets/last-mile-margin-logo.png";
+import lastMileMarginLogoDark from "../assets/last-mile-margin-logo.png";
 import { openCustomerPortal, startCheckout } from "../lib/subscription";
 
 const PERKS = [

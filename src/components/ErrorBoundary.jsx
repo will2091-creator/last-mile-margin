@@ -1,5 +1,5 @@
 import React from "react";
-import logo from "../assets/last-mile-margin-logo-transparent.svg";
+import logo from "../assets/last-mile-margin-logo.png";
 
 // The boundary can render before the themed app shell mounts, so read the
 // persisted theme straight from localStorage rather than threading isDark down.
