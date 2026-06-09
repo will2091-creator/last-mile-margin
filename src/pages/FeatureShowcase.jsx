@@ -275,7 +275,7 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
                 <span className={`text-xs font-black uppercase tracking-widest ${t.aiLabel}`}>AI built in, not bolted on</span>
               </div>
               <h2 className="mx-auto mt-5 max-w-2xl text-center text-3xl font-black leading-tight tracking-tight sm:text-4xl">
-                Five places AI does the work so you don't have to.
+                Six places AI does the work so you don't have to.
               </h2>
               <p className={`mx-auto mt-4 max-w-xl text-center text-base font-semibold leading-7 ${t.aiPara}`}>
                 Every AI feature runs on your actual workspace data — no generic advice, no hallucinated numbers.
@@ -287,7 +287,8 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
                   { Icon: Upload,        title: "AI Intake",           text: "Drop a claim email, route sheet, or notes. AI reads it, pulls out the fields that matter, and routes the draft to Claims or Expenses for one-tap review — no manual entry." },
                   { Icon: TriangleAlert, title: "Claim risk scoring",  text: "Each open claim gets an AI score: dispute viability, dollar impact, and evidence gaps. Know exactly which chargebacks are worth fighting — and what it's going to take to win." },
                   { Icon: MessageSquare, title: "Ask the business",    text: "Powered by Claude. Ask anything about your profit, claims, or operations in plain English and get a direct answer — grounded in your actual snapshot data, not a generic template." },
-                  { Icon: Bot,           title: "AI dispute packets",  text: "For claims worth fighting, AI builds the full dispute packet — evidence checklist, missing gaps, dispute angle. Submit once, correctly, instead of losing by default because the paperwork was too hard.", span: "sm:col-span-2 lg:col-span-1" },
+                  { Icon: Bot,           title: "AI dispute packets",  text: "For claims worth fighting, AI builds the full dispute packet — evidence checklist, missing gaps, dispute angle. Submit once, correctly, instead of losing by default because the paperwork was too hard." },
+                  { Icon: TrendingUp,    title: "Margin forecast",     text: "AI projects your next 30 days of profit from your saved days and explains what's driving the trend — so you see a thin month coming while you can still do something about it." },
                 ].map(({ Icon, title, text, span = "" }) => (
                   <div key={title} className={`flex flex-col gap-4 rounded-2xl border p-6 backdrop-blur ${t.aiCard} ${span}`}>
                     <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ${t.aiIconBg}`}>
