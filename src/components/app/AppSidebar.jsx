@@ -1,4 +1,5 @@
 import React from "react";
+import { ChevronDown } from "lucide-react";
 import lastMileMarginLogo from "../../assets/last-mile-margin-logo.png";
 import lastMileMarginLogoDark from "../../assets/last-mile-margin-logo-darkmode.png";
 import { Moon, Sun } from "../../shared";
@@ -74,10 +75,13 @@ export default function AppSidebar({
                 }`}
               >
                 <Icon className="h-4 w-4" />
-                {item.name}
+                <span className="flex-1">{item.name}</span>
+                {item.children && (
+                  <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isActiveParent ? "" : "-rotate-90"} ${isActiveParent ? "opacity-90" : "opacity-50"}`} />
+                )}
               </button>
 
-              {item.children && (
+              {item.children && isActiveParent && (
                 <div className="mt-1 space-y-0.5">
                   {item.children.map((child) => {
                     const childActive = isActiveParent && activeChild === child.name;
