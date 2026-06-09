@@ -268,14 +268,14 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, onResetPassword, isDark, 
 
   // Shared style tokens
   const inputClass = isDark
-    ? "w-full rounded-xl border border-white/10 bg-slate-950/70 py-3.5 pl-11 pr-4 text-sm font-semibold text-white outline-none transition focus:border-blue-500"
-    : "w-full rounded-xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-500";
+    ? "w-full rounded-xl border border-white/10 bg-slate-950/60 py-3.5 pl-11 pr-4 text-sm font-semibold text-white outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20"
+    : "w-full rounded-xl border border-slate-200 bg-white/90 py-3.5 pl-11 pr-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15";
   const inputNoIconClass = isDark
-    ? "w-full rounded-xl border border-white/10 bg-slate-950/70 py-3.5 px-4 text-sm font-semibold text-white outline-none transition focus:border-blue-500"
-    : "w-full rounded-xl border border-slate-200 bg-white py-3.5 px-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-500";
+    ? "w-full rounded-xl border border-white/10 bg-slate-950/60 py-3.5 px-4 text-sm font-semibold text-white outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20"
+    : "w-full rounded-xl border border-slate-200 bg-white/90 py-3.5 px-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15";
   const cardClass = isDark
-    ? "border-white/10 bg-slate-950/95 text-white shadow-2xl shadow-black/60"
-    : "border-white/60 bg-white text-slate-950 shadow-2xl shadow-slate-950/30";
+    ? "border-white/10 bg-slate-950/80 text-white shadow-2xl shadow-black/70 backdrop-blur-2xl"
+    : "border-white/50 bg-white/85 text-slate-950 shadow-2xl shadow-slate-950/40 backdrop-blur-2xl";
   const googleBtnClass = isDark
     ? "flex w-full items-center justify-center gap-3 rounded-xl border border-white/15 bg-white/5 px-5 py-3.5 text-sm font-black text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
     : "flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70";
@@ -300,10 +300,13 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, onResetPassword, isDark, 
             aria-hidden="true"
             onClick={closeModal}
             className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `linear-gradient(rgba(2,6,23,0.85), rgba(2,6,23,0.9)), url(${loginRoadLakeTruck})` }}
+            style={{ backgroundImage: `linear-gradient(rgba(2,6,23,0.55), rgba(2,6,23,0.7)), url(${loginRoadLakeTruck})` }}
           />
 
-          <section ref={cardRef} className={`relative z-10 max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl border p-6 sm:p-7 ${cardClass}`}>
+          <section ref={cardRef} className={`auth-modal-enter relative z-10 max-h-[92vh] w-full max-w-md overflow-hidden overflow-y-auto rounded-2xl border p-6 sm:p-7 ${cardClass}`}>
+            {/* Brand top-accent bar */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-500" />
+
             <button type="button" onClick={closeModal} aria-label="Close" className={closeBtn}>
               <X className="h-4 w-4" />
             </button>
@@ -315,6 +318,9 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, onResetPassword, isDark, 
                 alt="Last Mile Margin"
                 className="mx-auto h-20 w-44 object-contain sm:h-24 sm:w-52"
               />
+              {!signupDone && (
+                <p className={`mt-1 text-sm font-bold ${mutedText}`}>Know your real margin — before the month ends.</p>
+              )}
 
               {/* Sign in / Create account tabs */}
               {!signupDone && (
@@ -326,7 +332,7 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, onResetPassword, isDark, 
                       onClick={() => switchMode(m)}
                       className={`flex-1 rounded-lg py-2 text-sm font-black transition ${
                         mode === m
-                          ? isDark ? "bg-blue-600 text-white shadow" : "bg-white text-slate-950 shadow"
+                          ? isDark ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25" : "bg-white text-slate-950 shadow-md ring-1 ring-slate-200/60"
                           : isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-700"
                       }`}
                     >
@@ -456,7 +462,7 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, onResetPassword, isDark, 
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-70 ${isDark ? "bg-blue-600 hover:bg-blue-500" : "bg-slate-950 hover:bg-slate-800"}`}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-500 hover:to-indigo-500 hover:shadow-blue-600/40 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {isSubmitting ? "Signing in…" : "Sign in"}
                     <ArrowRight className="h-4 w-4" />
