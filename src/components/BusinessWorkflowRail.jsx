@@ -1,5 +1,8 @@
 import React, { useState } from "react";
+import { X } from "lucide-react";
 import { CheckCircle2 } from "../shared";
+
+const RAIL_DISMISSED_KEY = "finalMileWorkflowRailDismissed";
 import {
   businessWorkflowSteps,
   getWorkflowActiveStep,
@@ -16,7 +19,19 @@ export default function BusinessWorkflowRail({
   collapsible = false,
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem(RAIL_DISMISSED_KEY) === "1"; } catch { return false; }
+  });
+  const handleDismiss = (event) => {
+    event?.stopPropagation();
+    try { localStorage.setItem(RAIL_DISMISSED_KEY, "1"); } catch { /* ignore */ }
+    setDismissed(true);
+  };
+  const dismissBtnClass = isDark
+    ? "shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
+    : "shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700";
   const showFull = !collapsible || expanded;
+  if (dismissed) return null;
   const activeStepId = getWorkflowActiveStep({ activeTab, activeOperationsTab, activeFinanceTab });
   const activeStep = businessWorkflowSteps.find((step) => step.id === activeStepId) || businessWorkflowSteps[0];
   const completeCount = businessWorkflowSteps.filter((step) => getWorkflowStepStatus(step.id, setupStatus)).length;
@@ -30,35 +45,40 @@ export default function BusinessWorkflowRail({
   if (!showFull) {
     return (
       <section data-tour="business-workflow" className={shellClass}>
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          className="flex w-full items-center justify-between gap-3 text-left"
-        >
-          <span className="flex min-w-0 flex-wrap items-center gap-2">
-            <span className={isDark ? "rounded-full bg-blue-500/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-200" : "rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700"}>
-              Core Workflow
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="flex flex-1 items-center justify-between gap-3 text-left"
+          >
+            <span className="flex min-w-0 flex-wrap items-center gap-2">
+              <span className={isDark ? "rounded-full bg-blue-500/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-200" : "rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700"}>
+                Core Workflow
+              </span>
+              <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
+                {completeCount} of {businessWorkflowSteps.length} connected
+              </span>
+              <span className={`hidden truncate text-sm font-bold sm:inline ${mutedText}`}>
+                Current step: {activeStep.label}
+              </span>
             </span>
-            <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"}>
-              {completeCount} of {businessWorkflowSteps.length} connected
+            <span className="flex shrink-0 items-center gap-1 text-sm font-black text-blue-600">
+              Show steps
+              <span aria-hidden="true">▾</span>
             </span>
-            <span className={`hidden truncate text-sm font-bold sm:inline ${mutedText}`}>
-              Current step: {activeStep.label}
-            </span>
-          </span>
-          <span className="flex shrink-0 items-center gap-1 text-sm font-black text-blue-600">
-            Show steps
-            <span aria-hidden="true">▾</span>
-          </span>
-        </button>
+          </button>
+          <button type="button" onClick={handleDismiss} aria-label="Dismiss workflow guide" title="Dismiss" className={dismissBtnClass}>
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </section>
     );
   }
 
   return (
     <section data-tour="business-workflow" className={shellClass}>
-      {collapsible && (
-        <div className="mb-3 flex justify-end">
+      <div className="mb-3 flex items-center justify-end gap-2">
+        {collapsible && (
           <button
             type="button"
             onClick={() => setExpanded(false)}
@@ -67,8 +87,11 @@ export default function BusinessWorkflowRail({
             Hide steps
             <span aria-hidden="true">▴</span>
           </button>
-        </div>
-      )}
+        )}
+        <button type="button" onClick={handleDismiss} aria-label="Dismiss workflow guide" title="Dismiss" className={dismissBtnClass}>
+          <X className="h-4 w-4" />
+        </button>
+      </div>
       <div className="mb-3 flex flex-col gap-3 sm:mb-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
