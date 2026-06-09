@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { currency } from "../theme";
 import { useTheme } from "../ThemeContext";
 import { loadDashboardSnapshot, loadOpenClaims, loadOwnerCommandCenter, loadTeamMembership } from "../lib/mobileRepository";
@@ -13,6 +13,7 @@ export default function HomeScreen({ mobileMode, refreshToken, onNavigate }) {
   const [snapshot, setSnapshot] = useState(null);
   const [ownerSummary, setOwnerSummary] = useState(null);
   const [status, setStatus] = useState("Loading owner command center...");
+  const [detailMetric, setDetailMetric] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -91,10 +92,10 @@ export default function HomeScreen({ mobileMode, refreshToken, onNavigate }) {
   );
 
   const commandCards = [
-    ["Today's Profit", currency.format(displayProfit), snapshot?.label || "Latest saved day", displayProfit >= 0 ? "green" : "red", null],
-    ["Revenue", revenue ? currency.format(revenue) : "Not saved", "Contract money", "blue", null],
-    ["Expenses", costs ? currency.format(costs) : "Not saved", "Labor and route costs", "amber", null],
-    ["Claims Exposure", currency.format(displayExposure), `${displayOpenClaims} open`, displayExposure ? "red" : "green", "claims"],
+    { metric: "profit", label: "Today's Profit", value: currency.format(displayProfit), note: snapshot?.label || "Latest saved day", tone: displayProfit >= 0 ? "green" : "red" },
+    { metric: "revenue", label: "Revenue", value: revenue ? currency.format(revenue) : "Not saved", note: "Contract money", tone: "blue" },
+    { metric: "expenses", label: "Expenses", value: costs ? currency.format(costs) : "Not saved", note: "Labor and route costs", tone: "amber" },
+    { metric: "claims", label: "Claims Exposure", value: currency.format(displayExposure), note: `${displayOpenClaims} open`, tone: displayExposure ? "red" : "green" },
   ];
   const attentionItems = [
     {
@@ -153,21 +154,23 @@ export default function HomeScreen({ mobileMode, refreshToken, onNavigate }) {
   ];
 
   return (
+    <>
     <ScrollView contentContainerStyle={styles.container}>
       {isOwnerView ? (
         <>
           <View style={styles.commandGrid}>
-            {commandCards.map(([label, value, note, tone, targetTab]) => (
+            {commandCards.map((card) => (
               <CommandMetricCard
-                key={label}
-                label={label}
-                value={value}
-                note={note}
-                tone={tone}
-                onPress={targetTab ? () => onNavigate?.(targetTab) : null}
+                key={card.metric}
+                label={card.label}
+                value={card.value}
+                note={card.note}
+                tone={card.tone}
+                onPress={() => setDetailMetric(card.metric)}
               />
             ))}
           </View>
+          <Text style={styles.commandHint}>Tap any card for a full breakdown of where the money is.</Text>
 
           <Section title="Needs Attention" subtitle="Tap a card to go straight to the decision">
             {(attentionItems.length ? attentionItems : [{
@@ -226,6 +229,277 @@ export default function HomeScreen({ mobileMode, refreshToken, onNavigate }) {
         </View>
       )}
     </ScrollView>
+
+    <MetricDetailModal
+      metric={detailMetric}
+      onClose={() => setDetailMetric(null)}
+      onNavigate={onNavigate}
+      data={{
+        revenue,
+        costs,
+        displayProfit,
+        margin,
+        displayExposure,
+        displayOpenClaims,
+        profitWeek,
+        profitMonth,
+        savedDays,
+        claims,
+        receipts: ownerSummary?.receipts || [],
+        snapshotLabel: snapshot?.label || "Latest saved day",
+      }}
+    />
+    </>
+  );
+}
+
+// ---- Owner metric breakdowns ---------------------------------------------
+// Tapping any of the 4 command cards opens a sheet that shows where the money
+// is. Everything is built from data the owner has on mobile: per-day snapshots
+// (profit/revenue/cost totals), the open-claims list, and submitted expense
+// receipts. Line-item revenue and route-cost components live on the web app, so
+// those are described, not faked.
+
+function parseReceiptAmount(receipt) {
+  const match = String(receipt?.notes || "").match(/Amount:\s*([0-9]+(?:\.[0-9]+)?)/i);
+  return match ? Number(match[1] || 0) : 0;
+}
+
+function parseReceiptCategory(receipt) {
+  const raw = `${String(receipt?.notes || "").match(/^([^|]+?) expense/i)?.[1] || ""} ${receipt?.name || ""}`.toLowerCase();
+  if (/fuel|gas/.test(raw)) return "Fuel";
+  if (/repair/.test(raw)) return "Repairs";
+  if (/tool/.test(raw)) return "Tools";
+  if (/maintenance/.test(raw)) return "Maintenance";
+  if (/toll|parking/.test(raw)) return "Tolls";
+  if (/suppl/.test(raw)) return "Supplies";
+  return "Other";
+}
+
+function MetricDetailModal({ metric, onClose, onNavigate, data }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  if (!metric) return null;
+
+  const title = {
+    profit: "Profit breakdown",
+    revenue: "Revenue breakdown",
+    expenses: "Expense breakdown",
+    claims: "Claims exposure",
+  }[metric] || "Breakdown";
+
+  return (
+    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.modalBackdrop}>
+        <TouchableOpacity style={styles.modalBackdropTap} activeOpacity={1} onPress={onClose} />
+        <View style={styles.modalSheet}>
+          <View style={styles.modalHandle} />
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{title}</Text>
+            <TouchableOpacity onPress={onClose} style={styles.modalClose}>
+              <Text style={styles.modalCloseText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.modalBody} showsVerticalScrollIndicator={false}>
+            {metric === "profit" && <ProfitBody data={data} />}
+            {metric === "revenue" && <RevenueBody data={data} />}
+            {metric === "expenses" && <ExpensesBody data={data} />}
+            {metric === "claims" && <ClaimsBody data={data} onNavigate={onNavigate} onClose={onClose} />}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function ModalHero({ label, value, note, tone = "ink" }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  return (
+    <View style={styles.modalHero}>
+      <Text style={styles.modalHeroLabel}>{label}</Text>
+      <Text style={[styles.modalHeroValue, styles[`${tone}Value`] || styles.inkValue]} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
+      {note ? <Text style={styles.modalHeroNote}>{note}</Text> : null}
+    </View>
+  );
+}
+
+function BreakdownSection({ title, children }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  return (
+    <View style={styles.breakSection}>
+      <Text style={styles.breakSectionTitle}>{title}</Text>
+      <View style={styles.breakCard}>{children}</View>
+    </View>
+  );
+}
+
+function BreakdownRow({ label, sub, value, tone = "ink", strong }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  return (
+    <View style={styles.breakRow}>
+      <View style={styles.breakCopy}>
+        <Text style={[styles.breakLabel, strong && styles.breakLabelStrong]}>{label}</Text>
+        {sub ? <Text style={styles.breakSub}>{sub}</Text> : null}
+      </View>
+      {value != null ? (
+        <Text style={[styles.breakValue, styles[`${tone}Value`] || styles.inkValue, strong && styles.breakValueStrong]} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
+      ) : null}
+    </View>
+  );
+}
+
+function RiskTag({ risk }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const normalized = ["High", "Medium", "Low"].includes(risk) ? risk : "Medium";
+  const tagStyle = normalized === "High" ? styles.riskHigh : normalized === "Low" ? styles.riskLow : styles.riskMedium;
+  return <Text style={[styles.riskTag, tagStyle]}>{normalized}</Text>;
+}
+
+function ProfitBody({ data }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { revenue, costs, displayProfit, margin, profitWeek, profitMonth, savedDays, snapshotLabel } = data;
+  const tone = displayProfit >= 0 ? "green" : "red";
+  const recent = savedDays.slice(0, 5);
+  return (
+    <>
+      <ModalHero label={`Net profit · ${snapshotLabel}`} value={currency.format(displayProfit)} note={margin === null ? "Margin N/A" : `${margin.toFixed(1)}% margin`} tone={tone} />
+      <BreakdownSection title="How today's profit is built">
+        <BreakdownRow label="Revenue" sub="Money you brought in" value={`+ ${currency.format(revenue)}`} tone="green" />
+        <BreakdownRow label="Operating costs" sub="Labor, fuel, fixed & route costs" value={`− ${currency.format(costs)}`} tone="red" />
+        <View style={styles.breakDivider} />
+        <BreakdownRow label="Net profit" value={currency.format(displayProfit)} tone={tone} strong />
+      </BreakdownSection>
+      <BreakdownSection title="Profit trend">
+        <BreakdownRow label="This week" sub="Last 7 saved days" value={currency.format(profitWeek || displayProfit)} tone="green" />
+        <BreakdownRow label="This month" sub="Last 30 saved days" value={currency.format(profitMonth || displayProfit)} tone="green" />
+      </BreakdownSection>
+      {recent.length > 0 && (
+        <BreakdownSection title="Recent saved days">
+          {recent.map((day, i) => (
+            <BreakdownRow key={day.id || `${day.label}-${i}`} label={day.label || "Saved day"} value={currency.format(Number(day.profit || 0))} tone={Number(day.profit || 0) >= 0 ? "green" : "red"} />
+          ))}
+        </BreakdownSection>
+      )}
+    </>
+  );
+}
+
+function RevenueBody({ data }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { revenue, savedDays } = data;
+  const recent = savedDays.slice(0, 7).filter((day) => Number(day.revenue || 0) > 0);
+  const avg = recent.length ? recent.reduce((sum, day) => sum + Number(day.revenue || 0), 0) / recent.length : 0;
+  return (
+    <>
+      <ModalHero label="Revenue · latest saved day" value={revenue ? currency.format(revenue) : "Not saved"} note="Contract pay from your routes" tone="blue" />
+      {recent.length > 0 ? (
+        <BreakdownSection title="Revenue by saved day">
+          {recent.map((day, i) => (
+            <BreakdownRow key={day.id || `${day.label}-${i}`} label={day.label || "Saved day"} value={currency.format(Number(day.revenue || 0))} tone="blue" />
+          ))}
+          <View style={styles.breakDivider} />
+          <BreakdownRow label="Average per day" value={currency.format(avg)} tone="blue" strong />
+        </BreakdownSection>
+      ) : (
+        <Text style={styles.modalNote}>Save a day on the web dashboard to see revenue broken out by day.</Text>
+      )}
+      <BreakdownSection title="What revenue is made of">
+        <BreakdownRow label="Route pay" sub="Base contract rate for the route" />
+        <BreakdownRow label="Per-stop & install pay" sub="Paid per delivery and install" />
+        <BreakdownRow label="Surcharges & accessorials" sub="Fuel surcharge, reattempts, extras" />
+      </BreakdownSection>
+      <Text style={styles.modalNote}>Enter each revenue line on the web dashboard to see the exact amount per source.</Text>
+    </>
+  );
+}
+
+function ExpensesBody({ data }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { costs, receipts } = data;
+  const groups = {};
+  let receiptTotal = 0;
+  for (const receipt of receipts) {
+    const cat = parseReceiptCategory(receipt);
+    const amt = parseReceiptAmount(receipt);
+    receiptTotal += amt;
+    if (!groups[cat]) groups[cat] = { amount: 0, count: 0 };
+    groups[cat].amount += amt;
+    groups[cat].count += 1;
+  }
+  const categoryRows = Object.entries(groups).sort((a, b) => b[1].amount - a[1].amount);
+  return (
+    <>
+      <ModalHero label="Operating cost · latest saved day" value={costs ? currency.format(costs) : "Not saved"} note="Labor, fuel, fixed & route costs" tone="amber" />
+      {categoryRows.length > 0 ? (
+        <BreakdownSection title="Submitted expense receipts by category">
+          {categoryRows.map(([cat, info]) => (
+            <BreakdownRow key={cat} label={cat} sub={`${info.count} receipt${info.count === 1 ? "" : "s"}`} value={currency.format(info.amount)} tone="amber" />
+          ))}
+          <View style={styles.breakDivider} />
+          <BreakdownRow label="Total submitted receipts" value={currency.format(receiptTotal)} tone="amber" strong />
+        </BreakdownSection>
+      ) : (
+        <Text style={styles.modalNote}>No expense receipts submitted yet. Drivers can snap receipts from the mobile app.</Text>
+      )}
+      <Text style={styles.modalNote}>Operating cost also includes driver and helper labor, the daily truck payment, insurance, and route fuel — entered on the web dashboard.</Text>
+    </>
+  );
+}
+
+function ClaimsBody({ data, onNavigate, onClose }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { claims, displayExposure, displayOpenClaims } = data;
+  const open = claims.filter((claim) => !/closed|resolved/i.test(String(claim.status || "")));
+  const byRisk = { High: { amount: 0, count: 0 }, Medium: { amount: 0, count: 0 }, Low: { amount: 0, count: 0 } };
+  for (const claim of open) {
+    const risk = ["High", "Medium", "Low"].includes(claim.risk) ? claim.risk : "Medium";
+    byRisk[risk].amount += Number(claim.amount || 0);
+    byRisk[risk].count += 1;
+  }
+  return (
+    <>
+      <ModalHero label={`Open exposure · ${displayOpenClaims} claim${displayOpenClaims === 1 ? "" : "s"}`} value={currency.format(displayExposure)} note="Money at risk if claims go against you" tone="red" />
+      <BreakdownSection title="By risk level">
+        {["High", "Medium", "Low"].map((risk) => (
+          <BreakdownRow
+            key={risk}
+            label={`${risk} risk`}
+            sub={`${byRisk[risk].count} claim${byRisk[risk].count === 1 ? "" : "s"}`}
+            value={currency.format(byRisk[risk].amount)}
+            tone={risk === "High" ? "red" : risk === "Low" ? "green" : "amber"}
+          />
+        ))}
+      </BreakdownSection>
+      {open.length > 0 ? (
+        <BreakdownSection title="Open claims">
+          {open.slice(0, 10).map((claim, i) => (
+            <View key={claim.id || i} style={styles.claimDetailRow}>
+              <View style={styles.breakCopy}>
+                <Text style={styles.breakLabel}>{claim.type || "Claim"}</Text>
+                <Text style={styles.breakSub}>{claim.driver || "No driver"} · {claim.route || claim.category || "Route"}</Text>
+              </View>
+              <View style={styles.claimDetailRight}>
+                <Text style={[styles.breakValue, styles.redValue]} numberOfLines={1}>{currency.format(Number(claim.amount || 0))}</Text>
+                <RiskTag risk={claim.risk} />
+              </View>
+            </View>
+          ))}
+        </BreakdownSection>
+      ) : (
+        <Text style={styles.modalNote}>No open claims. Exposure is clear.</Text>
+      )}
+      <TouchableOpacity style={styles.modalCta} onPress={() => { onClose?.(); onNavigate?.("claims"); }}>
+        <Text style={styles.modalCtaText}>Open Claims tab</Text>
+      </TouchableOpacity>
+    </>
   );
 }
 
@@ -296,7 +570,10 @@ function CommandMetricCard({ label, value, note, tone, onPress }) {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const content = (
     <>
-      <Text style={styles.commandLabel}>{label}</Text>
+      <View style={styles.commandTop}>
+        <Text style={styles.commandLabel}>{label}</Text>
+        {onPress ? <Text style={styles.commandChevron}>›</Text> : null}
+      </View>
       <Text style={[styles.commandValue, styles[`${tone}Value`] || styles.inkValue]} numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>
@@ -306,7 +583,7 @@ function CommandMetricCard({ label, value, note, tone, onPress }) {
 
   if (onPress) {
     return (
-      <TouchableOpacity style={styles.commandCard} onPress={onPress}>
+      <TouchableOpacity style={styles.commandCard} onPress={onPress} activeOpacity={0.85}>
         {content}
       </TouchableOpacity>
     );
@@ -1321,5 +1598,208 @@ const createStyles = (colors) => StyleSheet.create({
     fontWeight: "700",
     lineHeight: 18,
     marginTop: 10,
+  },
+  commandTop: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  commandChevron: {
+    color: colors.muted,
+    fontSize: 20,
+    fontWeight: "900",
+    marginTop: -3,
+  },
+  commandHint: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: -2,
+    paddingHorizontal: 4,
+  },
+  modalBackdrop: {
+    backgroundColor: "rgba(2,6,23,0.55)",
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modalBackdropTap: {
+    bottom: 0,
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0,
+  },
+  modalSheet: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    maxHeight: "88%",
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+  },
+  modalHandle: {
+    alignSelf: "center",
+    backgroundColor: colors.border,
+    borderRadius: 999,
+    height: 5,
+    marginBottom: 12,
+    width: 40,
+  },
+  modalHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  modalTitle: {
+    color: colors.ink,
+    fontSize: 21,
+    fontWeight: "900",
+  },
+  modalClose: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  modalCloseText: {
+    color: colors.blue,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  modalBody: {
+    gap: 14,
+    paddingBottom: 16,
+  },
+  modalHero: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+  },
+  modalHeroLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  modalHeroValue: {
+    fontSize: 32,
+    fontWeight: "900",
+    marginTop: 4,
+  },
+  modalHeroNote: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: 4,
+  },
+  modalNote: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 18,
+    paddingHorizontal: 4,
+  },
+  breakSection: {
+    gap: 8,
+  },
+  breakSectionTitle: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "900",
+    marginLeft: 4,
+    textTransform: "uppercase",
+  },
+  breakCard: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+  },
+  breakRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "space-between",
+    paddingVertical: 11,
+  },
+  breakCopy: {
+    flex: 1,
+  },
+  breakLabel: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  breakLabelStrong: {
+    fontWeight: "900",
+  },
+  breakSub: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "700",
+    lineHeight: 15,
+    marginTop: 2,
+  },
+  breakValue: {
+    fontSize: 15,
+    fontWeight: "900",
+    maxWidth: 140,
+    textAlign: "right",
+  },
+  breakValueStrong: {
+    fontSize: 18,
+  },
+  breakDivider: {
+    backgroundColor: colors.border,
+    height: 1,
+    marginVertical: 4,
+  },
+  riskTag: {
+    borderRadius: 999,
+    fontSize: 10,
+    fontWeight: "900",
+    marginTop: 4,
+    overflow: "hidden",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    textAlign: "center",
+  },
+  riskHigh: {
+    backgroundColor: "#fee2e2",
+    color: "#991b1b",
+  },
+  riskMedium: {
+    backgroundColor: "#fef3c7",
+    color: "#92400e",
+  },
+  riskLow: {
+    backgroundColor: "#dcfce7",
+    color: "#166534",
+  },
+  claimDetailRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "space-between",
+    paddingVertical: 11,
+  },
+  claimDetailRight: {
+    alignItems: "flex-end",
+  },
+  modalCta: {
+    alignItems: "center",
+    backgroundColor: colors.blue,
+    borderRadius: 14,
+    marginTop: 4,
+    paddingVertical: 13,
+  },
+  modalCtaText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "900",
   },
 });
