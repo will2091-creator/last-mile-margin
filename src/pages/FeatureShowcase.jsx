@@ -283,12 +283,18 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
 
         {/* ---------- HERO ---------- */}
         <section className="mx-auto max-w-6xl px-5 pb-10 pt-14 lg:px-8 lg:pt-20">
+          <div className="mb-9 flex justify-center lg:mb-12">
+            <span className={`inline-flex items-center gap-2.5 rounded-full border px-6 py-2.5 text-sm font-black uppercase tracking-[0.12em] shadow-lg backdrop-blur sm:text-base ${t.badge} ${isDark ? "shadow-blue-500/10" : "shadow-blue-600/10"}`}>
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-60" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500" />
+              </span>
+              Built for final-mile contractors
+            </span>
+          </div>
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
-              <span className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-black uppercase tracking-wide backdrop-blur ${t.badge}`}>
-                Built for final-mile contractors
-              </span>
-              <h1 className="mt-6 text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
+              <h1 className="text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
                 Know your margin{" "}
                 <span className={`bg-gradient-to-r bg-clip-text text-transparent ${isDark ? "from-blue-400 via-indigo-400 to-violet-400" : "from-blue-600 via-indigo-600 to-violet-600"}`}>before the route costs you.</span>
               </h1>
