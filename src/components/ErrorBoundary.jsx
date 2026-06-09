@@ -1,6 +1,7 @@
 import React from "react";
 import logo from "../assets/last-mile-margin-logo.png";
 import logoDark from "../assets/last-mile-margin-logo-darkmode.png";
+import { reportError } from "../lib/errorReporting.js";
 
 // The boundary can render before the themed app shell mounts, so read the
 // persisted theme straight from localStorage rather than threading isDark down.
@@ -27,8 +28,9 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    // Surface for debugging; in production this is where you'd report to Sentry.
     console.error("ErrorBoundary caught an error:", error, info);
+    // Reports to Sentry when VITE_SENTRY_DSN is configured; no-op otherwise.
+    reportError(error, { componentStack: info?.componentStack, boundary: this.props.variant || "root" });
   }
 
   handleReload = () => {

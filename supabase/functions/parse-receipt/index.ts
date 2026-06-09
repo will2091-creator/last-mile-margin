@@ -1,9 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeadersFor } from "../_shared/cors.ts";
 
 const instructions = `You extract expense receipt data for a final-mile delivery business.
 Return only JSON with this exact shape:
@@ -17,6 +13,7 @@ Return only JSON with this exact shape:
 Use Gas for fuel stations and fuel purchases. Use Tools for tool/hardware purchases. Use Maintenance for repairs, parts, oil, tires, or service. Use Parking/Tolls for tolls, parking, bridges, or fees.`;
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsHeadersFor(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

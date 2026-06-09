@@ -13,11 +13,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14?target=deno";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeadersFor } from "../_shared/cors.ts";
 
 // Per-user tables and the column scoped to the user id. Deleted best-effort —
 // a table missing from this deployment is skipped without failing the request.
@@ -43,6 +39,7 @@ const USER_TABLES: Array<{ table: string; column: string }> = [
 const STORAGE_BUCKETS = ["documents", "claim-evidence", "team-photos", "contracts"];
 
 serve(async (req) => {
+  const corsHeaders = corsHeadersFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
