@@ -12,10 +12,10 @@ import { ArrowLeft, ShieldCheck } from "lucide-react";
 // ─────────────────────────────────────────────────────────────────────────────
 export const LEGAL_CONFIG = {
   productName: "Last Mile Margin",
-  legalEntity: "Last Mile Margin", // TODO: confirm the registered legal entity (e.g. "Last Mile Margin, LLC")
-  contactEmail: "support@finalmilemargin.com", // TODO: confirm the real contact inbox
+  legalEntity: "Final Mile Margin LLC", // the registered company that operates the Last Mile Margin product
+  contactEmail: "support@finalmilemargin.com", // monitored inbox for legal/privacy requests
   website: "finalmilemargin.com",
-  governingLaw: "the State of Delaware, United States", // TODO: confirm your governing jurisdiction
+  governingLaw: "the State of Alabama, United States",
   effectiveDate: "June 9, 2026",
 };
 
