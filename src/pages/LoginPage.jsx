@@ -3,7 +3,113 @@ import lastMileMarginLogo from "../assets/last-mile-margin-logo-transparent.svg"
 import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-transparent-dark.svg";
 import loginRoadLakeTruck from "../assets/login-road-lake-truck-branded.jpg";
 import FeatureShowcase from "./FeatureShowcase";
-import { ArrowRight, Building2, CheckCircle2, Clock, Eye, EyeOff, Lock, Mail, ShieldCheck, X } from "lucide-react";
+import { supabase } from "../lib/supabaseClient";
+import { ArrowRight, Bell, Building2, CheckCircle2, Clock, Eye, EyeOff, Lock, Mail, ShieldCheck, X } from "lucide-react";
+
+// ── Coming Soon panel with waitlist email capture ──────────────────────────
+function ComingSoon({ isDark, mutedText, onSignIn }) {
+  const [email, setEmail]     = useState("");
+  const [status, setStatus]   = useState("idle"); // idle | submitting | done | error
+  const [errMsg, setErrMsg]   = useState("");
+
+  const handleNotify = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setStatus("submitting");
+    setErrMsg("");
+    try {
+      const { error } = await supabase.from("waitlist").insert({ email: email.trim().toLowerCase() });
+      if (error) {
+        // Unique constraint = already on the list — treat as success
+        if (error.code === "23505") { setStatus("done"); return; }
+        throw error;
+      }
+      setStatus("done");
+    } catch (err) {
+      setErrMsg("Couldn't save your email right now. Try again in a moment.");
+      setStatus("error");
+    }
+  };
+
+  const inputClass = isDark
+    ? "flex-1 min-w-0 rounded-xl border border-white/10 bg-slate-950/70 py-3 pl-10 pr-4 text-sm font-semibold text-white outline-none transition focus:border-blue-500 placeholder:text-slate-500"
+    : "flex-1 min-w-0 rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-500 placeholder:text-slate-400";
+
+  return (
+    <div className="py-4 text-center">
+      <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl ${isDark ? "bg-blue-500/10" : "bg-blue-50"}`}>
+        <Clock className="h-8 w-8 text-blue-500" />
+      </div>
+      <h2 id="auth-modal-title" className="mt-5 text-2xl font-black tracking-tight">
+        Coming Soon
+      </h2>
+      <p className={`mt-3 text-sm font-semibold leading-relaxed ${mutedText}`}>
+        We're putting the finishing touches on sign-ups.<br />
+        Enter your email and we'll notify you the moment we go live.
+      </p>
+
+      {/* Email notify form */}
+      {status === "done" ? (
+        <div className={`mt-6 flex items-center justify-center gap-2.5 rounded-2xl border py-4 text-sm font-black ${isDark ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+          <CheckCircle2 className="h-5 w-5 shrink-0" />
+          You're on the list — we'll email you when we launch!
+        </div>
+      ) : (
+        <form onSubmit={handleNotify} className="mt-6">
+          <div className="flex gap-2">
+            <div className="relative flex-1 min-w-0">
+              <Mail className={`absolute left-3 top-3 h-4 w-4 ${mutedText}`} />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                className={inputClass}
+                autoComplete="email"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={status === "submitting"}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white transition hover:bg-blue-500 disabled:opacity-60"
+            >
+              <Bell className="h-4 w-4" />
+              {status === "submitting" ? "Saving…" : "Notify me"}
+            </button>
+          </div>
+          {status === "error" && (
+            <p className={`mt-2 text-xs font-bold ${isDark ? "text-red-400" : "text-red-600"}`}>{errMsg}</p>
+          )}
+        </form>
+      )}
+
+      <div className={`mt-5 rounded-2xl border p-4 text-left ${isDark ? "border-white/10 bg-white/5" : "border-slate-100 bg-slate-50"}`}>
+        <p className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-500" : "text-slate-400"}`}>When sign-ups open</p>
+        <ul className="mt-3 space-y-2">
+          {[
+            "3-day free trial, card required",
+            "$99/month — locked for your first 12 months",
+            "Full AI-powered profit & claims tools",
+          ].map((item) => (
+            <li key={item} className={`flex items-start gap-2.5 text-sm font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <button
+        type="button"
+        onClick={onSignIn}
+        className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl border px-5 py-3.5 text-sm font-black transition ${isDark ? "border-white/10 text-slate-300 hover:bg-white/5" : "border-slate-200 text-slate-700 hover:bg-slate-50"}`}
+      >
+        Already have an account? Sign in →
+      </button>
+    </div>
+  );
+}
 
 function LoginPage({ onLogin, onSignUp, isDark, setAppSettings }) {
   const [showModal, setShowModal] = useState(false);
@@ -298,42 +404,7 @@ function LoginPage({ onLogin, onSignUp, isDark, setAppSettings }) {
 
             {/* ── COMING SOON (sign-up disabled) ── */}
             {!signupDone && mode === "signup" && (
-              <div className="py-4 text-center">
-                <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl ${isDark ? "bg-blue-500/10" : "bg-blue-50"}`}>
-                  <Clock className="h-8 w-8 text-blue-500" />
-                </div>
-                <h2 id="auth-modal-title" className="mt-5 text-2xl font-black tracking-tight">
-                  Coming Soon
-                </h2>
-                <p className={`mt-3 text-sm font-semibold leading-relaxed ${mutedText}`}>
-                  We're putting the finishing touches on sign-ups.<br />
-                  Check back very soon — it's almost ready.
-                </p>
-
-                <div className={`mt-6 rounded-2xl border p-4 text-left ${isDark ? "border-white/10 bg-white/5" : "border-slate-100 bg-slate-50"}`}>
-                  <p className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-500" : "text-slate-400"}`}>When sign-ups open</p>
-                  <ul className="mt-3 space-y-2">
-                    {[
-                      "3-day free trial, card required",
-                      "$99/month — locked for your first 12 months",
-                      "Full AI-powered profit & claims tools",
-                    ].map((item) => (
-                      <li key={item} className={`flex items-start gap-2.5 text-sm font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => switchMode("signin")}
-                  className={`mt-6 flex w-full items-center justify-center gap-2 rounded-xl border px-5 py-3.5 text-sm font-black transition ${isDark ? "border-white/10 text-slate-300 hover:bg-white/5" : "border-slate-200 text-slate-700 hover:bg-slate-50"}`}
-                >
-                  Already have an account? Sign in →
-                </button>
-              </div>
+              <ComingSoon isDark={isDark} mutedText={mutedText} onSignIn={() => switchMode("signin")} />
             )}
           </section>
         </div>
