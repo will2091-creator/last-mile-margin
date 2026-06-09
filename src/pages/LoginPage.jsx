@@ -3,7 +3,7 @@ import lastMileMarginLogo from "../assets/last-mile-margin-logo-transparent.svg"
 import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-transparent-dark.svg";
 import loginRoadLakeTruck from "../assets/login-road-lake-truck-branded.jpg";
 import FeatureShowcase from "./FeatureShowcase";
-import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, Lock, Mail, ShieldCheck, X } from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, Clock, Eye, EyeOff, Lock, Mail, ShieldCheck, X } from "lucide-react";
 
 function LoginPage({ onLogin, onSignUp, isDark, setAppSettings }) {
   const [showModal, setShowModal] = useState(false);
@@ -296,122 +296,44 @@ function LoginPage({ onLogin, onSignUp, isDark, setAppSettings }) {
               </>
             )}
 
-            {/* ── SIGN UP FORM ── */}
+            {/* ── COMING SOON (sign-up disabled) ── */}
             {!signupDone && mode === "signup" && (
-              <>
-                <h1 id="auth-modal-title" className="sr-only">Create your account</h1>
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div>
-                    <label htmlFor="signup-company" className={labelClass}>Company name <span className={`font-medium ${mutedText}`}>(optional)</span></label>
-                    <div className="relative">
-                      <Building2 className={`absolute left-4 top-3.5 h-5 w-5 ${mutedText}`} />
-                      <input
-                        ref={firstFieldRef}
-                        id="signup-company"
-                        value={signupForm.companyName}
-                        onChange={(e) => setSignupForm((c) => ({ ...c, companyName: e.target.value }))}
-                        className={inputClass}
-                        placeholder="Your company name"
-                        type="text"
-                        autoComplete="organization"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="signup-email" className={labelClass}>Email</label>
-                    <div className="relative">
-                      <Mail className={`absolute left-4 top-3.5 h-5 w-5 ${mutedText}`} />
-                      <input
-                        id="signup-email"
-                        value={signupForm.email}
-                        onChange={(e) => setSignupForm((c) => ({ ...c, email: e.target.value }))}
-                        className={inputClass}
-                        placeholder="you@example.com"
-                        type="email"
-                        autoComplete="email"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="signup-password" className={labelClass}>Password</label>
-                    <div className="relative">
-                      <Lock className={`absolute left-4 top-3.5 h-5 w-5 ${mutedText}`} />
-                      <input
-                        id="signup-password"
-                        value={signupForm.password}
-                        onChange={(e) => setSignupForm((c) => ({ ...c, password: e.target.value }))}
-                        className={`${inputClass} pr-12`}
-                        placeholder="At least 8 characters"
-                        type={showPassword ? "text" : "password"}
-                        autoComplete="new-password"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((v) => !v)}
-                        aria-label={showPassword ? "Hide password" : "Show password"}
-                        className={`absolute right-4 top-3.5 ${mutedText}`}
-                      >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="signup-confirm" className={labelClass}>Confirm password</label>
-                    <div className="relative">
-                      <Lock className={`absolute left-4 top-3.5 h-5 w-5 ${mutedText}`} />
-                      <input
-                        id="signup-confirm"
-                        value={signupForm.confirm}
-                        onChange={(e) => setSignupForm((c) => ({ ...c, confirm: e.target.value }))}
-                        className={`${inputClass} pr-12`}
-                        placeholder="Re-enter your password"
-                        type={showConfirm ? "text" : "password"}
-                        autoComplete="new-password"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirm((v) => !v)}
-                        aria-label={showConfirm ? "Hide password" : "Show password"}
-                        className={`absolute right-4 top-3.5 ${mutedText}`}
-                      >
-                        {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {formError && (
-                    <div role="alert" className={isDark ? "rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm font-bold text-red-300" : "rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-600"}>
-                      {formError}
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-70 hover:bg-blue-500"
-                  >
-                    {isSubmitting ? "Creating account…" : "Create free account"}
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-
-                  <p className={`text-center text-xs ${mutedText}`}>
-                    You'll start with a clean workspace and a guided tour of the app.
-                  </p>
-                </form>
-
-                <p className={`mt-5 text-center text-sm ${mutedText}`}>
-                  Already have an account?{" "}
-                  <button type="button" onClick={() => switchMode("signin")} className={`font-bold ${isDark ? "text-blue-400 hover:underline" : "text-blue-600 hover:underline"}`}>
-                    Sign in →
-                  </button>
+              <div className="py-4 text-center">
+                <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl ${isDark ? "bg-blue-500/10" : "bg-blue-50"}`}>
+                  <Clock className="h-8 w-8 text-blue-500" />
+                </div>
+                <h2 id="auth-modal-title" className="mt-5 text-2xl font-black tracking-tight">
+                  Coming Soon
+                </h2>
+                <p className={`mt-3 text-sm font-semibold leading-relaxed ${mutedText}`}>
+                  We're putting the finishing touches on sign-ups.<br />
+                  Check back very soon — it's almost ready.
                 </p>
-              </>
+
+                <div className={`mt-6 rounded-2xl border p-4 text-left ${isDark ? "border-white/10 bg-white/5" : "border-slate-100 bg-slate-50"}`}>
+                  <p className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-500" : "text-slate-400"}`}>When sign-ups open</p>
+                  <ul className="mt-3 space-y-2">
+                    {[
+                      "3-day free trial, card required",
+                      "$99/month — locked for your first 12 months",
+                      "Full AI-powered profit & claims tools",
+                    ].map((item) => (
+                      <li key={item} className={`flex items-start gap-2.5 text-sm font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => switchMode("signin")}
+                  className={`mt-6 flex w-full items-center justify-center gap-2 rounded-xl border px-5 py-3.5 text-sm font-black transition ${isDark ? "border-white/10 text-slate-300 hover:bg-white/5" : "border-slate-200 text-slate-700 hover:bg-slate-50"}`}
+                >
+                  Already have an account? Sign in →
+                </button>
+              </div>
             )}
           </section>
         </div>
