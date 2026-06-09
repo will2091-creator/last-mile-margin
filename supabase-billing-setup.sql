@@ -18,9 +18,19 @@ create table if not exists public.subscriptions (
 -- Index for fast lookups
 create index if not exists subscriptions_user_id_idx on public.subscriptions(user_id);
 
+-- Table-level privilege: REQUIRED in addition to RLS. Without this GRANT the
+-- client gets "permission denied for table subscriptions" (42501) even with a
+-- correct RLS policy. The logged-in client reads as the `authenticated` role.
+grant usage on schema public to authenticated;
+grant select on public.subscriptions to authenticated;
+
 -- RLS: users can read only their own row; Edge Functions use service role (bypasses RLS)
 alter table public.subscriptions enable row level security;
 
+drop policy if exists "Users can read their own subscription" on public.subscriptions;
 create policy "Users can read their own subscription"
-  on public.subscriptions for select
+  on public.subscriptions for select to authenticated
   using (auth.uid() = user_id);
+
+-- Make the new table visible to the REST API immediately.
+notify pgrst, 'reload schema';
