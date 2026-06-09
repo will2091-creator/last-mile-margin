@@ -998,7 +998,8 @@ function ProfitabilityDashboard({
         icon: DollarSign,
         tone: "blue",
         value: totalRouteRevenue,
-        note: customCharges.length > 0 ? `${extraStops} stops · ${customCharges.length} custom charges` : `${extraStops} stops included`,
+        note: `${extraStops} stops`,
+        items: enabledCustomCharges.map((charge) => ({ name: charge.name || "Custom charge", amount: charge.amount })),
         fields: revenueFields,
       },
       {

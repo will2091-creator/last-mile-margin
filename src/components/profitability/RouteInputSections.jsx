@@ -41,6 +41,16 @@ export default function RouteInputSections({
                 {currency.format(section.value)}
               </p>
               <p className={`mt-1 truncate text-xs font-bold ${mutedText}`}>{section.note}</p>
+              {section.items && section.items.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {section.items.map((item, idx) => (
+                    <div key={`${item.name}-${idx}`} className="flex items-center justify-between gap-2 text-[11px] font-semibold">
+                      <span className={`truncate ${mutedText}`}>{item.name}</span>
+                      <span className={`shrink-0 ${titleText}`}>{currency.format(item.amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </button>
         );
