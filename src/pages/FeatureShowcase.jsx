@@ -523,6 +523,11 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
           <p className={`mt-8 flex items-center justify-center gap-2 text-center text-xs font-semibold ${t.footer}`}>
             <TrendingUp className="h-3.5 w-3.5" /> Last Mile Margin — margin protection for final-mile delivery contractors.
           </p>
+          <p className={`mt-3 flex items-center justify-center gap-4 text-center text-xs font-semibold ${t.footer}`}>
+            <a href="#/terms" className="hover:underline">Terms of Service</a>
+            <span aria-hidden="true">·</span>
+            <a href="#/privacy" className="hover:underline">Privacy Policy</a>
+          </p>
         </section>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import lastMileMarginLogo from "./assets/last-mile-margin-logo.png";
 import lastMileMarginLogoDark from "./assets/last-mile-margin-logo-darkmode.png";
 import LoginPage from "./pages/LoginPage";
+import LegalPage from "./pages/LegalPage";
 // Heavy authenticated pages (charts, AI, big forms) are code-split so the
 // initial load — and especially the logged-out login screen — stays lean.
 const DashboardHome = lazy(() => import("./pages/DashboardHome"));
@@ -115,6 +116,15 @@ const getAllowedTabsForRole = (role) => roleAccess[role] || roleAccess.driver;
 const canAccessTab = (role, tabName) => getAllowedTabsForRole(role).includes(normalizeTopTab(tabName));
 
 const getHashSlug = () => window.location.hash.replace(/^#\/?/, "").toLowerCase();
+
+// Public legal routes (#/terms, #/privacy) are reachable with or without a
+// session — Stripe, app stores, and the law all require them to be linkable
+// without an account. Returns the doc slug or null.
+const LEGAL_SLUGS = new Set(["terms", "privacy"]);
+const getLegalDocFromHash = () => {
+  const slug = getHashSlug();
+  return LEGAL_SLUGS.has(slug) ? slug : null;
+};
 
 const getTabFromUrl = () => {
   const slug = getHashSlug();
@@ -251,6 +261,19 @@ export default function App() {
   const [teamMembers, setTeamMembers] = useState([]);
   const [currentUserRole, setCurrentUserRole] = useState("owner");
   const [teamAccessStatus, setTeamAccessStatus] = useState("Team access will load after sign in.");
+  const [legalDoc, setLegalDoc] = useState(getLegalDocFromHash);
+
+  // Keep the public legal route in sync with the URL, independent of auth/role
+  // so it works for logged-out visitors too.
+  useEffect(() => {
+    const syncLegal = () => setLegalDoc(getLegalDocFromHash());
+    window.addEventListener("hashchange", syncLegal);
+    window.addEventListener("popstate", syncLegal);
+    return () => {
+      window.removeEventListener("hashchange", syncLegal);
+      window.removeEventListener("popstate", syncLegal);
+    };
+  }, []);
 
   useEffect(() => {
     if (tourActive) return;
@@ -515,6 +538,8 @@ export default function App() {
   useEffect(() => {
     const handleHistoryChange = () => {
       const slug = getHashSlug();
+      // Public legal routes are handled separately; don't rewrite them to Dashboard.
+      if (LEGAL_SLUGS.has(slug)) return;
       if (slug && !tabBySlug[slug]) {
         window.history.replaceState({ tab: "Dashboard" }, "", `#/${tabSlugs.Dashboard}`);
       }
@@ -1265,6 +1290,22 @@ export default function App() {
 
     return result;
   };
+
+  // Public legal pages — render for anyone (logged in or not) before any gate.
+  if (legalDoc) {
+    return (
+      <LegalPage
+        doc={legalDoc}
+        isDark={isDark}
+        onBack={() => {
+          const target = isLoggedIn ? `#/${tabSlugs.Dashboard}` : "";
+          window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${target}`);
+          setLegalDoc(null);
+          window.dispatchEvent(new HashChangeEvent("hashchange"));
+        }}
+      />
+    );
+  }
 
   if (isAuthLoading) {
     return (

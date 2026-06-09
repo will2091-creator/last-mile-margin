@@ -133,6 +133,11 @@ export default function AppSidebar({
           <p className="truncate">{authUser?.email || "Owner Account"}</p>
           <p className="mt-1 text-xs font-semibold uppercase tracking-wide">{roleLabel || currentUserRole}</p>
           <button onClick={signOut} className="mt-2 rounded-lg px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-500/10">Sign Out</button>
+          <p className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-500">
+            <a href="#/terms" className="hover:underline">Terms</a>
+            <span aria-hidden="true">·</span>
+            <a href="#/privacy" className="hover:underline">Privacy</a>
+          </p>
         </div>
       </div>
     </aside>
