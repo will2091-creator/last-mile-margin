@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { aiFetch } from "../lib/aiFetch";
 import { BarChart3, Camera, currency, DollarSign, FileText, RotateCcw, Sparkles, Trash2, Upload } from "../shared";
 import { loadVaultDocumentsFromSupabase } from "../lib/documentRepository";
 import { fileToCompressedImage } from "../lib/imagePrep";
@@ -83,11 +84,7 @@ export default function ReceiptsDashboard({ isDark, navigateToTab }) {
     setScanNote("");
     try {
       const { base64, contentType } = await fileToCompressedImage(file);
-      const response = await fetch("/api/vision-receipt", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64, contentType }),
-      });
+      const response = await aiFetch("/api/vision-receipt", { imageBase64: base64, contentType });
       if (!response.ok) throw new Error("AI unavailable");
       const data = await response.json().catch(() => ({}));
       if (!data || (!data.vendor && !data.amount)) throw new Error("Nothing read");

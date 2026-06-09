@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { aiFetch } from "../lib/aiFetch";
 import { AlertTriangle, CheckCircle2, RotateCcw, ShieldCheck, Sparkles } from "../shared";
 import { detectAnomalies, anomalyCounts } from "../lib/watchdog";
 
@@ -68,11 +69,7 @@ export default function WatchdogPanel({ isDark, navigateToTab, savedDays = [], c
         openClaims: (claims || []).filter((c) => c.status !== "Closed").length,
         teams: (teams || []).length,
       };
-      const response = await fetch("/api/watchdog", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ anomalies: anomalies.map(({ id, severity, title, detail, kind }) => ({ id, severity, title, detail, kind })), context }),
-      });
+      const response = await aiFetch("/api/watchdog", { anomalies: anomalies.map(({ id, severity, title, detail, kind }) => ({ id, severity, title, detail, kind })), context });
       if (!response.ok) throw new Error("AI unavailable");
       const data = await response.json().catch(() => ({}));
       if (!data || !data.summary) throw new Error("No briefing");

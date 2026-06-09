@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { aiFetch } from "../lib/aiFetch";
 import { AlertTriangle, BarChart3, CheckCircle2, ClipboardCheck, FileText, RotateCcw, ShieldCheck, Sparkles, Users } from "../shared";
 import { feedCounts } from "../lib/actionFeed";
 
@@ -35,7 +36,7 @@ export default function ActionFeed({ isDark, items = [], onExecute, aiSummary = 
         }
         const anomalies = items.slice(0, 8).map((i) => ({ id: i.id, severity: i.severity, title: i.title, detail: i.detail, kind: i.source }));
         const context = { anomalyCount: items.length, high: counts.high };
-        const res = await fetch("/api/watchdog", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ anomalies, context }) });
+        const res = await aiFetch("/api/watchdog", { anomalies, context });
         if (!res.ok) throw new Error("ai down");
         const data = await res.json().catch(() => ({}));
         const line = data?.headline || fallback;

@@ -1,4 +1,5 @@
 import { generateWatchdogWithOpenAI } from "../server/openaiCore.js";
+import { requireUser } from "../server/requireUser.js";
 
 const sendJson = (response, statusCode, payload) => {
   response.status(statusCode).json(payload);
@@ -17,6 +18,12 @@ export default async function handler(request, response) {
   }
 
   try {
+    const auth = await requireUser(request);
+    if (!auth.ok) {
+      sendJson(response, auth.status, { error: auth.error });
+      return;
+    }
+
     const body = getBody(request);
     const result = await generateWatchdogWithOpenAI({ anomalies: body.anomalies, context: body.context });
     sendJson(response, result.ok ? 200 : result.status, result.payload);

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { aiFetch } from "../lib/aiFetch";
 import {
   AlertTriangle,
   BarChart3,
@@ -240,17 +241,13 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
     let fallbackStatus = "Used local parser.";
 
     try {
-      const response = await fetch("/api/analyze-intake", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const response = await aiFetch("/api/analyze-intake", {
           text,
           files: files.map((file) => ({ name: file.name, type: file.type })),
           teams,
           claims,
           appSettings,
-        }),
-      });
+        });
 
       if (response.ok) {
         const result = await response.json();

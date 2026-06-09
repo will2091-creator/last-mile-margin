@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { aiFetch } from "../lib/aiFetch";
 import { getEvidenceChecklist as sharedEvidenceChecklist, getMissingEvidence as sharedMissingEvidence, isLikelyWorthDisputing as sharedIsLikelyWorthDisputing, draftDisputesPhrase } from "../lib/claims";
 import {
   AlertTriangle,
@@ -473,11 +474,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     setVisionStatus("reading");
     try {
       const { base64, contentType } = await fileToCompressedImage(file);
-      const response = await fetch("/api/vision-claim", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64, contentType }),
-      });
+      const response = await aiFetch("/api/vision-claim", { imageBase64: base64, contentType });
       if (!response.ok) throw new Error("Vision unavailable");
       const result = await response.json().catch(() => ({}));
       if (!result || !result.type) throw new Error("No result");
@@ -754,10 +751,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   const requestDisputeLetter = async (claim, selection = null) => {
     const fallback = buildFallbackDisputeLetter(claim, selection);
     try {
-      const response = await fetch("/api/dispute-letter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ claim: buildDisputeClaimContext(claim, selection) }),
+      const response = await aiFetch("/api/dispute-letter", { claim: buildDisputeClaimContext(claim, selection),
       });
       if (!response.ok) throw new Error("AI unavailable");
       const result = await response.json().catch(() => ({}));

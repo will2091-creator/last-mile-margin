@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { aiFetch } from "../lib/aiFetch";
 import {
   Area,
   AreaChart,
@@ -58,11 +59,7 @@ export default function ForecastPanel({ isDark, savedDays = [], appSettings = {}
         marginGap: forecast.target.marginGap,
         onPace: forecast.target.onPace,
       };
-      const response = await fetch("/api/forecast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ context }),
-      });
+      const response = await aiFetch("/api/forecast", { context });
       if (!response.ok) throw new Error("AI unavailable");
       const data = await response.json().catch(() => ({}));
       if (!data || !data.outlook) throw new Error("No forecast");

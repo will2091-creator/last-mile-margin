@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { aiFetch } from "../lib/aiFetch";
 import { currency, Sparkles } from "../shared";
 
 // Deterministic pre-dispatch claim-risk score (0-100) from a team's own signals.
@@ -80,11 +81,7 @@ export default function RiskForecast({ isDark, teams = [], claims = [] }) {
           openExposure: row.openExposure,
           survey: Number(row.team.surveyAvg || 0),
         }));
-        const response = await fetch("/api/risk-forecast", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ context }),
-        });
+        const response = await aiFetch("/api/risk-forecast", { context });
         if (!response.ok) throw new Error("unavailable");
         const data = await response.json().catch(() => ({}));
         if (!data || !data.summary) throw new Error("no forecast");

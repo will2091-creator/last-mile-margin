@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { aiFetch } from "../lib/aiFetch";
 import { currency, Sparkles, X } from "../shared";
 import { useToast } from "./Toast";
 import { addReminder } from "../lib/reminders";
@@ -107,11 +108,7 @@ export default function AskCopilot({ isDark, activeTab, navigateToTab, teams = [
     const ctx = buildContext();
     let answer;
     try {
-      const response = await fetch("/api/ask-business", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: query, businessContext: ctx, history }),
-      });
+      const response = await aiFetch("/api/ask-business", { question: query, businessContext: ctx, history });
       if (!response.ok) throw new Error("AI unavailable");
       const data = await response.json().catch(() => ({}));
       if (!data || !data.summary) throw new Error("No answer returned");

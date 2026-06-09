@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { aiFetch } from "../lib/aiFetch";
 import { AlertTriangle, BriefcaseBusiness, CheckCircle2, currency, RotateCcw } from "../shared";
 import { learnCostProfile, evaluateContract, buildEvalNarrative } from "../lib/contractEvaluator";
 
@@ -27,11 +28,7 @@ export default function ContractEvaluator({ isDark, open, onClose, contracts = [
     const fallback = buildEvalNarrative(result);
     let out;
     try {
-      const response = await fetch("/api/contract-eval", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ context: result }),
-      });
+      const response = await aiFetch("/api/contract-eval", { context: result });
       if (!response.ok) throw new Error("AI unavailable");
       const data = await response.json().catch(() => ({}));
       if (!data || !data.rationale) throw new Error("No call returned");

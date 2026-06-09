@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { aiFetch } from "../lib/aiFetch";
 import {
   AlertTriangle,
   BarChart3,
@@ -674,10 +675,7 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
     }
 
     try {
-      const response = await fetch("/api/ask-business", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const response = await aiFetch("/api/ask-business", {
           question: trimmed,
           businessContext,
           history: conversation.slice(0, 5).map((item) => ({
@@ -685,7 +683,6 @@ function AskBusinessDashboard({ claims, teams, results, form, savedDays, appSett
             title: item.title,
             summary: item.summary,
           })),
-        }),
       });
 
       if (!response.ok) {

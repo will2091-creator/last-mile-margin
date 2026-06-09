@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { aiFetch } from "../lib/aiFetch";
 import {
   AlertTriangle,
   Area,
@@ -157,11 +158,7 @@ function ComplianceDashboard({ teams, claims, isDark, navigateToTab, appSettings
     setDocScanStatus("reading");
     try {
       const { base64, contentType } = await fileToCompressedImage(file);
-      const response = await fetch("/api/vision-doc", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64, contentType }),
-      });
+      const response = await aiFetch("/api/vision-doc", { imageBase64: base64, contentType });
       if (!response.ok) throw new Error("Vision unavailable");
       const result = await response.json().catch(() => ({}));
       if (!result || (!result.type && !result.expiry)) throw new Error("No result");

@@ -1,4 +1,5 @@
 import { analyzeComplianceDocWithOpenAI, analyzeDamagePhotoWithOpenAI, analyzeIntakeWithOpenAI, analyzeReceiptWithOpenAI, askBusinessWithOpenAI, generateContractEvalWithOpenAI, generateDisputeLetterWithOpenAI, generateForecastWithOpenAI, generateMarginBriefWithOpenAI, generateRiskForecastWithOpenAI, generateWatchdogWithOpenAI, parseDayLogWithOpenAI } from "./openaiCore.js";
+import { requireUser } from "./requireUser.js";
 
 const readJsonBody = (req) =>
   new Promise((resolve, reject) => {
@@ -32,6 +33,12 @@ export async function handleAiApi(req, res, next) {
   }
 
   try {
+    const auth = await requireUser(req);
+    if (!auth.ok) {
+      sendJson(res, auth.status, { error: auth.error });
+      return;
+    }
+
     const body = await readJsonBody(req);
 
     if (req.url.startsWith("/api/ask-business")) {

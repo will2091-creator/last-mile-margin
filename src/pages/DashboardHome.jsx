@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { aiFetch } from "../lib/aiFetch";
 import {
   AlertTriangle,
   Area,
@@ -445,11 +446,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
     const fallback = parseDayLogFallback(text);
     let parsed;
     try {
-      const response = await fetch("/api/parse-daylog", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
+      const response = await aiFetch("/api/parse-daylog", { text });
       if (!response.ok) throw new Error("AI unavailable");
       const result = await response.json().catch(() => ({}));
       if (!result || (!result.form && !result.claims)) throw new Error("No parse returned");
