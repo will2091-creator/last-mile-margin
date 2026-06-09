@@ -11,6 +11,7 @@ const OperationsDashboard = lazy(() => import("./pages/OperationsDashboard"));
 const FinanceDashboard = lazy(() => import("./pages/FinanceDashboard"));
 const ReportsDashboard = lazy(() => import("./pages/ReportsDashboard"));
 const AskBusinessDashboard = lazy(() => import("./pages/AskBusinessDashboard"));
+const DocumentsDashboard = lazy(() => import("./pages/DocumentsDashboard"));
 const AiQuickIntake = lazy(() => import("./components/AiQuickIntake"));
 import BusinessWorkflowRail from "./components/BusinessWorkflowRail";
 import SyncConfidencePanel from "./components/SyncConfidencePanel";
@@ -49,6 +50,7 @@ import {
   toNum,
   Upload,
 } from "./shared";
+import { FolderArchive } from "lucide-react";
 
 const usernameEmailMap = {
   "william.mckoy": "william.mckoy2@gmail.com",
@@ -74,6 +76,7 @@ const tabSlugs = {
   Claims: "claims",
   Teams: "teams",
   Reports: "reports",
+  Documents: "documents",
   Ask: "ask",
   Settings: "settings",
 };
@@ -94,8 +97,8 @@ const groupedTabs = {
 const normalizeTopTab = (tab) => groupedTabs[tab]?.[0] || tab;
 
 const roleAccess = {
-  owner: ["Dashboard", "Ask", "Intake", "Operations", "Finance", "Reports", "Settings"],
-  admin: ["Dashboard", "Ask", "Intake", "Operations", "Finance", "Reports", "Settings"],
+  owner: ["Dashboard", "Ask", "Intake", "Operations", "Finance", "Reports", "Documents", "Settings"],
+  admin: ["Dashboard", "Ask", "Intake", "Operations", "Finance", "Reports", "Documents", "Settings"],
   dispatcher: ["Dashboard", "Ask", "Intake", "Operations", "Reports"],
   driver: ["Dashboard", "Intake"],
 };
@@ -767,6 +770,7 @@ export default function App() {
       ],
     },
     { name: "Reports", icon: ClipboardCheck },
+    { name: "Documents", icon: FolderArchive },
     { name: "Ask", icon: Bot },
     { name: "Settings", icon: Settings },
   ];
@@ -1584,6 +1588,8 @@ export default function App() {
               />
             ) : activeTab === "Reports" ? (
               <ReportsDashboard claims={claims} teams={teams} results={results} form={form} savedDays={savedDays} savedScenarios={savedScenarios} appSettings={appSettings} isDark={isDark} exportSummary={exportSummary} reportsHomeSignal={reportsHomeSignal} navigateToTab={navigateToTab} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} />
+            ) : activeTab === "Documents" ? (
+              <DocumentsDashboard isDark={isDark} />
             ) : activeTab === "Ask" ? (
               <AskBusinessDashboard
                 claims={claims}
