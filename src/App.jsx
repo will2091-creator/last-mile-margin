@@ -1542,7 +1542,7 @@ export default function App() {
           signOut={signOut}
         />
 
-        <main className="min-w-0 flex-1 p-4 pb-28 sm:p-6 sm:pb-28 lg:p-8">
+        <main className="min-w-0 flex-1 p-4 pb-44 sm:p-6 sm:pb-44 lg:p-8">
           <AppToolbar
             isDark={isDark}
             isDemoMode={isDemoMode}

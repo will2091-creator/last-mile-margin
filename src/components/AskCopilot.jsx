@@ -190,13 +190,13 @@ export default function AskCopilot({ isDark, activeTab, navigateToTab, teams = [
       <button
         onClick={() => setOpen((value) => !value)}
         aria-label={open ? "Close Ask AI" : "Ask AI"}
-        className="fixed bottom-24 right-4 z-[80] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl shadow-blue-600/30 transition hover:scale-105 hover:bg-blue-500 sm:bottom-6 sm:right-6"
+        className="fixed bottom-40 right-4 z-[80] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl shadow-blue-600/30 transition hover:scale-105 hover:bg-blue-500 lg:bottom-6 lg:right-6"
       >
         {open ? <X className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
       </button>
 
       {open && (
-        <div className={`fixed bottom-40 right-4 z-[80] flex max-h-[68vh] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-3xl border shadow-2xl sm:bottom-24 sm:right-6 ${panelClass}`}>
+        <div className={`fixed bottom-[14.5rem] right-4 z-[80] flex max-h-[56vh] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-3xl border shadow-2xl lg:bottom-24 lg:right-6 lg:max-h-[68vh] ${panelClass}`}>
           <div className={`flex items-center justify-between gap-2 border-b p-4 ${isDark ? "border-white/10" : "border-slate-200"}`}>
             <div className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600/15 text-blue-600"><Sparkles className="h-4 w-4" /></span>

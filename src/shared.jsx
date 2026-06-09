@@ -39,11 +39,18 @@ import {
   Cell,
   Pie,
   PieChart,
-  ResponsiveContainer,
+  ResponsiveContainer as RechartsResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+
+// recharts' ResponsiveContainer warns on its first pre-measure render (its size
+// state starts at -1×-1). Seeding initialDimension keeps the console clean; the
+// measuring layout effect replaces it with the real size before paint.
+export function ResponsiveContainer({ initialDimension = { width: 300, height: 200 }, ...props }) {
+  return <RechartsResponsiveContainer initialDimension={initialDimension} {...props} />;
+}
 
 export {
   AlertTriangle,
@@ -83,7 +90,6 @@ export {
   Cell,
   Pie,
   PieChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
