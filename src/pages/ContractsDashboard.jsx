@@ -530,6 +530,9 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
   const rowBorder = isDark ? "border-white/10" : "border-slate-200";
+  const scheduleInputClass = isDark
+    ? "w-48 rounded-lg border border-white/10 bg-slate-950/70 px-3 py-1.5 text-right text-sm font-black text-white outline-none transition focus:border-blue-500"
+    : "w-48 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-right text-sm font-black text-slate-950 outline-none transition focus:border-blue-500";
   const inputClass = isDark
     ? "w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500"
     : "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-blue-500";
@@ -590,26 +593,11 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
     return isDark ? "bg-blue-500/10 text-blue-300" : "bg-blue-50 text-blue-700";
   };
 
-  const customerLogoBlock = (contract) => {
-    const isLowes = contract.customer?.toLowerCase().includes("lowe");
-
-    if (isLowes) {
-      return (
-        <div className="flex h-16 w-32 shrink-0 items-center justify-center">
-          <div className="relative flex h-12 w-28 items-center justify-center bg-blue-700 text-white shadow-sm">
-            <div className="absolute -top-3 left-1/2 h-7 w-16 -translate-x-1/2 bg-blue-700 [clip-path:polygon(50%_0%,100%_100%,0%_100%)]" />
-            <span className="relative z-10 text-2xl font-black tracking-tight">Lowe's</span>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className={`flex h-16 w-32 shrink-0 items-center justify-center rounded-2xl text-xl font-bold ${logoClass(contract.logo)}`}>
-        {contract.logo}
-      </div>
-    );
-  };
+  const customerLogoBlock = (contract) => (
+    <div className={`flex h-16 w-32 shrink-0 items-center justify-center rounded-2xl text-xl font-bold ${logoClass(contract.logo)}`}>
+      {contract.logo}
+    </div>
+  );
 
   if (contracts.length === 0) {
     const requiredFields = [
@@ -1425,13 +1413,40 @@ function ContractsDashboard({ teams, claims, isDark, navigateToTab, isBlankDemo 
                 <div className={`divide-y ${isDark ? "divide-white/10" : "divide-slate-200"}`}>
                   <div className="flex items-center justify-between gap-4 py-3">
                     <p className={`text-sm font-semibold ${mutedText}`}>Operating Days</p>
-                    <p className={`font-black ${titleText}`}>Mon – Sat</p>
+                    {isEditingContract ? (
+                      <input
+                        type="text"
+                        value={selectedContract.operatingDays ?? "Mon – Sat"}
+                        onChange={(event) => updateContractField("operatingDays", event.target.value)}
+                        className={scheduleInputClass}
+                      />
+                    ) : (
+                      <p className={`font-black ${titleText}`}>{selectedContract.operatingDays || "Mon – Sat"}</p>
+                    )}
                   </div>
                   <div className="flex items-center justify-between gap-4 py-3">
                     <p className={`text-sm font-semibold ${mutedText}`}>Hours</p>
-                    <p className={`font-black ${titleText}`}>7:00 AM – 7:00 PM</p>
+                    {isEditingContract ? (
+                      <input
+                        type="text"
+                        value={selectedContract.hours ?? "7:00 AM – 7:00 PM"}
+                        onChange={(event) => updateContractField("hours", event.target.value)}
+                        className={scheduleInputClass}
+                      />
+                    ) : (
+                      <p className={`font-black ${titleText}`}>{selectedContract.hours || "7:00 AM – 7:00 PM"}</p>
+                    )}
                   </div>
                 </div>
+                {!isEditingContract && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingContract(true)}
+                    className="mt-3 text-xs font-black text-blue-600 hover:underline"
+                  >
+                    Edit schedule →
+                  </button>
+                )}
               </div>
 
               <div className={isDark ? "rounded-2xl border border-white/10 bg-white/5 p-5" : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"}>
