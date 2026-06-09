@@ -123,7 +123,11 @@ function GoogleIcon() {
   );
 }
 
-function LoginPage({ onLogin, onSignUp, onGoogleLogin, isDark, setAppSettings }) {
+// Flip to true once the Google OAuth provider is configured in Supabase.
+// Hidden until then so the button can't error on click.
+const GOOGLE_LOGIN_ENABLED = false;
+
+function LoginPage({ onLogin, onSignUp, onGoogleLogin, onResetPassword, isDark, setAppSettings }) {
   const [showModal, setShowModal] = useState(false);
   const [mode, setMode] = useState("signin"); // "signin" | "signup"
   const [loginForm, setLoginForm] = useState({ identifier: "", password: "", remember: false });
@@ -131,6 +135,7 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, isDark, setAppSettings })
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [formError, setFormError] = useState("");
+  const [formNotice, setFormNotice] = useState(""); // success/info messages (e.g. reset email sent)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [signupDone, setSignupDone] = useState(null); // null | { needsConfirmation, email }
   const firstFieldRef = useRef(null);
@@ -147,6 +152,7 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, isDark, setAppSettings })
   const openModal = (startMode = "signin") => {
     triggerRef.current = document.activeElement;
     setFormError("");
+    setFormNotice("");
     setMode(startMode);
     setSignupDone(null);
     setShowModal(true);
@@ -155,6 +161,7 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, isDark, setAppSettings })
 
   const switchMode = (next) => {
     setFormError("");
+    setFormNotice("");
     setSignupDone(null);
     setShowPassword(false);
     setShowConfirm(false);
@@ -194,6 +201,7 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, isDark, setAppSettings })
     event.preventDefault();
     setIsSubmitting(true);
     setFormError("");
+    setFormNotice("");
     const result = await onLogin({ identifier: loginForm.identifier, password: loginForm.password });
     setIsSubmitting(false);
     if (!result?.ok) setFormError(result?.error || "Could not sign in. Check your email and password.");
@@ -201,12 +209,32 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, isDark, setAppSettings })
 
   const handleGoogle = async () => {
     setFormError("");
+    setFormNotice("");
     setIsSubmitting(true);
     const result = await onGoogleLogin?.();
     // On success the browser navigates to Google, so we only reach here on error.
     if (!result?.ok) {
       setIsSubmitting(false);
       setFormError(result?.error || "Could not start Google sign-in. Please try again.");
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setFormError("");
+    setFormNotice("");
+    const email = loginForm.identifier.trim();
+    if (!email) {
+      setFormError("Enter your email above first, then tap “Forgot password.”");
+      return;
+    }
+    setIsSubmitting(true);
+    const result = await onResetPassword?.(email);
+    setIsSubmitting(false);
+    if (result?.ok) {
+      // Generic message — don't reveal whether the email has an account.
+      setFormNotice("If an account exists for that email, a password reset link is on its way. Check your inbox.");
+    } else {
+      setFormError(result?.error || "Couldn't send a reset link right now. Please try again.");
     }
   };
 
@@ -291,7 +319,7 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, isDark, setAppSettings })
               {/* Sign in / Create account tabs */}
               {!signupDone && (
                 <div className={`mt-4 flex rounded-xl p-1 ${isDark ? "bg-white/5" : "bg-slate-100"}`}>
-                  {[["signin", "Sign in"], ["signup", "Create account"]].map(([m, label]) => (
+                  {[["signin", "Sign in"], ["signup", "Join the waitlist"]].map(([m, label]) => (
                     <button
                       key={m}
                       type="button"
@@ -334,17 +362,20 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, isDark, setAppSettings })
               <>
                 <h1 id="auth-modal-title" className="sr-only">Sign in to your workspace</h1>
 
-                {/* Google sign-in */}
-                <button type="button" onClick={handleGoogle} disabled={isSubmitting} className={googleBtnClass}>
-                  <GoogleIcon />
-                  Continue with Google
-                </button>
-
-                <div className="my-5 flex items-center gap-3">
-                  <span className={`h-px flex-1 ${isDark ? "bg-white/10" : "bg-slate-200"}`} />
-                  <span className={`text-xs font-bold uppercase tracking-wider ${mutedText}`}>or</span>
-                  <span className={`h-px flex-1 ${isDark ? "bg-white/10" : "bg-slate-200"}`} />
-                </div>
+                {/* Google sign-in (hidden until the OAuth provider is configured) */}
+                {GOOGLE_LOGIN_ENABLED && (
+                  <>
+                    <button type="button" onClick={handleGoogle} disabled={isSubmitting} className={googleBtnClass}>
+                      <GoogleIcon />
+                      Continue with Google
+                    </button>
+                    <div className="my-5 flex items-center gap-3">
+                      <span className={`h-px flex-1 ${isDark ? "bg-white/10" : "bg-slate-200"}`} />
+                      <span className={`text-xs font-bold uppercase tracking-wider ${mutedText}`}>or</span>
+                      <span className={`h-px flex-1 ${isDark ? "bg-white/10" : "bg-slate-200"}`} />
+                    </div>
+                  </>
+                )}
 
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div>
@@ -402,8 +433,9 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, isDark, setAppSettings })
                     </label>
                     <button
                       type="button"
-                      onClick={() => setFormError("Password reset can be enabled in Supabase Auth after the production email sender is configured.")}
-                      className={`text-sm font-bold ${isDark ? "text-blue-400" : "text-blue-600"}`}
+                      onClick={handleForgotPassword}
+                      disabled={isSubmitting}
+                      className={`text-sm font-bold disabled:opacity-60 ${isDark ? "text-blue-400" : "text-blue-600"}`}
                     >
                       Forgot password?
                     </button>
@@ -412,6 +444,12 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, isDark, setAppSettings })
                   {formError && (
                     <div role="alert" className={isDark ? "rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm font-bold text-red-300" : "rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-600"}>
                       {formError}
+                    </div>
+                  )}
+
+                  {formNotice && (
+                    <div role="status" className={isDark ? "rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm font-bold text-emerald-300" : "rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-700"}>
+                      {formNotice}
                     </div>
                   )}
 
@@ -427,15 +465,15 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, isDark, setAppSettings })
                   <div className={`rounded-xl p-3 text-xs ${isDark ? "bg-white/5 text-slate-400" : "bg-slate-50 text-slate-600"}`}>
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                      <p className="font-bold">Secure Supabase login is enabled.</p>
+                      <p className="font-bold">Bank-level encryption. We never see your password.</p>
                     </div>
                   </div>
                 </form>
 
                 <p className={`mt-5 text-center text-sm ${mutedText}`}>
-                  No account?{" "}
+                  No account yet?{" "}
                   <button type="button" onClick={() => switchMode("signup")} className={`font-bold ${isDark ? "text-blue-400 hover:underline" : "text-blue-600 hover:underline"}`}>
-                    Create one free →
+                    Join the waitlist →
                   </button>
                 </p>
               </>

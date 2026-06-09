@@ -1212,6 +1212,17 @@ export default function App() {
     return { ok: true }; // browser is now navigating away to Google
   };
 
+  const resetPassword = async (email) => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { ok: false, error: "Password reset is not available right now." };
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  };
+
   const signOut = async () => {
     if (supabase) {
       await supabase.auth.signOut();
@@ -1262,6 +1273,7 @@ export default function App() {
         onLogin={signInWithSupabase}
         onSignUp={signUpWithSupabase}
         onGoogleLogin={signInWithGoogle}
+        onResetPassword={resetPassword}
         isDark={isDark}
         setAppSettings={setAppSettings}
       />
