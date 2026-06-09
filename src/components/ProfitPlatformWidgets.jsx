@@ -141,6 +141,7 @@ export function DocumentVaultTable({ documents, isDark }) {
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [uploadMessage, setUploadMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const selectedMockDocument = selectedDocument ? getMockDocument(selectedDocument) : null;
   const categoryCounts = vaultDocuments.reduce(
     (counts, doc) => ({
@@ -178,8 +179,7 @@ export function DocumentVaultTable({ documents, isDark }) {
     };
   }, []);
 
-  const handleUploadDocuments = async (event) => {
-    const files = Array.from(event.target.files || []);
+  const uploadFiles = async (files) => {
     if (!files.length) return;
 
     setIsUploading(true);
@@ -216,7 +216,29 @@ export function DocumentVaultTable({ documents, isDark }) {
     }
 
     setIsUploading(false);
+  };
+
+  const handleUploadDocuments = async (event) => {
+    await uploadFiles(Array.from(event.target.files || []));
     event.target.value = "";
+  };
+
+  // Drag-and-drop upload
+  const handleDragOver = (event) => {
+    if (event.dataTransfer?.types?.includes("Files")) {
+      event.preventDefault();
+      setIsDragging(true);
+    }
+  };
+  const handleDragLeave = (event) => {
+    // Only clear when the cursor actually leaves the drop card (not child elements)
+    if (event.currentTarget.contains(event.relatedTarget)) return;
+    setIsDragging(false);
+  };
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setIsDragging(false);
+    uploadFiles(Array.from(event.dataTransfer?.files || []));
   };
   const updateDocumentCategory = (docId, category) => {
     setVaultDocuments((current) => {
@@ -230,12 +252,25 @@ export function DocumentVaultTable({ documents, isDark }) {
   };
 
   return (
-    <div className={styles.baseCard}>
+    <div
+      className={`relative ${styles.baseCard} ${isDragging ? "ring-2 ring-blue-500 ring-offset-2" : ""} ${isDragging && isDark ? "ring-offset-slate-950" : isDragging ? "ring-offset-slate-50" : ""}`}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className={`pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-blue-500 ${isDark ? "bg-slate-950/85" : "bg-blue-50/90"}`}>
+          <Upload className={`h-10 w-10 ${isDark ? "text-blue-300" : "text-blue-600"}`} />
+          <p className={`text-base font-black ${isDark ? "text-white" : "text-slate-950"}`}>Drop files to upload</p>
+          <p className={`text-xs font-bold ${styles.muted}`}>COI, formation docs, W-9, permits — any file type</p>
+        </div>
+      )}
       <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Document Vault</p>
           <h2 className={`mt-1 text-xl font-bold ${styles.title}`}>Business and compliance documents</h2>
-          <p className={`mt-2 text-sm ${styles.muted}`}>Upload files here, then use the Category dropdown to organize each document.</p>
+          <p className={`mt-2 text-sm ${styles.muted}`}>Drag &amp; drop files anywhere on this panel, or use the Upload button — then organize each with the Category dropdown.</p>
         </div>
         <div className="flex shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center">
           <input
