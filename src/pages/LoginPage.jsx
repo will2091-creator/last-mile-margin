@@ -111,7 +111,19 @@ function ComingSoon({ isDark, mutedText, onSignIn }) {
   );
 }
 
-function LoginPage({ onLogin, onSignUp, isDark, setAppSettings }) {
+// Google "G" mark (official 4-color logo)
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 01-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
+      <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.34A9 9 0 009 18z"/>
+      <path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 013.68 9c0-.6.1-1.18.29-1.72V4.94H.96A9 9 0 000 9c0 1.45.35 2.83.96 4.06l3.01-2.34z"/>
+      <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59C13.46.89 11.43 0 9 0A9 9 0 00.96 4.94l3.01 2.34C4.68 5.16 6.66 3.58 9 3.58z"/>
+    </svg>
+  );
+}
+
+function LoginPage({ onLogin, onSignUp, onGoogleLogin, isDark, setAppSettings }) {
   const [showModal, setShowModal] = useState(false);
   const [mode, setMode] = useState("signin"); // "signin" | "signup"
   const [loginForm, setLoginForm] = useState({ identifier: "", password: "", remember: false });
@@ -187,6 +199,17 @@ function LoginPage({ onLogin, onSignUp, isDark, setAppSettings }) {
     if (!result?.ok) setFormError(result?.error || "Could not sign in. Check your email and password.");
   };
 
+  const handleGoogle = async () => {
+    setFormError("");
+    setIsSubmitting(true);
+    const result = await onGoogleLogin?.();
+    // On success the browser navigates to Google, so we only reach here on error.
+    if (!result?.ok) {
+      setIsSubmitting(false);
+      setFormError(result?.error || "Could not start Google sign-in. Please try again.");
+    }
+  };
+
   const handleSignUp = async (event) => {
     event.preventDefault();
     setFormError("");
@@ -225,6 +248,9 @@ function LoginPage({ onLogin, onSignUp, isDark, setAppSettings }) {
   const cardClass = isDark
     ? "border-white/10 bg-slate-950/95 text-white shadow-2xl shadow-black/60"
     : "border-white/60 bg-white text-slate-950 shadow-2xl shadow-slate-950/30";
+  const googleBtnClass = isDark
+    ? "flex w-full items-center justify-center gap-3 rounded-xl border border-white/15 bg-white/5 px-5 py-3.5 text-sm font-black text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
+    : "flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70";
   const labelClass = isDark ? "mb-2 block text-sm font-black text-white" : "mb-2 block text-sm font-black text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-600";
   const closeBtn = isDark
@@ -307,6 +333,19 @@ function LoginPage({ onLogin, onSignUp, isDark, setAppSettings }) {
             {!signupDone && mode === "signin" && (
               <>
                 <h1 id="auth-modal-title" className="sr-only">Sign in to your workspace</h1>
+
+                {/* Google sign-in */}
+                <button type="button" onClick={handleGoogle} disabled={isSubmitting} className={googleBtnClass}>
+                  <GoogleIcon />
+                  Continue with Google
+                </button>
+
+                <div className="my-5 flex items-center gap-3">
+                  <span className={`h-px flex-1 ${isDark ? "bg-white/10" : "bg-slate-200"}`} />
+                  <span className={`text-xs font-bold uppercase tracking-wider ${mutedText}`}>or</span>
+                  <span className={`h-px flex-1 ${isDark ? "bg-white/10" : "bg-slate-200"}`} />
+                </div>
+
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div>
                     <label htmlFor="login-identifier" className={labelClass}>Email</label>

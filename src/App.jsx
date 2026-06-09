@@ -1198,6 +1198,20 @@ export default function App() {
     return { ok: true, needsConfirmation: true, email };
   };
 
+  const signInWithGoogle = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { ok: false, error: "Supabase Auth is not configured." };
+    }
+    // Redirects to Google, then back to the app. The onAuthStateChange listener
+    // picks up the returning session and logs the user in automatically.
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true }; // browser is now navigating away to Google
+  };
+
   const signOut = async () => {
     if (supabase) {
       await supabase.auth.signOut();
@@ -1247,6 +1261,7 @@ export default function App() {
       <LoginPage
         onLogin={signInWithSupabase}
         onSignUp={signUpWithSupabase}
+        onGoogleLogin={signInWithGoogle}
         isDark={isDark}
         setAppSettings={setAppSettings}
       />
