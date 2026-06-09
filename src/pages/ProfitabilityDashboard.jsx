@@ -1232,7 +1232,7 @@ function ProfitabilityDashboard({
             title="Run your first route profit check"
             description="Start with revenue, then enter labor, fuel, truck, insurance, maintenance, and claim reserve. This calculator will show margin, profit per stop, and route risk before you save the contract."
             Icon={DollarSign}
-            primaryAction={{ label: "Start Blank Calculator", onClick: resetRouteCalculator }}
+            primaryAction={{ label: "Start Blank Calculator", onClick: startNewRouteContract }}
             secondaryActions={[
               { label: "Save Scenario", onClick: saveScenario },
               { label: "Open Contracts", onClick: () => navigateToTab?.("Contracts") },

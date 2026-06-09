@@ -1016,9 +1016,6 @@ function AiQuickIntake({ teams, claims, isDark, appSettings, onAddClaim, onApply
           <div className={`mt-5 border-t pt-4 ${isDark ? "border-white/10" : "border-slate-200"}`}>
             <div className="mb-3 flex items-center justify-between">
               <h3 className={`font-black ${titleText}`}>Drafts ({drafts.length})</h3>
-              <button onClick={() => setActiveDraftId(drafts[0]?.id || "")} className="text-xs font-black text-blue-600">
-                View all drafts
-              </button>
             </div>
 
             {drafts.length === 0 ? (

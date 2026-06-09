@@ -1,286 +1,593 @@
 # Button and Navigation Audit
 
-Date: June 4, 2026
+Date: June 9, 2026
 
-Scope: web dashboard, grouped web routes, dashboard starter modals, forms, table actions, document vault, reports, Ask, settings, and mobile owner/driver navigation.
+Scope: every interactive element in the web app — pre-login marketing (FeatureShowcase) and login, the app shell (toolbar / sidebar / mobile bottom-nav / date picker / saved-days / sign-out), all dashboards and subtabs, every modal and AI panel, the document vault, and supporting components.
 
-## Route Map
+## Method
 
-| Route | Component | Expected result | Status |
-| --- | --- | --- | --- |
-| `#/dashboard` | `src/pages/DashboardHome.jsx` | Dashboard command center or blank-workspace starter | Working |
-| `#/ask` | `src/pages/AskBusinessDashboard.jsx` | Ask My Business assistant | Working, backend/API dependent for OpenAI answers |
-| `#/intake` | `src/components/AiQuickIntake.jsx` | AI intake form and draft review | Working, backend/API dependent for AI extraction |
-| `#/operations` | `src/pages/OperationsDashboard.jsx` | Operations Dispatch subtab | Working |
-| `#/claims` | `src/pages/OperationsDashboard.jsx` -> `ClaimsDashboard` | Operations page with Claims subtab active | Fixed |
-| `#/teams` | `src/pages/OperationsDashboard.jsx` -> `TeamsDashboard` | Operations page with Teams subtab active | Fixed |
-| `#/compliance` | `src/pages/OperationsDashboard.jsx` -> `ComplianceDashboard` | Operations page with Compliance subtab active | Fixed |
-| `#/finance` | `src/pages/FinanceDashboard.jsx` | Finance page with Profitability subtab active | Working |
-| `#/profitability` | `src/pages/FinanceDashboard.jsx` -> `ProfitabilityDashboard` | Finance page with Profitability subtab active | Fixed |
-| `#/receipts` | `src/pages/FinanceDashboard.jsx` -> `ReceiptsDashboard` | Finance page with Receipts subtab active | Fixed |
-| `#/contracts` | `src/pages/FinanceDashboard.jsx` -> `ContractsDashboard` | Finance page with Contracts subtab active; blank users see first-contract setup panel | Fixed |
-| `#/reports` | `src/pages/ReportsDashboard.jsx` | Reports page | Working |
-| `#/settings` | `src/pages/SettingsDashboard.jsx` | Settings page | Working |
-| Unknown hashes | `src/App.jsx` | Redirects cleanly to `#/dashboard` | Fixed |
+Re-verified from scratch (the prior June 4 audit was treated as unverified). Sixteen independent agents enumerated and traced every `<button>`, `onClick`, `role="button"`, anchor, select/toggle/chip, and modal open/close control across the codebase. Each flagged candidate bug was then independently re-checked by a separate adversarial agent that re-read the actual code to eliminate false positives. Navigation correctness was judged against the canonical `navigateToTab` target list extracted from `src/App.jsx`.
 
-## Web App Shell
+- Interactive elements inventoried: **459** across **16** surfaces.
+- Candidate issues flagged: **2** → **2 confirmed**, **0 rejected** by adversarial verification.
+- `npm run build`: green. No new lint errors introduced (the repo has pre-existing strict-rule lint errors unrelated to navigation; out of scope).
 
-| Clickable element | File/component | Current action | Expected action | Status |
+Status legend: `works` · `disabled-ok` (intentionally disabled / backend-later) · `broken` · `dead` (no-op or invalid nav) · `wrong-destination` · `ambiguous`.
+
+## Surface summary
+
+| Surface | Elements | Confirmed bugs |
+| --- | --- | --- |
+| App shell (toolbar/sidebar/bottom-nav/date-picker/saved-days/sign-out) | 18 | 0 |
+| Marketing + Login | 25 | 0 |
+| DashboardHome | 44 | 0 |
+| ClaimsDashboard | 88 | 0 |
+| Profitability | 45 | 1 |
+| Contracts + ContractEvaluator | 43 | 0 |
+| Operations + Compliance | 27 | 0 |
+| Teams | 24 | 0 |
+| Finance + Receipts + CashPosition | 22 | 0 |
+| Reports | 18 | 0 |
+| Ask + AskCopilot | 14 | 0 |
+| AI Intake | 19 | 1 |
+| Dashboard modals | 38 | 0 |
+| AI panels | 6 | 0 |
+| Document vault | 10 | 0 |
+| Misc components | 18 | 0 |
+
+## Bugs found and fixed
+
+### 1. "Start Blank Calculator" EmptyState primary action references undefined resetRouteCalculator
+
+- **Location:** `src/pages/ProfitabilityDashboard.jsx:1235` (Profitability)
+- **Failure mode:** undefined-fn-or-prop-throws · **Severity:** medium
+- **Problem:** In the Route Profit Check branch, the blank-demo EmptyState sets primaryAction={{ label: "Start Blank Calculator", onClick: resetRouteCalculator }}. The identifier resetRouteCalculator is never defined anywhere in ProfitabilityDashboard.jsx (or anywhere in src/ — it appears exactly once, at this line). Because it is read as a bare identifier while rendering this branch's JSX, it throws ReferenceError: resetRouteCalculator is not defined the moment the EmptyState element is constructed, crashing the Profitability page render (caught by the surrounding ErrorBoundary). This is reachable only when isBlankDemo && !hasSavedContractData. Note isBlankDemoWorkspace is hardcoded false in App.jsx:158 today, so the path is not currently triggered in the live app, but it is a guaranteed crash the instant blank-demo mode is enabled. The neighboring resetForm prop is correctly passed (App.jsx:1619 -> FinanceDashboard:121 -> ProfitabilityDashboard:121) but is not the symbol referenced here.
+- **Fix applied:** At src/pages/ProfitabilityDashboard.jsx:1235, replace `onClick: resetRouteCalculator` with `onClick: startNewRouteContract` — the existing in-scope handler defined at line 1098 that zeroes all route fields and is already used for the equivalent "new contract" button at line 1196. Exact change: `primaryAction={{ label: "Start Blank Calculator", onClick: startNewRouteContract }}`. (Alternatively, use the real prop `onClick: resetForm` if a full top-level form reset is intended; `startNewRouteContract` is the closer match for this route-profit-check branch.)
+
+### 2. "View all drafts" button
+
+- **Location:** `AiQuickIntake.jsx:1019` (AI Intake)
+- **Failure mode:** noop-handler · **Severity:** low
+- **Problem:** The button label promises an expanded 'all drafts' view, but the handler only does setActiveDraftId(drafts[0]?.id \|\| ""). When there are drafts it merely re-selects the first one (the full list already renders below it unconditionally); when there are 0 drafts it sets activeDraftId to an empty string, which is a visible no-op. So the control either does nothing meaningful or contradicts its label. It never throws and never navigates wrongly, so impact is cosmetic/UX only.
+- **Fix applied:** src/components/AiQuickIntake.jsx:1019 — the drafts list at lines 1032-1048 is already always rendered, so the button has no real "view all" target. Simplest correct fix: remove the button (lines 1019-1021), leaving just the `Drafts ({drafts.length})` heading. If a distinct affordance is desired, replace the no-op with a real action and guard on count, e.g. give the drafts container a ref and on click call `draftsListRef.current?.scrollIntoView({ behavior: "smooth" })`, and render the button only when `drafts.length > 0` (e.g. `{drafts.length > 0 && (<button ...>View all drafts</button>)}`). Do not leave it calling `setActiveDraftId(drafts[0]?.id \|\| "")`.
+
+## Full re-verified inventory
+
+### App shell (toolbar/sidebar/bottom-nav/date-picker/saved-days/sign-out)
+
+| Element | Location | Current action | Expected | Status |
 | --- | --- | --- | --- | --- |
-| Light/Dark Mode button | `src/App.jsx`, `src/pages/LoginPage.jsx` | Toggles `appSettings.themeMode` | Toggle app theme | Working |
-| Sidebar Dashboard | `src/App.jsx` | `navigateToTab("Dashboard")` | Go to `#/dashboard` and active sidebar state | Working |
-| Sidebar Ask | `src/App.jsx` | `navigateToTab("Ask")` | Go to `#/ask` | Working |
-| Sidebar Intake | `src/App.jsx` | `navigateToTab("Intake")` | Go to `#/intake` | Working |
-| Sidebar Operations | `src/App.jsx` | `navigateToTab("Operations")` | Go to `#/operations` | Working |
-| Sidebar Finance | `src/App.jsx` | `navigateToTab("Finance")` | Go to `#/finance` | Working |
-| Sidebar Reports | `src/App.jsx` | `navigateToTab("Reports")` | Go to `#/reports` | Working |
-| Sidebar Settings | `src/App.jsx` | `navigateToTab("Settings")` | Go to `#/settings` | Working |
-| Sign Out | `src/App.jsx` | Clears demo/session state and Supabase auth | Return to login | Working |
-| Save Snapshot | `src/App.jsx` | Saves current day snapshot | Add entry to Daily History | Working |
-| Daily History dropdown | `src/App.jsx` | Opens saved day list | Show saved days or clean empty state | Working |
-| Daily History row | `src/App.jsx` | Loads saved day snapshot | Dashboard reflects selected snapshot | Working |
-| Date dropdown | `src/App.jsx` | Opens calendar/range picker | Select date/range | Working |
-| Calendar previous/next | `src/App.jsx` | Moves displayed month | Move month | Working |
-| Calendar day | `src/App.jsx` | Selects date/range | Update global date range | Working |
-| Today / This Week / Done | `src/App.jsx` | Updates/ closes date picker | Working date controls | Working |
-| Mobile web bottom nav | `src/App.jsx` | Routes visible tabs | Touch-friendly mobile navigation | Added/fixed |
+| Daily History dropdown toggle (FileText + count + ▾) | `src/components/app/AppToolbar.jsx:37-55` | onClick toggles setShowSavedDays((c)=>!c) and forces setShowDatePicker(false). Only rendered when canManageBusiness is true. | Open/close the saved-days history panel and close the date picker. | works — Gated on canManageBusiness (owner/admin) by design. |
+| Saved-day row buttons (one per savedDays entry) | `src/components/app/AppToolbar.jsx:71-89` | onClick={() => loadSavedDay(day)}. loadSavedDay (App.jsx:1061) sets globalDateRange, loadedSavedDay, closes both dropdowns, navigateToTab('Dashboard'). | Load that saved workday and jump to Dashboard. | works |
+| Daily History empty-state text | `src/components/app/AppToolbar.jsx:64-67` | Static text shown when savedDays.length === 0. Not interactive. | Inform the user no history exists yet. | works — Non-interactive; listed for completeness. |
+| Date-range dropdown toggle (FileText + globalDateLabel + ▾) | `src/components/app/AppToolbar.jsx:98-115` | onClick toggles setShowDatePicker, forces setShowSavedDays(false), and seeds setCalendarMonth from globalDateRange.start. | Open/close the calendar date picker and sync the visible month to the current selection. | works |
+| Calendar previous-month button (‹) | `src/components/app/AppToolbar.jsx:120-127` | onClick={() => moveCalendarMonth(-1)}. moveCalendarMonth (App.jsx:619) advances calendarMonth by -1 month. | Show the previous month. | works |
+| Calendar next-month button (›) | `src/components/app/AppToolbar.jsx:132-139` | onClick={() => moveCalendarMonth(1)}. | Show the next month. | works |
+| Calendar day cells (one per grid day) | `src/components/app/AppToolbar.jsx:166-176` | onClick={() => pickCalendarDate(day.dateKey)}. pickCalendarDate (App.jsx:604) builds/extends the selected range and clears loadedSavedDay. | Pick a single day, or extend to a range on the second click. | works |
+| Today button | `src/components/app/AppToolbar.jsx:181-187` | onClick={selectToday}. selectToday (App.jsx:623) sets range to today/today, clears loadedSavedDay, snaps calendar month. | Set the global range to today. | works |
+| This Week button | `src/components/app/AppToolbar.jsx:188-194` | onClick={selectThisWeek}. selectThisWeek (App.jsx:630) sets Sun..Sat range for current week. | Set the global range to the current week. | works |
+| Done button | `src/components/app/AppToolbar.jsx:195-201` | onClick={() => setShowDatePicker(false)} — closes the date picker. | Close the calendar dropdown. | works |
+| Start / End date inputs (type=date) | `src/components/app/AppToolbar.jsx:212-225` | onChange clears loadedSavedDay, updates globalDateRange (auto-swapping start/end if inverted), and resyncs calendarMonth. | Manually edit the range start/end and keep start<=end. | works |
+| Theme toggle button (Light/Dark Mode) | `src/components/app/AppSidebar.jsx:34-50` | onClick={toggleThemeMode}. toggleThemeMode (App.jsx:550) flips appSettings.themeMode. | Toggle light/dark theme. | works |
+| Primary nav parent buttons (Dashboard, Intake, Operations, Finance, Reports, Ask, Settings) | `src/components/app/AppSidebar.jsx:62-78` | onClick={() => navigateToTab(item.name)}. All item.name values are valid tabSlugs keys (Operations/Finance are top-level keys). | Navigate to the named top-level tab. | works |
+| Sub-nav child buttons (Dispatch, Claims, Teams, Compliance, Profitability, Cash Position, Receipts, Contracts) | `src/components/app/AppSidebar.jsx:85-101` | onClick={() => navigateToTab(child.tab)}. child.tab values: Operations, Claims, Teams, Compliance, Profitability, 'Cash Position', Receipts, Contracts — all valid (Dispatch uses tab:'Operations'; grouped subtabs set parent+subtab via groupedTabs). | Navigate to the subtab and open its parent group. | works — Dispatch child intentionally routes to tab:'Operations' (Operations default subtab is Dispatch). |
+| Take the tour button | `src/components/app/AppSidebar.jsx:113-125` | onClick={onStartTour}; onStartTour=startTour (App.jsx:818) which loads demo data, sets tourActive, navigateToTab('Dashboard'). Only rendered when onStartTour is truthy. | Start the guided product tour. | works |
+| Sign Out button | `src/components/app/AppSidebar.jsx:131` | onClick={signOut}. signOut (App.jsx:1226) calls supabase.auth.signOut() then clears authUser/isLoggedIn. | Sign the user out. | works |
+| Mobile bottom-nav primary buttons (first 4 visible nav items; Operations labeled 'Ops') | `src/components/app/AppBottomNav.jsx:11-27` | onClick={() => navigateToTab(item.name)} — item.name is always a valid tabSlugs key. | Navigate to the tab. | works |
+| Mobile bottom-nav overflow buttons (visible nav items beyond the first 4) | `src/components/app/AppBottomNav.jsx:37-53` | onClick={() => navigateToTab(item.name)} — valid tab names. | Navigate to the tab. | works |
 
-## Dashboard
+### Marketing + Login
 
-| Clickable element | File/component | Current action | Expected action | Status |
+| Element | Location | Current action | Expected | Status |
 | --- | --- | --- | --- | --- |
-| Period chips Day/Week/Month/Qtr/Year | `src/pages/DashboardHome.jsx` | Updates dashboard period | Change metric period | Working |
-| Open Operations | `src/pages/DashboardHome.jsx` | `navigateToTab("Operations")` | Go to Operations | Working |
-| Add Contract | `src/pages/DashboardHome.jsx` | Opens contract modal | Open inline contract form on dashboard | Fixed |
-| Add Team | `src/pages/DashboardHome.jsx` | Opens team modal | Open inline team form on dashboard | Working |
-| Import Data | `src/pages/DashboardHome.jsx` | Opens import modal | Open inline import form | Working |
-| Save Contract | `src/pages/DashboardHome.jsx` | Saves quick contract to local dashboard contract store | Persist contract and update dashboard totals | Fixed |
-| Clear for Another | `src/pages/DashboardHome.jsx` | Clears saved contract form | Ready to add another contract | Working |
-| Open Profitability | `src/pages/DashboardHome.jsx` | Routes to Finance/Profitability | Show saved contract in finance context | Working |
-| Contract modal Close | `src/pages/DashboardHome.jsx` | Closes modal | Close without saving | Working |
-| Save Team | `src/pages/DashboardHome.jsx` | Adds team to dashboard/operations state | Persist team in session/app state | Working |
-| Open Operations from saved team | `src/pages/DashboardHome.jsx` | Routes to Operations | Show team readiness | Working |
-| Import type cards | `src/pages/DashboardHome.jsx` | Selects import type | Set Contract Document/Claim Email/Receipt | Working |
-| Save Import | `src/pages/DashboardHome.jsx` | Saves import; claims update claim metrics | Save starter import | Working |
-| Open Full Intake | `src/pages/DashboardHome.jsx` | Routes by import type | Open relevant Intake/Operations/Finance area | Working |
-| Dashboard metric/cards/View All/View Details | `src/pages/DashboardHome.jsx` | Routes to source page | Go to Claims, Profitability, Teams, Contracts, Reports, Compliance as labeled | Working |
-| Blank demo starter buttons | `src/pages/DashboardHome.jsx` | Open starter modals | New account sees no fake data and can start setup | Fixed |
-| Business Launch Center next action | `src/pages/DashboardHome.jsx`, `src/components/NextActionCard.jsx` | Opens setup modal or routes to needed tab | Guide user to next setup step | Added |
-| Trend empty state | `src/pages/DashboardHome.jsx` | Shows saved-snapshot guidance when no trend exists | Avoid fake May trend history | Fixed |
+| Theme toggle (Sun/Moon icon button, header) | `src/pages/FeatureShowcase.jsx:137-144` | onClick={onToggleTheme}; onToggleTheme=LoginPage.toggleTheme which calls setAppSettings to flip themeMode dark/light. Rendered only when onToggleTheme prop is truthy (it is). | Toggle dark/light theme | works |
+| Sign in (header, hidden on mobile) | `src/pages/FeatureShowcase.jsx:146-151` | onClick={onSignIn} -> LoginPage openModal('signin'); opens auth modal in sign-in mode | Open sign-in modal | works |
+| Coming soon (header primary) | `src/pages/FeatureShowcase.jsx:152-157` | onClick={onSignUp} -> LoginPage openModal('signup'); opens auth modal showing Coming Soon waitlist (intentional) | Open waitlist/Coming Soon | works |
+| Coming soon (hero primary CTA) | `src/pages/FeatureShowcase.jsx:177-182` | onClick={onSignUp} -> opens Coming Soon waitlist | Open waitlist | works |
+| Sign in (hero secondary CTA) | `src/pages/FeatureShowcase.jsx:183-188` | onClick={onSignIn} -> opens sign-in modal | Open sign-in modal | works |
+| Coming soon (claims callout CTA) | `src/pages/FeatureShowcase.jsx:238-243` | onClick={onSignUp} -> opens Coming Soon waitlist | Open waitlist | works |
+| Gallery tablist + 6 screen tabs (Command Center/Intake/Claims/Profitability/Contracts/Reports) | `src/pages/FeatureShowcase.jsx:341-358` | role=tablist with onKeyDown={onTabKey} (ArrowLeft/Right cycle tab via setTab); each tab button onClick={() => setTab(i)} updates local state to swap the screenshot/desc; aria-selected, tabIndex roving, aria-controls all correct | Switch the displayed product screenshot | works |
+| Coming soon (closing CTA primary) | `src/pages/FeatureShowcase.jsx:394-399` | onClick={onSignUp} -> opens Coming Soon waitlist | Open waitlist | works |
+| Sign in (closing CTA secondary) | `src/pages/FeatureShowcase.jsx:400-405` | onClick={onSignIn} -> opens sign-in modal | Open sign-in modal | works — CLH_URL constant (line 36) is defined but never referenced in this file; harmless dead constant, not an interactive element. |
+| Waitlist email input (ComingSoon) | `src/pages/LoginPage.jsx:62-70` | controlled input, onChange sets local email state; type=email, required | Capture waitlist email | works |
+| Notify me (waitlist submit) | `src/pages/LoginPage.jsx:72-79` | type=submit inside form onSubmit={handleNotify}; inserts email into supabase 'waitlist' table, treats 23505 unique-violation as success, shows done/error states; disabled while status==='submitting' | Submit email to waitlist | works |
+| Already have an account? Sign in (ComingSoon) | `src/pages/LoginPage.jsx:103-109` | onClick={onSignIn} which is passed as () => switchMode('signin') from line 490; switches modal to sign-in form | Switch to sign-in form | works |
+| Modal backdrop | `src/pages/LoginPage.jsx:299-304` | onClick={closeModal} sets showModal=false; aria-hidden backdrop closes the dialog | Close modal on backdrop click | works |
+| Modal close X | `src/pages/LoginPage.jsx:310-312` | onClick={closeModal} -> setShowModal(false) | Close modal | works — Escape key also closes via the keydown handler at LoginPage.jsx:177; focus trap + scroll-lock + focus-restore all wired in the useEffect (173-198). Full close paths present (X, backdrop, Esc). |
+| Mode tabs: 'Sign in' / 'Join the waitlist' | `src/pages/LoginPage.jsx:329-340` | onClick={() => switchMode(m)} where m is 'signin' or 'signup'; switches form mode and resets error/notice state | Switch between sign-in and waitlist views | works |
+| Go to sign in (email-confirmation success state) | `src/pages/LoginPage.jsx:356-362` | onClick={() => switchMode('signin')} | Return to sign-in after sign-up confirmation | works — Only reachable when signupDone.needsConfirmation is set, which requires onSignUp to return needsConfirmation — currently sign-up path is gated behind the Coming Soon screen, so this branch is dormant but correctly wired. |
+| Continue with Google | `src/pages/LoginPage.jsx:372-384` | onClick={handleGoogle} -> onGoogleLogin?.() (signInWithGoogle in App.jsx). Entire block gated behind GOOGLE_LOGIN_ENABLED=false so it does not render | Intentionally hidden until OAuth configured | disabled-ok — Intentional per spec; uses optional chaining so even if rendered with an undefined prop it would not throw. Prop IS passed (App.jsx:1275). |
+| Sign-in form (submit) | `src/pages/LoginPage.jsx:386-477` | onSubmit={handleSignIn} -> onLogin({identifier,password}) (signInWithSupabase); sets formError on failure; submit button disabled while isSubmitting | Authenticate user | works |
+| Email field (sign-in) | `src/pages/LoginPage.jsx:391-401` | controlled; onChange updates loginForm.identifier; ref=firstFieldRef for focus trap; required, type=email | Capture email | works |
+| Password field (sign-in) | `src/pages/LoginPage.jsx:409-418` | controlled; onChange updates loginForm.password; type toggles with showPassword | Capture password | works |
+| Show/Hide password toggle | `src/pages/LoginPage.jsx:419-426` | onClick={() => setShowPassword(v => !v)}; flips input type between text/password; aria-label updates | Toggle password visibility | works |
+| Remember me checkbox | `src/pages/LoginPage.jsx:432-437` | onChange updates loginForm.remember; controlled checkbox | Toggle remember-me state | works — loginForm.remember is captured in state but not forwarded to onLogin (handleSignIn only passes identifier+password). Cosmetic/no-op on persistence, but not a broken control — out of audit scope and low impact. |
+| Forgot password? | `src/pages/LoginPage.jsx:440-447` | onClick={handleForgotPassword}; requires identifier filled (else shows inline error), calls onResetPassword?.(email) (resetPassword in App.jsx), shows generic success notice; disabled while isSubmitting | Send password reset email | works |
+| Join the waitlist (footer link button) | `src/pages/LoginPage.jsx:479-484` | onClick={() => switchMode('signup')}; switches to Coming Soon view | Switch to waitlist view | works |
+| MobileShowcase section (phone mockups, feature bullets, 'coming soon' badge) | `src/components/MobileShowcase.jsx (entire file)` | Purely presentational. The 'Open' labels (line 145), TabBar items, and 'iOS & Android — coming soon' (line 227) are <span>/<div> text, NOT buttons — no onClick, no href anywhere in the file | Static marketing visual; no interaction intended | works — No interactive elements exist in this file. The phone-screen 'Open' chips and bottom tab bar are decorative spans inside a static mockup; correctly non-interactive. |
 
-## Operations
+### DashboardHome
 
-| Clickable element | File/component | Current action | Expected action | Status |
+| Element | Location | Current action | Expected | Status |
 | --- | --- | --- | --- | --- |
-| Dispatch subtab | `src/pages/OperationsDashboard.jsx` | `navigateToTab("Operations")` | Show Dispatch and URL `#/operations` | Fixed |
-| Claims subtab | `src/pages/OperationsDashboard.jsx` | `navigateToTab("Claims")` | Show Claims and URL `#/claims` | Fixed |
-| Teams subtab | `src/pages/OperationsDashboard.jsx` | `navigateToTab("Teams")` | Show Teams and URL `#/teams` | Fixed |
-| Compliance subtab | `src/pages/OperationsDashboard.jsx` | `navigateToTab("Compliance")` | Show Compliance and URL `#/compliance` | Fixed |
-| Open Claims metric | `src/pages/OperationsDashboard.jsx` | Opens Claims subtab | Route to Claims workflow | Working |
-| High Risk metric | `src/pages/OperationsDashboard.jsx` | Opens Claims subtab | Route to Claims workflow | Working |
-| Missing Photos metric | `src/pages/OperationsDashboard.jsx` | Opens Teams subtab | Route to Teams workflow | Working |
-| Ready Teams metric | `src/pages/OperationsDashboard.jsx` | Opens Compliance subtab | Route to Compliance workflow | Working |
-| Open Work | `src/pages/OperationsDashboard.jsx` | Routes to best next subtab | Jump to Claims/Teams/Compliance based on issue | Working |
-| Manage Teams | `src/pages/OperationsDashboard.jsx` | Opens Teams subtab | Manage team readiness | Fixed |
-| Operations setup empty-state Add Team | `src/pages/OperationsDashboard.jsx` | Routes to Teams subtab | Start dispatch workflow | Added |
-| Operations setup Import Claim | `src/pages/OperationsDashboard.jsx` | Routes to Claims subtab | Start claims workflow | Added |
-| Dispatch empty-state Add Team | `src/pages/OperationsDashboard.jsx` | Routes to Teams subtab | Add first route team | Added |
+| Period chips (Day/Week/Month/Qtr/Year) | `src/pages/DashboardHome.jsx:997-1009` | onClick={() => setDashboardPeriod(period)} — local state; rescales the headline KPIs | Switch the dashboard period | works |
+| Evaluate Contract button | `src/pages/DashboardHome.jsx:1013-1020` | onClick={() => setShowEvaluator(true)} — opens ContractEvaluator modal | Open the contract evaluator | works |
+| AI Day Log button | `src/pages/DashboardHome.jsx:1021-1026` | onClick={openDayLog} — sets showDayLog=true, resets text/status/result | Open the AI Day Log modal | works |
+| Open Operations button | `src/pages/DashboardHome.jsx:1029-1035` | onClick={() => setActiveTab('Operations')} — navigateToTab('Operations') | Navigate to Operations | works — 'Operations' is a valid tabSlugs key |
+| AI Day Log modal backdrop | `src/pages/DashboardHome.jsx:1042` | onClick={() => setShowDayLog(false)} on the fixed overlay; inner panel has stopPropagation (1043) | Close modal on backdrop click without closing on inner clicks | works |
+| Day Log modal Close (X/Close) button | `src/pages/DashboardHome.jsx:1052` | onClick={() => setShowDayLog(false)} | Close the Day Log modal | works |
+| Speak it / Stop mic toggle | `src/pages/DashboardHome.jsx:1073-1083` | onClick={toggleMic} from useSpeechToText; only rendered when micSupported | Toggle speech-to-text dictation | works |
+| Parse with AI button | `src/pages/DashboardHome.jsx:1087-1093` | onClick={parseDayLog}; disabled when !dayLogText.trim() \|\| status==='parsing' | Parse the day note (POST /api/parse-daylog with offline fallback) | works |
+| Back button (Day Log review) | `src/pages/DashboardHome.jsx:1138` | onClick={() => setDayLogStatus('idle')} | Return to the note-entry step | works |
+| Apply to today button | `src/pages/DashboardHome.jsx:1139-1145` | onClick={applyDayLogResult} → onApplyDayLog?.({formPatch, claims}) then closes; disabled when no fields and no claims | Apply parsed day log to today and close | works — onApplyDayLog is passed from App.jsx (applyDayLog) |
+| ContractEvaluator (modal child) | `src/pages/DashboardHome.jsx:1154-1160` | onClose={() => setShowEvaluator(false)} | Provide a working close path | works |
+| ActionFeed render gate | `src/pages/DashboardHome.jsx:1162` | Renders <ActionFeed onExecute={onExecute}> only when !isCleanBlankWorkspace | Show the Do-this-now feed when workspace has data | works |
+| Net Profit hero card (button) | `src/pages/DashboardHome.jsx:1166-1205` | onClick={() => goToSource('Profitability')} → setActiveTab('Profitability') | Navigate to Profitability | works |
+| Revenue Today KPI card | `src/pages/DashboardHome.jsx:1210-1216` | onClick={() => goToSource('Profitability')} | Navigate to Profitability | works |
+| Costs Today KPI card | `src/pages/DashboardHome.jsx:1218-1224` | onClick={() => goToSource('Profitability')} | Navigate to Profitability | works |
+| Margin KPI card | `src/pages/DashboardHome.jsx:1226-1232` | onClick={() => goToSource('Profitability')} | Navigate to Profitability | works |
+| Team Readiness KPI card | `src/pages/DashboardHome.jsx:1234-1253` | onClick={() => goToSource('Teams')} → setActiveTab('Teams') (grouped → Operations/Teams) | Navigate to Teams subtab | works — 'Teams' is a groupedTabs key → Operations parent + Teams subtab |
+| ForecastPanel (navigateToTab=setActiveTab) | `src/pages/DashboardHome.jsx:1260` | Receives navigateToTab={setActiveTab} | Allow forecast panel to navigate | works — Out-of-scope component; prop is the real router |
+| View all steps button (compact setup) | `src/pages/DashboardHome.jsx:1282-1287` | onClick={() => setSetupExpanded(true)} | Expand the full setup wizard | works |
+| Collapse setup button | `src/pages/DashboardHome.jsx:1292-1298` | onClick={() => setSetupExpanded(false)} | Collapse the setup wizard | works |
+| Contract Performance 'View all' | `src/pages/DashboardHome.jsx:1331` | onClick={() => setActiveTab('Finance')} | Navigate to Finance | works |
+| Contract table sort headers (name/revenue/netProfit/margin) | `src/pages/DashboardHome.jsx:1349-1356` | onClick={() => toggleContractSort(key)} — local sort state | Toggle sort key/direction | works |
+| Contract row (clickable tr) | `src/pages/DashboardHome.jsx:1363` | onClick={() => setActiveTab('Finance')} | Open Finance for the contract | works |
+| Recent Claims 'View all' | `src/pages/DashboardHome.jsx:1379` | onClick={() => setActiveTab('Claims')} (grouped → Operations/Claims) | Navigate to Claims | works |
+| Claim row (clickable tr) | `src/pages/DashboardHome.jsx:1395` | onClick={() => goToSource('Claims')} | Open Claims | works |
+| ContractModal (child) | `src/pages/DashboardHome.jsx:1418-1437` | Gated by isContractModalOpen; X→setIsContractModalOpen(false); setActiveTab('Finance') on view; submit→saveQuickContract | Open/close + save contract | works |
+| TeamModal (child) | `src/pages/DashboardHome.jsx:1438-1454` | Gated by isTeamModalOpen; X→setIsTeamModalOpen(false); setActiveTab('Operations') on view; submit→saveQuickTeam | Open/close + save team | works |
+| ExpenseModal (child) | `src/pages/DashboardHome.jsx:1455-1471` | Gated by isExpenseModalOpen; X→setIsExpenseModalOpen(false); submit→saveExpenseSetup | Open/close + save expenses | works |
+| ImportModal (child) | `src/pages/DashboardHome.jsx:1472-1488` | Gated by isImportModalOpen; X→setIsImportModalOpen(false); setActiveTab('Operations'\|'Finance'\|'Intake') on view; submit→saveQuickImport | Open/close + save import | works — All three view targets are valid tabs |
+| Preview modal Close (X) button | `src/pages/DashboardHome.jsx:1501-1507` | onClick={() => setIsPreviewModalOpen(false)} | Close the preview modal | works |
+| Remaining-setup step buttons (preview modal) | `src/pages/DashboardHome.jsx:1543-1554` | onClick closes preview then openSetupStep(step.id) | Jump to the chosen setup step | works |
+| Keep Editing button (preview modal) | `src/pages/DashboardHome.jsx:1567-1573` | onClick={() => setIsPreviewModalOpen(false)} | Close the preview modal | works |
+| Finish Setup Preview button | `src/pages/DashboardHome.jsx:1574-1580` | onClick={markPreviewComplete} — sets previewed=true and closes | Mark preview complete and close | works |
+| Preview modal backdrop | `src/pages/DashboardHome.jsx:1490` | Fixed overlay with NO onClick backdrop-close handler; closeable via X / Keep Editing / Finish | Has a working close path (X + two footer buttons) | disabled-ok — No backdrop/Esc close, but explicit close controls exist — not a trap |
+| Next-best-action CTA button | `src/components/NextActionCard.jsx:29-31` | onClick={() => onAction?.(currentAction)}; only shown when !status.isComplete; onAction=handleSetupStatusAction (via SetupWizard) | Run the next setup action / navigate | works — Rendered inside SetupWizard.jsx:91, not directly in DashboardHome (the DashboardHome import at line 34 is unused) |
+| Feed item buttons | `src/components/ActionFeed.jsx:87-99` | onClick={() => onExecute?.(item)} → DashboardHome.onExecute: reminderDone/openClaim/draftDisputes/logDay/navigate(action.tab) | Execute the ranked action | works — All action.tab values from actionFeed.js/watchdog.js (Claims, Profitability, Compliance, Teams, Dashboard, Intake, Settings, Reports, Ask) are valid tabs |
+| +N more / Show less toggle | `src/components/ActionFeed.jsx:104-106` | onClick={() => setExpanded(v => !v)}; only when items.length > 5 | Expand/collapse the feed list | works |
+| Show steps (collapsed header) button | `src/components/BusinessWorkflowRail.jsx:33-36` | onClick={() => setExpanded(true)} | Expand the workflow rail | works |
+| Hide steps button | `src/components/BusinessWorkflowRail.jsx:62-69` | onClick={() => setExpanded(false)}; only when collapsible | Collapse the workflow rail | works |
+| Workflow step buttons (Contracts/Teams/Dispatch/Claims/Receipts/Profitability/Reports/Ask AI) | `src/components/BusinessWorkflowRail.jsx:109-148` | onClick={() => onNavigate?.(step.tab)}; onNavigate=navigateToTab (App.jsx) | Navigate to each step's tab | works — step.tab values: Contracts, Teams, Dispatch, Claims, Receipts, Profitability, Reports, Ask — all valid (Dispatch normalized by groupedTabs before the guard) |
+| Reminder text input | `src/components/RemindersCard.jsx:56-62` | onChange sets text; onKeyDown Enter → submit() | Capture reminder text; submit on Enter | works |
+| Due-date input (type=date) | `src/components/RemindersCard.jsx:63-69` | onChange sets due; aria-labeled | Capture optional due date | works |
+| Add reminder button | `src/components/RemindersCard.jsx:70-76` | onClick={submit} → addReminder; disabled when !text.trim() | Add a reminder | works |
+| Mark done (check) button per reminder | `src/components/RemindersCard.jsx:87-94` | onClick={() => removeReminder(r.id)}; aria-label/title 'Mark done' | Remove/complete the reminder (fires REMINDERS_EVENT) | works |
 
-## Claims
+### ClaimsDashboard
 
-| Clickable element | File/component | Current action | Expected action | Status |
+| Element | Location | Current action | Expected | Status |
 | --- | --- | --- | --- | --- |
-| Import Claim Email | `src/pages/ClaimsDashboard.jsx` | Opens import/drop panel | Import pasted or dropped claim text | Working |
-| Add Claim | `src/pages/ClaimsDashboard.jsx` | Opens add claim form | Add claim manually | Fixed for blank accounts |
-| Claim filters | `src/pages/ClaimsDashboard.jsx` | Update filtered claims | Filter board/table/intelligence | Working |
-| Reset Filters | `src/pages/ClaimsDashboard.jsx` | Clears filters | Show all claims | Working |
-| No claims Import Claim Email | `src/pages/ClaimsDashboard.jsx` | Opens claim email import panel | Start claim intake | Added |
-| No claims Add Manual Claim | `src/pages/ClaimsDashboard.jsx` | Opens add claim form | Add first claim manually | Added |
-| Filtered empty Reset Filters | `src/pages/ClaimsDashboard.jsx` | Clears filters from empty table state | Recover from no-result filters | Added |
-| Drag/drop claim email | `src/pages/ClaimsDashboard.jsx` | Reads file/text and extracts draft | Build claim draft | Working with file/text fallback alerts |
-| Extract Claim | `src/pages/ClaimsDashboard.jsx` | Parses pasted text into draft | Show editable draft | Working |
-| Add to Review Queue | `src/pages/ClaimsDashboard.jsx` | Queues imported draft | Save for review | Fixed to allow Unassigned driver/team |
-| Save as Claim | `src/pages/ClaimsDashboard.jsx` | Adds claim to board/table | Persist claim | Fixed to allow Unassigned driver/team |
-| Clear Import | `src/pages/ClaimsDashboard.jsx` | Clears import draft/text | Reset import panel | Working |
-| Review queued/imported claim | `src/pages/ClaimsDashboard.jsx` | Opens review modal | Review/edit status | Working |
-| Dispute Packet | `src/pages/ClaimsDashboard.jsx` | Opens dispute packet modal | Show packet checklist | Working |
-| Approve queued claim | `src/pages/ClaimsDashboard.jsx` | Adds queued claim | Save claim | Working |
-| Ignore queued claim | `src/pages/ClaimsDashboard.jsx` | Removes queued item | Dismiss queue item | Working |
-| Mark Open/Closed/Under Review | `src/pages/ClaimsDashboard.jsx` | Updates status | Move claim between boards | Working |
-| Edit Claim | `src/pages/ClaimsDashboard.jsx` | Opens form with claim data | Update claim | Working |
-| Delete Claim | `src/pages/ClaimsDashboard.jsx` | Opens confirm modal, then removes | Delete claim after confirmation | Working |
-| Show/Hide Claim Log | `src/pages/ClaimsDashboard.jsx` | Toggles table | Show full claim log | Working |
-| Export PDF Soon | `src/pages/ClaimsDashboard.jsx` | Disabled with tooltip | Not active until backend document generation exists | Intentionally disabled |
+| Draft <N> disputes (Sparkles) | `src/pages/ClaimsDashboard.jsx:1106` | onClick=generateAllDisputes — opens batch modal, sets running, sequentially calls requestDisputeLetter for each contestable claim | Batch-draft dispute letters for contestable claims | works — Only rendered when contestableClaims.length > 0 |
+| Hidden file input (damage photo) | `src/pages/ClaimsDashboard.jsx:1113` | onChange=handleDamagePhoto — compresses image, POSTs /api/vision-claim, opens prefilled Add form; falls back to openAddForm on error | Scan a damage photo into a claim draft | works |
+| Scan damage photo (Camera) | `src/pages/ClaimsDashboard.jsx:1114` | onClick triggers damagePhotoInputRef.current?.click(); disabled while visionStatus==='reading' | Open file picker to scan a photo | works |
+| Import Claim Email | `src/pages/ClaimsDashboard.jsx:1121` | onClick sets showImport=true, showForm=false, clears reviewClaim/activeReviewId, scrolls to panel | Open the email import panel | works |
+| + Add Claim | `src/pages/ClaimsDashboard.jsx:1133` | onClick=openAddForm — resets edit state, seeds blankClaim with next ID, shows form | Open the add-claim form | works |
+| Intelligence metric cards (clickable when filter present) | `src/pages/ClaimsDashboard.jsx:1161` | Renders as <button> only when filter truthy; onClick=applyIntelFilter(filter) resets filters, applies segment, scrolls to filters | One-click filter claims to the segment | works — Non-filter cards render as <div> with onClick=undefined (intentional, not interactive) |
+| Intelligence insight cards (clickable when filter present) | `src/pages/ClaimsDashboard.jsx:1183` | <button> when insight.filter truthy; onClick=applyIntelFilter(insight.filter) | Filter claims to the insight segment | works — Non-filter insights render as <div> (intentional) |
+| Reset Filters | `src/pages/ClaimsDashboard.jsx:1203` | onClick=resetClaimFilters — resets all six filters to All | Clear all filters | works |
+| Filter selects (Team, Driver, Claim Type, Preventable, Status, Risk) | `src/pages/ClaimsDashboard.jsx:1223` | onChange=updateClaimFilter(field, value) — updates claimFilters | Filter the claims list/board | works |
+| EmptyState primary: Import Claim Email | `src/pages/ClaimsDashboard.jsx:1242` | onClick opens import panel (same as header import button) | Open import panel | works — Only when claims.length===0 |
+| EmptyState secondary: Add Manual Claim | `src/pages/ClaimsDashboard.jsx:1253` | onClick=openAddForm | Open add form | works |
+| EmptyState secondary: Open Intake | `src/pages/ClaimsDashboard.jsx:1254` | onClick=() => navigateToTab?.('Intake') — 'Intake' is a valid tab target | Navigate to Intake tab | works — Optional-chained; safe even if prop missing. 'Intake' matches the valid-targets list exactly. |
+| Workflow board column drop zone (Needs Review / In Progress / Resolved) | `src/pages/ClaimsDashboard.jsx:1272` | onDragOver=preventDefault; onDrop=handleClaimDrop(event, bucket.title) — re-statuses dragged claim/queue item | Drop a card to change its status | works |
+| Claim card (draggable) | `src/pages/ClaimsDashboard.jsx:1299` | draggable; onDragStart sets draggedClaim; onDragEnd clears it | Drag card between columns | works |
+| Move back (ChevronLeft) | `src/pages/ClaimsDashboard.jsx:1325` | onClick=moveClaimDir(claim, bucket.title, -1) — moves one column left via updateClaimStatus | Move claim to previous column | works — Hidden on 'Needs Review' and for source==='queue' cards |
+| Move forward (ChevronRight) | `src/pages/ClaimsDashboard.jsx:1336` | onClick=moveClaimDir(claim, bucket.title, 1) | Move claim to next column | works — Hidden on 'Resolved' |
+| Review Claim (queue card) | `src/pages/ClaimsDashboard.jsx:1370` | onClick=openClaimReview(claim,'queue',{id,confidence,receivedAt,sourceText}) — opens review panel | Open review for a queued import | works |
+| Generate Dispute Packet (queue card) | `src/pages/ClaimsDashboard.jsx:1373` | onClick=setDisputePacketClaim(claim) — opens dispute packet modal | Open dispute packet modal | works |
+| Save (queue card) | `src/pages/ClaimsDashboard.jsx:1376` | onClick=approveQueuedClaim({id, claim}) — moves item from queue into claims | Save queued claim to log | works |
+| Review Claim (claim card) | `src/pages/ClaimsDashboard.jsx:1382` | onClick=openClaimReview(claim) — opens review panel | Open review panel | works |
+| Generate Dispute Packet (claim card) | `src/pages/ClaimsDashboard.jsx:1385` | onClick=setDisputePacketClaim(claim) | Open dispute packet modal | works |
+| Resolve (claim card) | `src/pages/ClaimsDashboard.jsx:1388` | onClick=updateClaimStatus(claim.id,'Closed') | Mark claim closed | works — Hidden when already Closed |
+| Review panel: Close | `src/pages/ClaimsDashboard.jsx:1435` | onClick=setReviewClaim(null) | Close the inline review panel | works |
+| Review panel: Generate Dispute Packet | `src/pages/ClaimsDashboard.jsx:1484` | onClick=setDisputePacketClaim(reviewClaim.claim) | Open dispute packet modal | works |
+| Save to Needs Review (queue review) | `src/pages/ClaimsDashboard.jsx:1492` | onClick approveQueuedClaimWithStatus(reviewClaim,'Under Review') then setReviewClaim(null) | Save queued claim as Under Review | works |
+| Save to In Progress (queue review) | `src/pages/ClaimsDashboard.jsx:1501` | onClick approveQueuedClaimWithStatus(reviewClaim,'Open') then close | Save queued claim as Open | works |
+| Edit Full Draft (queue review) | `src/pages/ClaimsDashboard.jsx:1510` | onClick reviewQueuedClaim(reviewClaim) then close — loads draft into import panel | Reopen full import editor | works |
+| Move to In Progress (claim review) | `src/pages/ClaimsDashboard.jsx:1522` | onClick=updateClaimStatus(reviewClaim.claim.id,'Open') | Set status Open | works — Hidden when already Open |
+| Mark Resolved (claim review) | `src/pages/ClaimsDashboard.jsx:1527` | onClick=updateClaimStatus(...,'Closed') | Set status Closed | works — Hidden when already Closed |
+| Move to Needs Review (claim review) | `src/pages/ClaimsDashboard.jsx:1532` | onClick=updateClaimStatus(...,'Under Review') | Set status Under Review | works — Hidden when already Under Review |
+| Edit Details (claim review) | `src/pages/ClaimsDashboard.jsx:1537` | onClick=openEditForm(reviewClaim.claim) — loads claim into edit form | Open edit form for this claim | works |
+| Import panel: Close | `src/pages/ClaimsDashboard.jsx:1560` | onClick sets showImport=false, importDraft=null, activeReviewId=null | Close import panel | works |
+| Email drop zone | `src/pages/ClaimsDashboard.jsx:1573` | onDragEnter/Over set dragging; onDragLeave clears; onDrop=handleEmailDrop (reads files or text into claimEmailText) | Accept dropped email/file/text | works |
+| Claim email textarea | `src/pages/ClaimsDashboard.jsx:1596` | onChange=setClaimEmailText; also has drop handlers | Edit pasted email text | works |
+| Extract Claim Draft | `src/pages/ClaimsDashboard.jsx:1611` | onClick=extractClaimFromEmail — parses text, sets importDraft + confidence; alerts if empty | Parse email into a draft | works |
+| Import draft: Claim ID input | `src/pages/ClaimsDashboard.jsx:1638` | onChange=updateImportDraft('id', value) | Edit draft claim ID | works |
+| Import draft: Category select | `src/pages/ClaimsDashboard.jsx:1642` | onChange sets category and resets type to first option of that category | Change category and reset type | works |
+| Import draft: Claim Type select | `src/pages/ClaimsDashboard.jsx:1660` | onChange=updateImportDraft('type', value) | Pick claim type | works |
+| Import draft: Assigned Driver select | `src/pages/ClaimsDashboard.jsx:1668` | onChange sets driver, derived team and route | Assign driver | works |
+| Import draft: Route input | `src/pages/ClaimsDashboard.jsx:1690` | onChange=updateImportDraft('route', value) | Edit route | works |
+| Import draft: Amount input | `src/pages/ClaimsDashboard.jsx:1694` | onChange=updateImportDraft('amount', value) | Edit amount | works |
+| Import draft: Status select | `src/pages/ClaimsDashboard.jsx:1698` | onChange=updateImportDraft('status', value) | Set status | works |
+| Import draft: Risk select | `src/pages/ClaimsDashboard.jsx:1706` | onChange=updateImportDraft('risk', value) | Set risk | works |
+| Import draft: Preventable select | `src/pages/ClaimsDashboard.jsx:1714` | onChange=updateImportDraft('preventable', value) | Set preventability | works |
+| Import draft: Date input | `src/pages/ClaimsDashboard.jsx:1722` | onChange=updateImportDraft('date', value) | Edit date | works |
+| Add to Needs Review / Update Review Item | `src/pages/ClaimsDashboard.jsx:1727` | onClick=queueImportedClaim — validates id/type, pushes/updates review queue, closes import | Queue the imported claim | works |
+| Save Claim (import) | `src/pages/ClaimsDashboard.jsx:1730` | onClick=approveImportedClaim — validates, adds to claims, removes from queue if reviewing | Save imported claim to log | works |
+| Clear Draft | `src/pages/ClaimsDashboard.jsx:1733` | onClick sets importDraft=null, activeReviewId=null | Clear the extracted draft | works |
+| Review queue row: Generate Dispute Packet | `src/pages/ClaimsDashboard.jsx:1802` | onClick=setDisputePacketClaim(item.claim) | Open dispute packet modal | works |
+| Review queue row: Save to Log | `src/pages/ClaimsDashboard.jsx:1805` | onClick=approveQueuedClaim(item) | Save queued claim to log | works |
+| Review queue row: Edit | `src/pages/ClaimsDashboard.jsx:1808` | onClick=reviewQueuedClaim(item) — loads draft into import panel | Edit queued draft | works |
+| Review queue row: Ignore | `src/pages/ClaimsDashboard.jsx:1811` | onClick=ignoreQueuedClaim(item.id) — opens confirm modal that removes from queue | Remove queued item after confirm | works |
+| Add/Edit form: Cancel (X header) | `src/pages/ClaimsDashboard.jsx:1834` | onClick=setShowForm(false) | Close form | works |
+| Form: Claim ID input | `src/pages/ClaimsDashboard.jsx:1842` | onChange=updateClaimField('id', value) | Edit ID | works |
+| Form: Category select | `src/pages/ClaimsDashboard.jsx:1847` | onChange sets category and resets type | Change category | works |
+| Form: Claim Type select | `src/pages/ClaimsDashboard.jsx:1866` | onChange=updateClaimField('type', value) | Pick type | works |
+| Form: Assigned Driver select | `src/pages/ClaimsDashboard.jsx:1875` | onChange sets driver, derived team and route | Assign driver | works |
+| Form: Route input | `src/pages/ClaimsDashboard.jsx:1898` | onChange=updateClaimField('route', value) | Edit route | works |
+| Form: Amount input | `src/pages/ClaimsDashboard.jsx:1903` | onChange=updateClaimField('amount', value) | Edit amount | works |
+| Form: Status select | `src/pages/ClaimsDashboard.jsx:1908` | onChange=updateClaimField('status', value) | Set status | works |
+| Form: Risk select | `src/pages/ClaimsDashboard.jsx:1917` | onChange=updateClaimField('risk', value) | Set risk | works |
+| Form: Preventable select | `src/pages/ClaimsDashboard.jsx:1926` | onChange=updateClaimField('preventable', value) | Set preventability | works |
+| Form: Date input | `src/pages/ClaimsDashboard.jsx:1936` | onChange=updateClaimField('date', value) | Edit date | works |
+| Save Claim / Update Claim | `src/pages/ClaimsDashboard.jsx:1941` | onClick=saveClaim — validates id/type, updates or prepends to claims, resets form | Save/update claim | works |
+| Form: Cancel (footer) | `src/pages/ClaimsDashboard.jsx:1944` | onClick resets claimForm, editingId, closes form | Cancel edits | works |
+| View Full Claim Log / Hide Claim Log | `src/pages/ClaimsDashboard.jsx:2013` | onClick=setShowClaimLog(prev => !prev) — toggles log table | Toggle claims log table | works |
+| Log row: Generate Dispute Packet | `src/pages/ClaimsDashboard.jsx:2071` | onClick=setDisputePacketClaim(claim) | Open dispute packet modal | works |
+| Log row: Edit | `src/pages/ClaimsDashboard.jsx:2077` | onClick=openEditForm(claim) | Open edit form | works |
+| Log row: Delete | `src/pages/ClaimsDashboard.jsx:2083` | onClick=deleteClaim(claim.id) — opens confirm modal that removes claim | Delete claim after confirm | works |
+| Empty log: Reset Filters | `src/pages/ClaimsDashboard.jsx:2104` | onClick=resetClaimFilters | Clear filters | works |
+| Export PDF Soon (dispute packet) | `src/pages/ClaimsDashboard.jsx:2137` | disabled button, title explains backend doc-gen needed; TODO above | Disabled until PDF export backend exists | disabled-ok — Intentional placeholder; clearly labeled and titled |
+| Dispute packet modal: Close | `src/pages/ClaimsDashboard.jsx:2145` | onClick=setDisputePacketClaim(null) | Close dispute packet modal | works — Modal has no backdrop-click or Esc close, but Close button works |
+| Evidence checklist toggle (per item) | `src/pages/ClaimsDashboard.jsx:2185` | onClick=toggleEvidence(item.label); aria-pressed reflects state | Include/exclude evidence in letter | works |
+| Generate dispute letter / Regenerate (header) | `src/pages/ClaimsDashboard.jsx:2236` | onClick=generateDisputeLetter(disputePacketClaim) — sets loading, calls requestDisputeLetter, sets letter | Draft the dispute letter | works — Hidden while status==='loading' |
+| Dispute letter body textarea | `src/pages/ClaimsDashboard.jsx:2276` | onChange=setDisputeLetterBody | Edit the generated letter | works |
+| Recipient email input | `src/pages/ClaimsDashboard.jsx:2291` | onChange=setRecipientEmail | Edit recipient email | works |
+| Save as default / Saved as default | `src/pages/ClaimsDashboard.jsx:2298` | onClick=saveDefaultClaimsEmail — writes to localStorage, sets defaultClaimsEmail | Persist default claims email | works |
+| Copy letter | `src/pages/ClaimsDashboard.jsx:2314` | onClick=copyDisputeLetter — navigator.clipboard.writeText(body), 2s 'Copied!' state | Copy letter to clipboard | works |
+| Email letter (Mail) | `src/pages/ClaimsDashboard.jsx:2321` | onClick=emailDisputeLetter — opens mailto: with subject/body in new tab | Open email client with letter | works |
+| Regenerate (footer) | `src/pages/ClaimsDashboard.jsx:2329` | onClick=generateDisputeLetter(disputePacketClaim) | Regenerate letter | works |
+| Dispute outcome chips (Won / Partial / Lost) | `src/pages/ClaimsDashboard.jsx:2349` | onClick=markDisputeOutcome(disputePacketClaim, val) — sets disputeOutcome + recovered on claim and modal state | Log dispute outcome | works |
+| Amount recovered input | `src/pages/ClaimsDashboard.jsx:2363` | onChange=updateClaimDispute(id, outcome, value) | Edit recovered amount | works — Only shown for won/partial |
+| Batch modal backdrop | `src/pages/ClaimsDashboard.jsx:2379` | onClick=setBatchOpen(false); inner div stops propagation | Close batch modal on backdrop click | works |
+| Batch modal: Copy all | `src/pages/ClaimsDashboard.jsx:2389` | onClick=copyAllDisputes — concatenates all letters to clipboard | Copy all batch letters | works — Only when done and letters exist |
+| Batch modal: Close | `src/pages/ClaimsDashboard.jsx:2391` | onClick=setBatchOpen(false) | Close batch modal | works |
+| Batch letter textarea (read-only) | `src/pages/ClaimsDashboard.jsx:2405` | readOnly textarea displaying letter.letter | Display drafted letter | works |
+| Confirm modal: Cancel | `src/pages/ClaimsDashboard.jsx:2425` | onClick=setConfirmAction(null) | Dismiss confirm dialog | works |
+| Confirm modal: Confirm (Delete/Ignore) | `src/pages/ClaimsDashboard.jsx:2432` | onClick runs confirmAction.onConfirm() then setConfirmAction(null) | Execute the confirmed destructive action | works |
 
-## Teams
+### Profitability
 
-| Clickable element | File/component | Current action | Expected action | Status |
+| Element | Location | Current action | Expected | Status |
 | --- | --- | --- | --- | --- |
-| Add Person | `src/pages/TeamsDashboard.jsx` | Opens person/team form | Add team member/assignment | Working |
-| Empty-state Add Person / Add Route Team | `src/pages/TeamsDashboard.jsx` | Opens person/team form | Build first route team | Added |
-| Save Person | `src/pages/TeamsDashboard.jsx` | Adds or updates person/team | Persist person and team slot | Working |
-| Cancel/Close form | `src/pages/TeamsDashboard.jsx` | Closes form | Cancel edit/add | Working |
-| Team status dropdowns | `src/pages/TeamsDashboard.jsx` | Updates selected team fields | Update readiness/compliance data | Working |
-| Upload Photo | `src/pages/TeamsDashboard.jsx` | Reads local image and marks uploaded | Attach field photo locally/web | Working |
-| Edit person | `src/pages/TeamsDashboard.jsx` | Opens form | Edit person assignment | Working |
-| Delete person | `src/pages/TeamsDashboard.jsx` | Confirms then deletes | Remove person | Working |
+| View toggle: "All Contracts" / "Route Profit Check" segmented buttons | `src/pages/ProfitabilityDashboard.jsx:1141-1153 (Route Profit Check branch)` | onClick={() => setProfitabilityView(view)} — switches the local profitabilityView state (persisted to localStorage via useEffect) | Switch the dashboard view | works |
+| View toggle: "All Contracts" / "Route Profit Check" segmented buttons | `src/pages/ProfitabilityDashboard.jsx:1518-1531 (All Contracts branch)` | onClick={() => setProfitabilityView(view)} — same as above | Switch the dashboard view | works |
+| Contract Name <select> (Route Profit Check, when saved contracts exist) | `src/pages/ProfitabilityDashboard.jsx:1162-1177` | onChange sets selectedRouteContractId, clears save status, calls loadSavedRouteContract() or applyRouteContractDefaults() | Load the chosen saved contract's numbers into the form | works |
+| Contract Name <input> (Route Profit Check, new contract) | `src/pages/ProfitabilityDashboard.jsx:1179-1184` | onChange={(e)=>update("scenarioName", e.target.value)} | Edit the new contract name | works |
+| "Save Contract" button | `src/pages/ProfitabilityDashboard.jsx:1189-1194` | onClick={saveRouteContract} (defined line 1066) — validates name, builds row, upserts into rollupRows, selects it, sets status | Persist the current route as a contract row | works |
+| "+ Add Another" button | `src/pages/ProfitabilityDashboard.jsx:1195-1200` | onClick={startNewRouteContract} (defined line 1098) — resets selection to new-contract and zeroes all form fields | Start a fresh blank route contract | works |
+| "+ Add Contract Row" button (All Contracts header, Route Profit Check branch render) | `src/pages/ProfitabilityDashboard.jsx:1211-1216` | onClick={addRollupRow} (defined line 649) — seeds rollupDraft and opens the rollup editor popup | Open editor to add a new contract row | works |
+| "Export Roll-Up" button | `src/pages/ProfitabilityDashboard.jsx:1217-1222` | onClick={exportRollup} (defined line 684) — builds a text summary blob and triggers a download | Download the roll-up summary | works |
+| EmptyState "Start Blank Calculator" primary action (blank-demo Route Profit Check) | `src/pages/ProfitabilityDashboard.jsx:1235` | primaryAction.onClick = resetRouteCalculator — an identifier that is NEVER defined anywhere in the file or codebase; referencing it during render of this branch throws ReferenceError | Reset the route calculator to a blank state (likely should call startNewRouteContract or resetForm) | broken — Only reachable when isBlankDemo && !hasSavedContractData. isBlankDemoWorkspace is hardcoded false in App.jsx:158 today, so this path is currently unreachable in the live app, but it is a guaranteed crash if blank-demo is ever enabled. |
+| EmptyState "Save Scenario" secondary action | `src/pages/ProfitabilityDashboard.jsx:1237` | onClick={saveScenario} — saveScenario prop is passed (App.jsx:1615 -> FinanceDashboard:117 -> ProfitabilityDashboard:117) and defined in App.jsx:726 | Save current scenario | works |
+| EmptyState "Open Contracts" secondary action | `src/pages/ProfitabilityDashboard.jsx:1238` | onClick={() => navigateToTab?.("Contracts")} — "Contracts" is a valid tabSlugs key | Navigate to Contracts tab | works |
+| Scenario buttons: "Add 5 Stops", "Add $250 Accessorials", "Add Helper Cost", "Fuel +10%" | `src/pages/ProfitabilityDashboard.jsx:1368-1375` | onClick={action} where each action calls update(...) with a computed value | Apply the quick what-if change to the form | works |
+| Route Section editor popup "Close" button (X-equivalent, top-right) | `src/pages/ProfitabilityDashboard.jsx:1409-1414` | onClick={closeRouteSectionEditor} (line 581) — clears editingRouteSection + position | Close the route section editor popup | works |
+| Route section editor number inputs | `src/pages/ProfitabilityDashboard.jsx:1421-1426` | onChange={(e)=>update(key, e.target.value)} for each field | Live-edit the underlying form values | works |
+| Custom charge enable checkbox (inside Revenue section editor) | `src/pages/ProfitabilityDashboard.jsx:1448-1453` | onChange -> updateCustomContractCharge(activeRouteContractId, charge.id, "enabled", checked) | Toggle custom charge on/off | works |
+| Custom charge amount input (inside Revenue section editor) | `src/pages/ProfitabilityDashboard.jsx:1458-1463` | onChange -> updateCustomContractCharge(..., "amount", value) | Edit custom charge amount | works |
+| Route section editor "Done" button | `src/pages/ProfitabilityDashboard.jsx:1490-1495` | onClick={closeRouteSectionEditor} | Close the editor | works |
+| Route section editor Escape key + outside mousedown close | `src/pages/ProfitabilityDashboard.jsx:301-326 (Esc/outside-click handler for route editor)` | useEffect adds keydown(Escape) and mousedown handlers that clear editingRouteSection; respects [data-route-editor-trigger] and the editor ref | Allow Esc and backdrop/outside click to close the popup | works |
+| "+ Add Contract Row" / "+ Add Contract" buttons (All Contracts view header and roll-up table header) | `src/pages/ProfitabilityDashboard.jsx:1538-1543 & 1802-1807` | onClick={addRollupRow} — opens rollup editor with a fresh draft | Open editor to add a contract | works |
+| "Export Roll-Up" button (All Contracts view header) | `src/pages/ProfitabilityDashboard.jsx:1544-1549` | onClick={exportRollup} | Download roll-up | works |
+| EmptyState "Add Contract Row" primary action (blank-demo All Contracts) | `src/pages/ProfitabilityDashboard.jsx:1562` | onClick={addRollupRow} — defined line 649 | Open the add-contract editor | works |
+| EmptyState "Open Route Profit Check" secondary action | `src/pages/ProfitabilityDashboard.jsx:1564` | onClick={() => setProfitabilityView("Route Profit Check")} | Switch to Route Profit Check view | works |
+| EmptyState "Open Intake" secondary action | `src/pages/ProfitabilityDashboard.jsx:1565` | onClick={() => navigateToTab?.("Intake")} — "Intake" is a valid tabSlugs key | Navigate to Intake tab | works |
+| "View chart" button (Net Profit by Contract card) | `src/pages/ProfitabilityDashboard.jsx:1653-1660` | onClick={(e)=>openChartPopup("profit", e)} (defined line 644) | Open the profit chart popup | works |
+| "View chart" button (Cost Breakdown card) | `src/pages/ProfitabilityDashboard.jsx:1694-1701` | onClick={(e)=>openChartPopup("costs", e)} | Open the cost chart popup | works |
+| "View chart" button (Profitability Trend card; only when hasTrendData) | `src/pages/ProfitabilityDashboard.jsx:1728-1735` | onClick={(e)=>openChartPopup("trend", e)} | Open the trend chart popup | works |
+| "Add Contract" button (Profitability Trend empty-state) | `src/pages/ProfitabilityDashboard.jsx:1773-1779` | onClick={() => setProfitabilityView("Route Profit Check")} | Switch to Route Profit Check to add a contract | works |
+| Roll-up search input | `src/pages/ProfitabilityDashboard.jsx:1796-1801` | onChange={(e)=>setSearchTerm(e.target.value)} — filters filteredRows | Filter contracts by name | works |
+| Contract roll-up table row (whole <tr> click) | `src/pages/ProfitabilityDashboard.jsx:1835-1846` | onClick={(e)=>openRollupEditor(row.id, e)} — opens the rollup editor popup positioned near the click | Open the contract detail editor | works |
+| Row "Edit" button | `src/pages/ProfitabilityDashboard.jsx:1865-1875` | onClick stops propagation then openRollupEditor(row.id, event) | Open editor for this row | works |
+| Row delete (Trash2) button | `src/pages/ProfitabilityDashboard.jsx:1876-1885` | onClick stops propagation then deleteRollupRow(row.id) -> window.confirm then removes row | Delete the contract row after confirmation | works |
+| Chart popup "Close" button | `src/pages/ProfitabilityDashboard.jsx:1934-1940` | onClick={closeChartPopup} (line 592) — clears activeChartKey + position | Close chart popup | works |
+| Chart popup Escape key + outside mousedown close | `src/pages/ProfitabilityDashboard.jsx:328-353 (chart popup Esc/outside handler)` | useEffect adds keydown(Escape) and mousedown handlers clearing activeChartKey; respects [data-chart-popup-trigger] and chartPopupRef | Esc / outside click closes chart popup | works |
+| Rollup editor contract-name input | `src/components/profitability/RollupEditorPanel.jsx:46-50` | onChange={(e)=>updateRollupDraft("contract", e.target.value)} | Edit draft contract name | works |
+| Rollup editor "Cancel" button (top-right) | `src/components/profitability/RollupEditorPanel.jsx:53-58` | onClick={closeRollupEditor} — clears editing id/position/draft | Close editor without saving | works |
+| Rollup editor 9 numeric field inputs (Revenue, Labor, Fuel, Truck/Insurance, Maintenance, Other, Claims, Routes, Stops) | `src/components/profitability/RollupEditorPanel.jsx:76-81` | onChange={(e)=>updateRollupDraft(key, e.target.value)} — coerces numeric fields via rollupNumberFields | Edit draft numbers; draft totals recompute | works |
+| Rollup editor footer "Cancel" button | `src/components/profitability/RollupEditorPanel.jsx:106-112` | onClick={closeRollupEditor} | Close editor without saving | works |
+| Rollup editor "Save Changes" button | `src/components/profitability/RollupEditorPanel.jsx:113-119` | onClick={saveRollupDraft} (line 517) — normalizes draft, upserts into rollupRows, closes editor | Persist draft to the roll-up table | works — This editor has no X/backdrop/Esc close, but both Cancel buttons close it, so it is not trapped. |
+| Pay-type checkboxes (routePay, perStopPay, installPay, accessorialPay, fuelSurcharge, reattemptPay) | `src/components/profitability/ContractChargeRules.jsx:41-46` | onChange -> updateContractChargeRule(activeRouteContractId, key, checked) (line 530) | Toggle which charges this contract allows | works |
+| Custom charge enable checkbox | `src/components/profitability/ContractChargeRules.jsx:62-67` | onChange -> updateCustomContractCharge(..., "enabled", checked) | Toggle custom charge | works |
+| Custom charge delete (Trash2) button | `src/components/profitability/ContractChargeRules.jsx:72-79` | onClick -> deleteCustomContractCharge(activeRouteContractId, charge.id) (line 574) | Remove custom charge | works |
+| Custom charge name + amount inputs | `src/components/profitability/ContractChargeRules.jsx:82-86 & 91-96` | onChange -> updateCustomContractCharge(..., "name"/"amount", value) | Edit existing custom charge | works |
+| Add-custom-charge name + amount draft inputs | `src/components/profitability/ContractChargeRules.jsx:109-113 & 117-123` | onChange -> setCustomChargeDraft(...) | Compose a new custom charge | works |
+| "+ Add Charge" button | `src/components/profitability/ContractChargeRules.jsx:125-131` | onClick -> addCustomContractCharge(activeRouteContractId) (line 541) — validates name, appends charge, resets draft | Add the composed custom charge | works |
+| Route input section cards (Revenue, Labor, Truck/Fuel/Miles, Claims & Other, Route Details) | `src/components/profitability/RouteInputSections.jsx:18-55` | onClick={(e)=>openRouteSectionEditor(section.id, event)} (line 631) — opens the floating section editor | Open the section editor for that group | works |
 
-## Finance
+### Contracts + ContractEvaluator
 
-| Clickable element | File/component | Current action | Expected action | Status |
+| Element | Location | Current action | Expected | Status |
 | --- | --- | --- | --- | --- |
-| Profitability subtab | `src/pages/FinanceDashboard.jsx` | `navigateToTab("Profitability")` | Show Profitability and URL `#/profitability` | Fixed |
-| Receipts subtab | `src/pages/FinanceDashboard.jsx` | `navigateToTab("Receipts")` | Show Receipts and URL `#/receipts` | Fixed |
-| Contracts subtab | `src/pages/FinanceDashboard.jsx` | `navigateToTab("Contracts")` | Show Contracts and URL `#/contracts` | Fixed |
-| Route Profit Check view chips | `src/pages/ProfitabilityDashboard.jsx` | Switch view | Change profitability view | Working |
-| Contract selector | `src/pages/ProfitabilityDashboard.jsx` | Selects saved/new contract | Update route-profit contract context | Working |
-| Save Contract | `src/pages/ProfitabilityDashboard.jsx` | Saves selected route-profit contract | Persist route contract | Working |
-| Add Another | `src/pages/ProfitabilityDashboard.jsx` | Starts new route contract | New contract entry state | Working |
-| Add Contract Row | `src/pages/ProfitabilityDashboard.jsx` | Adds rollup row | Add summary row | Working |
-| Download Rollup | `src/pages/ProfitabilityDashboard.jsx` | Downloads rollup text export | Export rollup data | Working |
-| Section edit buttons | `src/pages/ProfitabilityDashboard.jsx` | Opens section editor | Edit route input group | Working |
-| Chart View buttons | `src/pages/ProfitabilityDashboard.jsx` | Opens chart modal | View chart details | Working |
-| Rollup row click | `src/pages/ProfitabilityDashboard.jsx` | Opens row editor | Edit rollup row | Working |
-| Rollup save/delete/cancel | `src/pages/ProfitabilityDashboard.jsx` | Saves or removes row | Manage row | Working |
-| Contracts: Import Draft / Save Draft / Discard | `src/pages/ContractsDashboard.jsx` | Applies/discards imported contract draft | Manage intake draft | Working |
-| Contracts: Select contract/rate card | `src/pages/ContractsDashboard.jsx` | Changes selected contract/card | Display selected contract | Working |
-| Contracts: Edit/Save contract | `src/pages/ContractsDashboard.jsx` | Toggles edit mode/saves fields | Edit contract details | Working |
-| Contracts: Tabs Rates/Claims/Teams/Notes | `src/pages/ContractsDashboard.jsx` | Switches contract detail panel | Show selected detail view | Working |
-| Contracts: Open in Route Profit | `src/pages/ContractsDashboard.jsx` | Routes to Profitability | Use rate card in route profit | Working |
-| Contracts: View Claims/Teams | `src/pages/ContractsDashboard.jsx` | Routes to Operations subtab | Show related workflow | Working |
-| Receipts filter chips | `src/pages/ReceiptsDashboard.jsx` | Filters receipts | Show matching receipts | Working |
-| Finance setup health next action | `src/pages/FinanceDashboard.jsx`, `src/components/SetupProgressPanel.jsx` | Routes to needed Finance/setup tab | Guide incomplete setup | Added |
-| Finance workflow cards | `src/pages/FinanceDashboard.jsx` | Switch between Profitability, Receipts, Contracts | Explain and route grouped finance tabs | Added |
-| Blank Contracts Create First Contract | `src/pages/ContractsDashboard.jsx` | Creates a local contract and opens edit mode | Start first contract/rate card without leaving page | Fixed |
-| Blank Contracts Open Intake / Profit Calculator / Review Claims | `src/pages/ContractsDashboard.jsx` | Routes to Intake, Profitability, or Claims | Guide contract setup into related workflows | Added |
-| Blank Contracts import setup contract | `src/pages/ContractsDashboard.jsx` | Imports dashboard setup contract into Contracts and opens edit mode | Reuse quick setup contracts instead of fake sample names | Added |
-| Contracts KPI notes | `src/pages/ContractsDashboard.jsx` | Shows saved/needed data notes, not fake prior-period trends | Keep blank/new-account metrics honest | Fixed |
-| Receipt empty-state Open Intake | `src/pages/ReceiptsDashboard.jsx` | Routes to Intake | Start receipt/intake workflow | Added |
-| Receipt empty-state Review Mobile Setup | `src/pages/ReceiptsDashboard.jsx` | Routes to Settings | Review mobile upload setup | Added |
-| Profitability empty-state Add Contract Row | `src/pages/ProfitabilityDashboard.jsx` | Opens existing rollup row editor | Add first contract profit row | Added |
-| Profitability empty-state Start Blank Calculator | `src/pages/ProfitabilityDashboard.jsx` | Resets/opens blank route calculator | Run first route profit check | Added |
+| + Add Contract (empty-state header) | `src/pages/ContractsDashboard.jsx:635-641` | onClick={addContract} — prepends a new blank contract, selects it, opens Overview tab, sets editing mode | Create a new contract | works |
+| Create Contract Draft (empty-state AI draft banner) | `src/pages/ContractsDashboard.jsx:656-658` | onClick={applyContractImportDraft} — builds a contract from contractImportDraft, adds it, selects+edits it, clears the draft + localStorage key | Materialize the AI import draft into a contract | works |
+| Dismiss (empty-state AI draft banner) | `src/pages/ContractsDashboard.jsx:659-661` | onClick={dismissContractImportDraft} — nulls contractImportDraft and removes localStorage key | Discard the AI draft | works |
+| Create First Contract (EmptyState primaryAction) | `src/pages/ContractsDashboard.jsx:673` | onClick={addContract} | Create a new contract | works |
+| Open Intake (EmptyState secondaryAction) | `src/pages/ContractsDashboard.jsx:675` | onClick={() => navigateToTab?.("Intake")} — valid target | Navigate to Intake | works |
+| Open Profit Calculator (EmptyState secondaryAction) | `src/pages/ContractsDashboard.jsx:676` | onClick={() => navigateToTab?.("Profitability")} — valid target | Navigate to Profitability | works |
+| Review Claims (EmptyState secondaryAction) | `src/pages/ContractsDashboard.jsx:677` | onClick={() => navigateToTab?.("Claims")} — valid target | Navigate to Claims | works |
+| Setup contract import row button (empty-state) | `src/pages/ContractsDashboard.jsx:697-708` | onClick={() => importSetupContract(row, index)} — converts a stored setup row to a contract, removes it from the quick list, selects+edits it | Import a quick-setup row as a contract | works |
+| + Add Contract (main header) | `src/pages/ContractsDashboard.jsx:734-739` | onClick={addContract} | Create a new contract | works |
+| Create Contract Draft (main AI draft banner) | `src/pages/ContractsDashboard.jsx:754-756` | onClick={applyContractImportDraft} | Materialize AI draft | works |
+| Dismiss (main AI draft banner) | `src/pages/ContractsDashboard.jsx:757-759` | onClick={dismissContractImportDraft} | Discard the AI draft | works |
+| Change Contract <select> | `src/pages/ContractsDashboard.jsx:801-816` | onChange={(e) => selectContract(e.target.value)} — sets selectedContractId (incl. special value 'ALL'), resets tab to Overview, exits edit mode | Switch the actively viewed contract or All view | works |
+| View (All Contracts table row action) | `src/pages/ContractsDashboard.jsx:894-899` | onClick={() => selectContract(contract.id)} — selects that contract | Open the chosen contract detail | works |
+| Edit Contract / Done Editing (toggle) | `src/pages/ContractsDashboard.jsx:944-953` | onClick={() => setIsEditingContract((c) => !c)} — toggles the inline edit panel | Toggle edit mode | works |
+| Contract detail tabs (Overview/Rates/Requirements/Performance/Compliance/Notes) | `src/pages/ContractsDashboard.jsx:959-971` | onClick={() => setSelectedContractTab(tab)} for each tab string | Switch the contract detail sub-tab | works |
+| Save Changes (edit panel header) | `src/pages/ContractsDashboard.jsx:981-986` | onClick={() => setIsEditingContract(false)} — only closes the edit panel; edits are already persisted live via updateContractField/useEffect, so no data is lost | Persist + close editor (it does close; 'save' is a no-op label since saving is continuous) | ambiguous — Functionally identical to the 'Done Editing' toggle. Label implies a discrete save that doesn't exist, but nothing breaks — fields autosave on change. Cosmetic only. |
+| Edit-panel field inputs (17 text/number inputs) | `src/pages/ContractsDashboard.jsx:1011-1016` | onChange={(e) => updateContractField(key, e.target.value)} — updates the selected contract; number fields coerced via Number() | Edit contract fields live | works |
+| Pay Type <select> (Flat Rate/Per Stop/Hybrid) | `src/pages/ContractsDashboard.jsx:1022-1030` | onChange={(e) => updateContractField("payType", e.target.value)} — also recomputes payStructure | Set pay type | works |
+| Status <select> (Active/Pending/Inactive) | `src/pages/ContractsDashboard.jsx:1035-1043` | onChange={(e) => updateContractField("status", e.target.value)} | Set contract status | works |
+| Risk <select> (Low/Watch/At Risk) | `src/pages/ContractsDashboard.jsx:1048-1056` | onChange={(e) => updateContractField("risk", e.target.value)} | Set risk level | works |
+| Overview <textarea> | `src/pages/ContractsDashboard.jsx:1063-1067` | onChange={(e) => updateContractField("overview", e.target.value)} | Edit overview text | works |
+| Notes <textarea> | `src/pages/ContractsDashboard.jsx:1072-1076` | onChange={(e) => updateContractField("notes", e.target.value)} | Edit notes text | works |
+| Use in Route Profit (Rates tab) | `src/pages/ContractsDashboard.jsx:1098-1103` | onClick={openSelectedContractInRouteProfit} — writes route-profit localStorage keys (contract id, view, draft JSON) then navigateToTab?.("Profitability") | Hand off contract to Route Profit Check in Profitability | works |
+| Standard charge toggle checkboxes (6: routePay/perStopPay/installPay/accessorialPay/fuelSurcharge/reattemptPay) | `src/pages/ContractsDashboard.jsx:1125-1130` | onChange={(e) => updateContractChargeRule(selectedRateCardId, key, e.target.checked)} | Enable/disable a standard charge for the rate card | works |
+| Custom charge name input (draft) | `src/pages/ContractsDashboard.jsx:1146-1151` | onChange updates customChargeDraft.name | Capture new custom charge name | works |
+| Custom charge amount input (draft) | `src/pages/ContractsDashboard.jsx:1154-1160` | onChange updates customChargeDraft.amount | Capture new custom charge amount | works |
+| + Add Charge | `src/pages/ContractsDashboard.jsx:1162-1168` | onClick={() => addCustomContractCharge(selectedRateCardId)} — adds a custom charge (no-op if name blank) and resets draft | Append a custom charge to the rate card | works |
+| Custom charge enabled checkbox | `src/pages/ContractsDashboard.jsx:1207-1212` | onChange={(e) => updateCustomContractCharge(selectedRateCardId, charge.id, "enabled", e.target.checked)} | Toggle a custom charge on/off | works |
+| Delete custom charge (Trash2 icon) | `src/pages/ContractsDashboard.jsx:1215-1222` | onClick={() => deleteCustomContractCharge(selectedRateCardId, charge.id)} | Remove the custom charge | works |
+| Custom charge name edit input | `src/pages/ContractsDashboard.jsx:1226-1230` | onChange={(e) => updateCustomContractCharge(..., "name", e.target.value)} | Rename an existing custom charge | works |
+| Custom charge amount edit input | `src/pages/ContractsDashboard.jsx:1233-1238` | onChange={(e) => updateCustomContractCharge(..., "amount", e.target.value)} | Edit an existing custom charge amount | works |
+| Configure (Pay Structure card) | `src/pages/ContractsDashboard.jsx:1362-1364` | onClick={() => setSelectedContractTab("Rates")} | Jump to the Rates tab | works |
+| View Claims → | `src/pages/ContractsDashboard.jsx:1449` | onClick={() => navigateToTab?.("Claims")} — valid target (sets Claims subtab + Operations parent) | Navigate to Claims | works |
+| View Team Details | `src/pages/ContractsDashboard.jsx:1470-1472` | onClick={() => navigateToTab?.("Teams")} — valid target | Navigate to Teams | works |
+| View Contract History | `src/pages/ContractsDashboard.jsx:1494-1496` | onClick={() => setSelectedContractTab("Notes")} — switches to the Notes tab (no dedicated history view exists) | Show contract history; app has no history view, so it shows Notes | ambiguous — Label says 'History' but routes to the Notes sub-tab. It does perform a real, consistent-ish action (Notes holds the narrative), so not broken — label overpromises. |
+| View All (Upcoming Renewals header) | `src/pages/ContractsDashboard.jsx:1580` | onClick={() => selectContract("ALL")} — switches to the All Contracts aggregate view | Show all contracts | works |
+| Modal backdrop | `src/components/ContractEvaluator.jsx:67` | onClick={onClose} on the fixed inset-0 overlay — closes via setShowEvaluator(false) (confirmed wired in DashboardHome.jsx:1157) | Close modal on backdrop click | works |
+| Modal inner panel | `src/components/ContractEvaluator.jsx:68` | onClick={(e) => e.stopPropagation()} — prevents backdrop close when clicking inside | Keep modal open on inner click | works |
+| Close (modal X/Close button) | `src/components/ContractEvaluator.jsx:80` | onClick={onClose} — closes the modal | Close the modal | works |
+| Contract/route name input | `src/components/ContractEvaluator.jsx:84` | onChange={(e) => setName(e.target.value)} | Capture optional route name | works |
+| Offered revenue input | `src/components/ContractEvaluator.jsx:88` | onChange strips non-numeric then setRevenue; drives result computation | Capture revenue, sanitized | works |
+| Expected costs input | `src/components/ContractEvaluator.jsx:92` | onChange strips non-numeric then setCost (blank = predict from history) | Capture optional cost override | works |
+| Get the AI call / Refresh AI call | `src/components/ContractEvaluator.jsx:142-148` | onClick={generate} — async POST /api/contract-eval with fallback to buildEvalNarrative on any error; disabled while status==='loading' | Fetch AI narrative, fall back to deterministic call | works — disabled={status==='loading'} is correct gating; guarded by early return if no result. |
 
-## Reports
+### Operations + Compliance
 
-| Clickable element | File/component | Current action | Expected action | Status |
+| Element | Location | Current action | Expected | Status |
 | --- | --- | --- | --- | --- |
-| Preview Profit Report | `src/pages/ReportsDashboard.jsx` | Opens preview modal | Preview report | Working |
-| Report card Preview | `src/pages/ReportsDashboard.jsx` | Opens selected report preview | Preview report | Working |
-| Report card Download PDF | `src/pages/ReportsDashboard.jsx` | Generates PDF download | Download PDF report | Fixed |
-| Report readiness badges | `src/pages/ReportsDashboard.jsx` | Show requirements; disable unready reports | Prevent fake reports before setup data exists | Added |
-| Reports Finish Setup / Open Dashboard | `src/pages/ReportsDashboard.jsx` | Routes to setup/dashboard | Guide blank reports state | Added |
-| Preview modal Download PDF | `src/pages/ReportsDashboard.jsx` | Generates PDF download | Download selected report | Working |
-| Preview modal Close | `src/pages/ReportsDashboard.jsx` | Closes modal | Close preview | Working |
-| Filter dropdowns | `src/pages/ReportsDashboard.jsx` | Update report table filters | Filter report history | Working |
-| Clear Filters | `src/pages/ReportsDashboard.jsx` | Resets filters | Show all matching reports | Working |
-| View All Exports | `src/pages/ReportsDashboard.jsx` | Clears filters | Show all exports | Working |
-| Report table Download | `src/pages/ReportsDashboard.jsx` | Generates PDF for row | Download PDF report | Working |
+| Mobile section chips (Dispatch / Claims / Teams / Compliance) | `src/pages/OperationsDashboard.jsx:119-132` | onClick={() => goToSection(tab.id)} -> if navigateToTab present, navigateToTab(tab.id === 'Dispatch' ? 'Operations' : tab.id). 'Operations','Claims','Teams','Compliance' are all valid (Claims/Teams/Compliance are grouped to Operations). | Switch the Operations subsection / parent tab. | works — lg:hidden — only visible on mobile. Active chip highlighted via activeSection === tab.id. |
+| OperationMetric 'Open Claims' | `src/pages/OperationsDashboard.jsx:165-173` | onClick={() => goToSection('Claims')} -> navigateToTab('Claims') (grouped to Operations + Claims subtab). Valid. | Open Claims subsection. | works |
+| OperationMetric 'High Risk' | `src/pages/OperationsDashboard.jsx:174-182` | onClick={() => goToSection('Claims')} -> navigateToTab('Claims'). Valid. | Open Claims subsection (high-risk claims live there). | works |
+| OperationMetric 'Missing Photos' | `src/pages/OperationsDashboard.jsx:183-191` | onClick={() => goToSection('Teams')} -> navigateToTab('Teams'). Valid. | Open Teams subsection (photo status is per team). | works |
+| OperationMetric 'Ready Teams' | `src/pages/OperationsDashboard.jsx:192-200` | onClick={() => goToSection('Teams')} -> navigateToTab('Teams'). Valid. | Open Teams subsection. | works |
+| 'Open Work' button (Next operations move) | `src/pages/OperationsDashboard.jsx:216-221` | onClick={() => goToSection(highRiskClaims.length ? 'Claims' : teamsMissingPhotos.length ? 'Teams' : 'Compliance')} -> navigateToTab('Claims'\|'Teams'\|'Compliance'), all valid grouped targets. | Jump to the subsection that owns the current top issue. | works |
+| Operations EmptyState primary action | `src/pages/OperationsDashboard.jsx:146` | actionButton(operationEmptyConfig.primaryAction) -> onClick calls goToAction({label:'Add Team', tab:'Teams'}) -> goToSection('Teams') -> navigateToTab('Teams'). Valid. | Add a team (routes to Teams). | works — Only rendered when teams.length === 0 && claims.length === 0. |
+| Operations EmptyState secondary actions ('Import Claim', 'Review Compliance') | `src/pages/OperationsDashboard.jsx:147` | secondaryActions.map(actionButton) -> goToAction({tab:'Claims'}) and goToAction({tab:'Compliance'}) -> goToSection -> navigateToTab('Claims'\|'Compliance'). Both valid. | Route to Claims / Compliance subsections. | works |
+| SetupProgressPanel next-best-action button (onAction) | `src/pages/OperationsDashboard.jsx:160` | onAction={goToAction}; SetupProgressPanel calls onAction(nextAction) where nextAction.tab is one of Settings/Dashboard/Teams/Profitability/Intake/Claims/Receipts/Reports/Ask (all valid tabSlugs keys). goToAction routes Dashboard->navigateToTab('Dashboard'); Teams/Claims/Compliance->goToSection; else navigateToTab(action.tab). | Advance the user to the next setup step's tab. | works — Rendered only when teams/claims exist but setup not mostly complete. |
+| DispatchBoard 'Manage Teams' button | `src/pages/OperationsDashboard.jsx:280-282` | onClick={() => setActiveSection('Teams')} where setActiveSection is goToSection (passed at line 230) -> navigateToTab('Teams'). Valid. | Open Teams subsection. | works — setActiveSection prop on DispatchBoard is actually goToSection, not the raw setActiveSection. |
+| DispatchBoard empty-state 'Add Team' | `src/pages/OperationsDashboard.jsx:294` | onClick: () => setActiveSection('Teams') (goToSection) -> navigateToTab('Teams'). Valid. | Route to Teams. | works — Shown only when assignments.length === 0 (no teams). |
+| DispatchBoard empty-state 'Review Claims' | `src/pages/OperationsDashboard.jsx:295` | onClick: () => setActiveSection('Claims') (goToSection) -> navigateToTab('Claims'). Valid. | Route to Claims. | works |
+| Compliance EmptyState 'Track a Document' | `src/pages/ComplianceDashboard.jsx:254` | onClick: () => openDocForm() -> opens the doc modal (setShowDocForm(true)). | Open the add-document modal. | works — Shown only when no teams/claims/docs exist. |
+| Compliance EmptyState 'Add Team' | `src/pages/ComplianceDashboard.jsx:256` | onClick: () => navigateToTab?.('Teams'). 'Teams' is valid (grouped to Operations). | Route to Teams. | works |
+| Compliance EmptyState 'Review Claims' | `src/pages/ComplianceDashboard.jsx:257` | onClick: () => navigateToTab?.('Claims'). 'Claims' is valid (grouped to Operations). | Route to Claims. | works |
+| Document Tracker 'Add document' header button | `src/pages/ComplianceDashboard.jsx:288-294` | onClick={() => openDocForm()} -> opens modal in create mode (editingDocId=null, docForm=EMPTY_DOC). | Open add-document modal. | works — Rendered only when docs.length > 0. |
+| 'Track a document' button (docs empty inline state) | `src/pages/ComplianceDashboard.jsx:306-312` | onClick={() => openDocForm()} -> opens modal in create mode. | Open add-document modal. | works |
+| Per-doc 'Edit' button | `src/pages/ComplianceDashboard.jsx:341-347` | onClick={() => openDocForm(doc)} -> opens modal in edit mode (editingDocId=doc.id, docForm prefilled). | Edit the selected document. | works |
+| Per-doc delete (Trash2 icon) button | `src/pages/ComplianceDashboard.jsx:348-355` | onClick={() => removeDoc(doc.id)} -> setDocs filtering out the id; persists to localStorage via effect. aria-label present. | Remove the document. | works — No confirm dialog, but immediate removal is acceptable for this row action. |
+| Modal backdrop (overlay) | `src/pages/ComplianceDashboard.jsx:438` | onClick={closeDocForm} on the fixed inset-0 overlay; inner panel has onClick stopPropagation (line 439). Clicking outside closes. | Close modal on backdrop click. | works |
+| Modal header 'Close' button | `src/pages/ComplianceDashboard.jsx:445` | onClick={closeDocForm} -> setShowDocForm(false) + resets form. | Close the modal. | works |
+| Hidden file input (doc photo) | `src/pages/ComplianceDashboard.jsx:448` | type=file accept=image/* capture=environment onChange={handleDocPhoto}; ref-triggered. handleDocPhoto resets value, compresses, POSTs /api/vision-doc, fills form on success, no-ops on failure. | Let AI scan a document photo to prefill the form. | works — Network failure is caught silently and leaves form for manual entry (intended). |
+| 'Scan document with AI' button | `src/pages/ComplianceDashboard.jsx:449-456` | onClick={() => docPhotoInputRef.current?.click()} triggers the file input; disabled while docScanStatus === 'reading'; label switches to 'Reading document…'. | Open camera/file picker for AI doc scan. | works |
+| Document type SelectField (onChange) | `src/pages/ComplianceDashboard.jsx:460` | onChange={(value) => setDocForm({ ...docForm, type: value })}; options=DOC_TYPES. SelectField wires native select onChange to onChange(event.target.value). | Update docForm.type. | works |
+| Label / Issuer / Issue date / Expiration date / Notes TextFields (onChange) | `src/pages/ComplianceDashboard.jsx:463-471` | Each onChange={(value) => setDocForm({ ...docForm, <field>: value })}. TextField wires input onChange to onChange(event.target.value). Date fields use type='date'. | Update the corresponding docForm field. | works |
+| Modal 'Cancel' button | `src/pages/ComplianceDashboard.jsx:483` | onClick={closeDocForm} -> closes modal + resets form. | Cancel and close modal. | works |
+| Modal 'Add document' / 'Save changes' button | `src/pages/ComplianceDashboard.jsx:484` | onClick={saveDoc} -> guards on docForm.type (always set, defaults to DOC_TYPES[0]); edits existing doc or prepends new doc with id DOC-<ts>; closes modal. | Persist the document and close modal. | works — Label varies by editingDocId. Not disabled even when label/expiry blank, but type is always present so saveDoc never silently no-ops in practice. |
 
-## Ask and Intake
+### Teams
 
-| Clickable element | File/component | Current action | Expected action | Status |
+| Element | Location | Current action | Expected | Status |
 | --- | --- | --- | --- | --- |
-| Daily Briefing Open tab | `src/pages/AskBusinessDashboard.jsx` | Routes to suggested tab | Open relevant page | Working |
-| AI mode prompt cards | `src/pages/AskBusinessDashboard.jsx` | Sends prebuilt question | Ask contextual business question | Working, OpenAI/API dependent |
-| Ask data readiness checklist | `src/pages/AskBusinessDashboard.jsx`, `src/components/DataHealthChecklist.jsx` | Routes missing data items to setup tabs | Make missing data visible before asking | Added |
-| Setup-aware suggested prompts | `src/pages/AskBusinessDashboard.jsx` | Sends setup/margin/team/claim prompts based on available data | Avoid generic suggestions in blank workspaces | Added |
-| Ask button | `src/pages/AskBusinessDashboard.jsx` | Sends typed question | Return answer and next steps | Working, OpenAI/API dependent |
-| Suggested prompt chips | `src/pages/AskBusinessDashboard.jsx` | Sends prompt | Return answer | Working |
-| Recent question row | `src/pages/AskBusinessDashboard.jsx` | Restores question | Let user rerun/review question | Working |
-| Intake drawer/open button | `src/components/AiQuickIntake.jsx` | Opens AI intake | Show intake panel | Working |
-| Close Intake | `src/components/AiQuickIntake.jsx` | Closes panel | Close without saving | Working |
-| Mock form buttons | `src/components/AiQuickIntake.jsx` | Loads mock text | Test intake with realistic forms | Working |
-| Intake standalone source cards | `src/components/AiQuickIntake.jsx` | Informational, no save | Explain what can be pasted/uploaded | Added |
-| Attach file | `src/components/AiQuickIntake.jsx` | Reads file into intake | Add file text | Working |
-| Analyze Intake | `src/components/AiQuickIntake.jsx` | Builds drafts | Create claim/route/day drafts | Working, OpenAI/API dependent |
-| Clear | `src/components/AiQuickIntake.jsx` | Clears input/drafts | Reset intake | Working |
-| Apply Draft / Save to Claim / Save to Day | `src/components/AiQuickIntake.jsx` | Applies draft to app state | Save draft to correct workflow | Working |
-| Open saved destination | `src/components/AiQuickIntake.jsx` | Routes to saved workflow | Show saved result | Working |
-| Intake help toggle | `src/components/AiQuickIntake.jsx` | Shows/hides help | Explain intake behavior | Working |
+| Add Person (header button) | `src/pages/TeamsDashboard.jsx:485` | onClick={openAddPerson} → resets editingPerson to null, seeds personForm with a blank person + auto team name (`Team ${A+teams.length}`), opens the inline form (setShowForm(true)) | Open the Add Person form | works |
+| EmptyState primaryAction 'Add Person' (shown only when activePeople===0) | `src/pages/TeamsDashboard.jsx:502` | primaryAction.onClick={openAddPerson}; EmptyState renders it as a real <button type=button> (EmptyState.jsx:56-66) and calls action.onClick | Open the Add Person form | works |
+| EmptyState secondaryAction 'Add Route Team' | `src/pages/TeamsDashboard.jsx:503-505` | onClick={openAddPerson} — same handler as primary; opens the same Add Person form | Arguably should open a team-centric flow, but opening the person form is a reasonable funnel and not broken | works — Both empty-state actions intentionally point at openAddPerson; label differs but behavior is identical. Not a bug. |
+| Cancel (form header X/Cancel button) | `src/pages/TeamsDashboard.jsx:516` | onClick={() => setShowForm(false)} — closes the inline form. Note: does NOT reset personForm/editingPerson, but reopening via openAddPerson/openEditPerson always re-seeds the form, so no stale-state leak | Close the form | works |
+| Person Name TextField | `src/pages/TeamsDashboard.jsx:522` | onChange={(v) => updatePersonField('name', v)}; TextField calls onChange(event.target.value) | Update personForm.name | works |
+| Role SelectField (Lead Driver / Helper) | `src/pages/TeamsDashboard.jsx:523` | onChange={(v) => updatePersonField('role', v)} | Update personForm.role | works |
+| Team Name TextField | `src/pages/TeamsDashboard.jsx:524` | onChange={(v) => updatePersonField('teamName', v)} | Update personForm.teamName | works |
+| Truck # TextField | `src/pages/TeamsDashboard.jsx:525` | onChange={(v) => updatePersonField('truck', v)} | Update personForm.truck | works |
+| Route TextField | `src/pages/TeamsDashboard.jsx:526` | onChange={(v) => updatePersonField('route', v)} | Update personForm.route | works |
+| Compliance Score Field (numeric, suffix %) | `src/pages/TeamsDashboard.jsx:527` | onChange={(v) => updatePersonField('complianceScore', v)}; coerced to Number in applyPersonToTeam | Update personForm.complianceScore | works |
+| Survey Avg Field (numeric, suffix /10) | `src/pages/TeamsDashboard.jsx:528` | onChange={(v) => updatePersonField('surveyAvg', v)} | Update personForm.surveyAvg | works |
+| Status SelectField (Good / Watch / At Risk) | `src/pages/TeamsDashboard.jsx:529` | onChange={(v) => updatePersonField('status', v)} | Update personForm.status | works |
+| Person Photo file input (form) | `src/pages/TeamsDashboard.jsx:538-543` | onChange={(event) => handleFormPhotoUpload(event.target.files?.[0])} → creates object URL, sets personForm.photoUrl/photoStatus='Uploaded'/photoUploadedAt; preview img renders at line 544 | Attach a local photo preview to the form | works — Form upload uses URL.createObjectURL only (no Supabase write); the per-person bench upload at line 764 does write to Supabase. Intentional split. |
+| Save Person / Update Person (form submit) | `src/pages/TeamsDashboard.jsx:548` | onClick={() => applyPersonToTeam(personForm)} → validates name+teamName+truck (alert if missing), then either updates the existing team (editingPerson path) or prepends a new TEAM-#### object; resets form & closes | Persist the person to teams and close the form | works |
+| Cancel (form footer button) | `src/pages/TeamsDashboard.jsx:551-560` | onClick resets personForm to blankPerson, clears editingPerson, closes form | Discard edits and close the form | works |
+| Route-row avatar (draggable person chip) | `src/pages/TeamsDashboard.jsx:606-633` | draggable; onDragStart sets dataTransfer + draggedPersonId; onDragOver/onDragLeave set dropTarget ring; onDrop → handleDropOnPerson(person) → movePersonToTeam (confirm() if seat occupied) | Drag a person to re-pair them onto another seat/team | works |
+| Open-seat drop zone (the '+' tile) | `src/pages/TeamsDashboard.jsx:635-652` | onDragOver/onDragLeave set dropTarget; onDrop → handleDropOnSeat(team.id, lead ? 'Helper' : 'Lead Driver') → movePersonToTeam | Drop a dragged person into the empty seat on this team | works |
+| Route inline text input (per row) | `src/pages/TeamsDashboard.jsx:661-665` | onChange={(event) => updateTeamField(team.id, 'route', event.target.value)} → updates team.route via setTeams | Inline-edit the route name | works |
+| Truck inline text input (per row) | `src/pages/TeamsDashboard.jsx:667-671` | onChange={(event) => updateTeamField(team.id, 'truck', event.target.value)} | Inline-edit the truck # | works |
+| Status <select> (per route row: Good/Watch/At Risk) | `src/pages/TeamsDashboard.jsx:687-695` | onChange={(event) => updateTeamField(team.id, 'status', event.target.value)} → updates team.status (and color tone). Does NOT update derived person.status used by 'People At Risk' metric | Change the route's status | works — Functional. Quirk: 'People At Risk' MetricCard (line 568) counts person.status==='At Risk' which is derived from team.status via getPeopleFromTeams, so it stays in sync on next render — actually consistent. No bug. |
+| Photo upload label+hidden file input (Worker Bench card) | `src/pages/TeamsDashboard.jsx:761-765` | <label> wraps hidden <input type=file>; onChange={(event) => handlePhotoUpload(person, event.target.files?.[0])} → async uploadTeamPhoto (Supabase) then setTeams with signedUrl/'Uploaded'; updates photoBackendStatus banner | Upload that person's daily photo to backend | works |
+| Edit (Worker Bench card) | `src/pages/TeamsDashboard.jsx:766-768` | onClick={() => openEditPerson(person)} → sets editingPerson, copies person into personForm, opens form | Open the form pre-filled to edit this person | works |
+| Delete (Worker Bench card) | `src/pages/TeamsDashboard.jsx:769-771` | onClick={() => deletePerson(person)} → window.confirm, then setTeams clears that person's seat and drops teams with no lead/helper | Remove the person after confirmation | works |
+| Worker Bench card (draggable container) | `src/pages/TeamsDashboard.jsx:715-735` | draggable; onDragStart sets draggedPersonId; onDragOver/onDragLeave manage dropTarget ring; onDrop → handleDropOnPerson(person) | Drag a bench person onto another person to pair/re-pair | works |
 
-## Compliance and Document Vault
+### Finance + Receipts + CashPosition
 
-| Clickable element | File/component | Current action | Expected action | Status |
+| Element | Location | Current action | Expected | Status |
 | --- | --- | --- | --- | --- |
-| Upload Documents | `src/components/ProfitPlatformWidgets.jsx` | Opens file picker and stores docs | Upload/record docs | Working, Supabase Storage dependent |
-| Compliance setup Upload Documents | `src/pages/ComplianceDashboard.jsx` | Routes to Intake | Start compliance document intake | Added |
-| Compliance setup Add Team / Review Claims | `src/pages/ComplianceDashboard.jsx` | Routes to Teams/Claims | Build required compliance context | Added |
-| Category chips | `src/components/ProfitPlatformWidgets.jsx` | Filter vault docs | Show category | Working |
-| Document row | `src/components/ProfitPlatformWidgets.jsx` | Opens preview modal | Preview doc | Working |
-| Category dropdown | `src/components/ProfitPlatformWidgets.jsx` | Updates document category | Organize doc | Working |
-| View | `src/components/ProfitPlatformWidgets.jsx` | Opens preview modal | Preview doc | Working |
-| Preview backdrop / Close | `src/components/ProfitPlatformWidgets.jsx` | Closes modal | Close preview | Working |
+| Mobile finance sub-tab buttons (Profitability / Cash Position / Receipts / Contracts) | `src/pages/FinanceDashboard.jsx:72-85` | onClick={() => goToFinanceSection(tab)}; goToFinanceSection calls navigateToTab(tab) when navigateToTab exists (it always does here), else falls back to setActiveSection(tab). tab is one of financeTabs = ['Profitability','Cash Position','Receipts','Contracts']. | Switch the active finance sub-section to the chosen tab. | works — All four labels are exact, case-correct groupedTabs/tabSlugs keys ('Cash Position' has the required space). navigateToTab routes them via the Finance group. Container is lg:hidden (mobile-only) by design. |
+| SetupProgressPanel onAction (passes goToAction) | `src/pages/FinanceDashboard.jsx:92` | goToAction(action): if action.tab is a finance subtab -> goToFinanceSection(action.tab); otherwise navigateToTab?.(action.tab \|\| 'Finance'). action comes from getNextBestSetupAction, whose tab is always one of Settings/Dashboard/Teams/Profitability/Intake/Claims/Receipts/Reports/Ask. | Navigate to the next-best setup action's tab. | works — Every possible action.tab value is a valid navigateToTab target (Teams/Claims/Profitability/Receipts route via groupedTabs). Guards against null action. |
+| activeSection conditional render (Cash Position / Receipts / Contracts / Profitability) | `src/pages/FinanceDashboard.jsx:96-131` | Renders the matching child dashboard based on activeSection prop (= activeFinanceTab from App). Passes navigateToTab (real router) down to each child. | Render the selected finance sub-dashboard. | works — Not interactive itself; confirms children receive the real router under prop name navigateToTab. |
+| Hidden file input (receipt image) | `src/pages/ReceiptsDashboard.jsx:136` | onChange={(e) => handleFile(e.target.files?.[0])}; handleFile posts the compressed image to /api/vision-receipt, opens a prefilled draft on success or an empty draft with a fallback note on failure, then clears fileRef.value. | Let the user pick/capture a receipt image to scan. | works — capture='environment' is ignored on desktop (normal file picker opens) — not a bug. |
+| Scan receipt button | `src/pages/ReceiptsDashboard.jsx:137-144` | onClick={() => fileRef.current?.click()}; disabled while scanStatus==='scanning'. Opens the hidden file input. Shows spinner + 'Reading…' while scanning. | Trigger the file picker to scan a receipt. | works |
+| Add manually button | `src/pages/ReceiptsDashboard.jsx:145-150` | onClick={() => { setDraft({...emptyDraft}); setScanNote(''); }} — opens the blank draft form. | Open an empty receipt draft form for manual entry. | works |
+| Draft Vendor input | `src/pages/ReceiptsDashboard.jsx:168` | onChange updates draft.vendor. | Edit vendor field. | works |
+| Draft Amount input | `src/pages/ReceiptsDashboard.jsx:172` | onChange strips non-numeric and updates draft.amount. | Edit amount field. | works |
+| Draft Category select | `src/pages/ReceiptsDashboard.jsx:176-178` | onChange updates draft.category from RECEIPT_CATEGORIES options. | Choose a category. | works |
+| Draft Date input | `src/pages/ReceiptsDashboard.jsx:182` | onChange updates draft.date. | Edit the date. | works |
+| Draft Cancel button | `src/pages/ReceiptsDashboard.jsx:186` | onClick={() => { setDraft(null); setScanNote(''); }} — closes the draft form. | Dismiss the draft without saving. | works — This is the close path for the inline draft 'modal' — setDraft(null) collapses it (form only renders when draft is truthy). |
+| Draft Save receipt button | `src/pages/ReceiptsDashboard.jsx:187` | onClick={saveDraft}; disabled={!draft.vendor.trim() && !draft.amount}. saveDraft calls addReceipt(...) then setDraft(null)/setScanNote(''). | Save the receipt and close the form. | works — Disabled only when BOTH vendor and amount are empty — intentional (requires at least one). addReceipt is exported and defined in src/lib/receipts.js. |
+| EmptyState primaryAction 'Scan a receipt' | `src/pages/ReceiptsDashboard.jsx:225` | onClick={() => fileRef.current?.click()} — opens the file picker. | Start a receipt scan from the empty state. | works |
+| EmptyState secondaryAction 'Open Intake' | `src/pages/ReceiptsDashboard.jsx:226` | onClick={() => navigateToTab?.('Intake')}. | Navigate to the Intake tab. | works — 'Intake' is an exact valid tabSlugs key. |
+| Category filter chips ('All' + each RECEIPT_CATEGORY) | `src/pages/ReceiptsDashboard.jsx:237-243` | onClick={() => setFilter(c)} — sets the active filter; list re-computes filtered receipts. | Filter the receipt list by category. | works |
+| Per-receipt Category select (local/scan receipts) | `src/pages/ReceiptsDashboard.jsx:263-269` | onChange={(e) => updateReceipt(r.id, { category: e.target.value })}; persists and fires RECEIPTS_EVENT to refresh. | Re-categorize a receipt. | works — Only rendered for non-mobile receipts; mobile receipts show a static read-only chip (line 261). updateReceipt is exported/defined. |
+| Delete receipt button (Trash2) | `src/pages/ReceiptsDashboard.jsx:273-275` | onClick={() => removeReceipt(r.id)}; only rendered when r.source !== 'mobile'. aria-label='Delete receipt'. | Delete a local/scan receipt. | works — removeReceipt is exported/defined; mobile receipts intentionally have no delete (read-only). |
+| 'Show all' inline button (empty-filter state) | `src/pages/ReceiptsDashboard.jsx:281` | onClick={() => setFilter('All')} — clears the category filter. | Reset filter to All. | works |
+| 'Request Advance (coming soon)' button | `src/pages/CashPositionDashboard.jsx:219-226` | type='button', disabled, cursor-not-allowed, title explains it's intentionally inactive. No onClick. | Be visibly inert until funding ships (roadmap placeholder). | disabled-ok — Intentional preview-only control; the whole Cash Position view is documented as read-only ('no funds move'). |
+| PageIntro (eyebrow/title/description/chips only) | `src/pages/CashPositionDashboard.jsx:95-102` | Renders header + non-interactive chips ['Preview only', 'Live data'/'Demo data']. No actions prop passed, so PageIntro renders no buttons. | Display the page header and status chips. | works — Chips are <span> display elements (PageIntro.jsx:30-34), not buttons. |
+| Next-action button (label = nextAction.actionLabel) | `src/components/SetupProgressPanel.jsx:63-65` | onClick={() => onAction?.(nextAction)}; only rendered when !status.isComplete. In FinanceDashboard onAction = goToAction. | Trigger the next-best setup action (navigate to its tab). | works — Optional-chained onAction is safe even if no handler is passed. |
+| 'Take Tour' button | `src/components/SetupProgressPanel.jsx:67-71` | onClick={onTakeTour}; only rendered when onTakeTour is truthy. | Start the guided tour. | works — FinanceDashboard does NOT pass onTakeTour, so this button does not render in the audited Finance context — correctly hidden, not a dead button. |
 
-## Settings
+### Reports
 
-| Clickable element | File/component | Current action | Expected action | Status |
+| Element | Location | Current action | Expected | Status |
 | --- | --- | --- | --- | --- |
-| Settings tabs | `src/pages/SettingsDashboard.jsx` | Switch active settings section | Show selected section | Working |
-| Restore Setup | `src/pages/SettingsDashboard.jsx` | Restores setup guidance flag in localStorage | Bring onboarding prompts back | Added |
-| Reset Checklist | `src/pages/SettingsDashboard.jsx` | Clears setup wizard localStorage keys | Restart setup checklist | Added |
-| Onboarding preset buttons | `src/pages/SettingsDashboard.jsx` | Applies dashboard layout presets | Owner daily, claims-heavy, finance, compliance views | Added |
-| Save Preferences | `src/pages/SettingsDashboard.jsx` | Shows saved notice | Preferences are already stored through state/local persistence | Working |
-| Company inputs/dropdowns | `src/pages/SettingsDashboard.jsx` | Update settings | Persist company/theme/accent | Working |
-| Add Team Member | `src/pages/SettingsDashboard.jsx` | Saves pending invite if allowed | Create pending access record | Working, invite email backend later |
-| Role dropdowns | `src/pages/SettingsDashboard.jsx` | Updates member role if allowed | Change role | Working, disabled for owners/non-managers |
-| Show All / Hide All / Reset Order | `src/pages/SettingsDashboard.jsx` | Updates dashboard layout | Control widgets | Working |
-| Dashboard presets | `src/pages/SettingsDashboard.jsx` | Applies preset widget layout | Reorder/show dashboard sections | Working |
-| Up / Down | `src/pages/SettingsDashboard.jsx` | Reorders widget | Move dashboard widget | Working; edge buttons disabled |
-| Widget toggles | `src/pages/SettingsDashboard.jsx` | Shows/hides widget | Control dashboard layout | Working |
-| Benchmark toggle and inputs | `src/pages/SettingsDashboard.jsx` | Updates target values | Control profitability targets | Working |
-| Claims thresholds | `src/pages/SettingsDashboard.jsx` | Updates thresholds | Control claim risk labels | Working |
-| Accessorial inputs | `src/pages/SettingsDashboard.jsx` | Updates default charges | Control contract math defaults | Working |
-| Label inputs | `src/pages/SettingsDashboard.jsx` | Updates custom labels | Rename common terms | Working |
-| Employee toggles | `src/pages/SettingsDashboard.jsx` | Updates employee rules | Control employee workflow | Working |
-| Notification toggles | `src/pages/SettingsDashboard.jsx` | Updates alert preferences | Control alerts | Working |
-| View Layout | `src/pages/SettingsDashboard.jsx` | Opens Dashboard Layout tab | Jump to layout settings | Working |
+| Preview Profit Report (header button) | `src/pages/ReportsDashboard.jsx:486-493` | onClick sets selectedReport to reportCards[0] (Daily Route Profit Report), opening the inline preview card. Disabled via !reportIsReady(reportCards[0]) when the contract requirement is not met; title attribute explains why. | Open the profit report preview; disabled until a contract exists. | works |
+| EmptyState primary 'Finish Setup' action | `src/pages/ReportsDashboard.jsx:498-509` | onClick calls navigateToTab?.('Dashboard') — valid tab. Rendered only when !setupStatus.hasAnyBusinessData. | Navigate to Dashboard to finish setup. | works |
+| EmptyState secondary 'Open Dashboard' action | `src/pages/ReportsDashboard.jsx:505-508` | onClick calls navigateToTab?.('Dashboard') — valid tab. | Navigate to Dashboard. | works |
+| EmptyState secondary 'Open Intake' action | `src/pages/ReportsDashboard.jsx:505-508` | onClick calls navigateToTab?.('Intake') — valid tab. | Navigate to Intake. | works |
+| DataHealthChecklist items (onAction) | `src/pages/ReportsDashboard.jsx:512-514` | onAction={(item) => item?.tab && navigateToTab?.(item.tab)}. Items come from setupSteps in onboarding.js with tab values: Settings, Dashboard, Teams, Profitability, Intake — all valid navigateToTab targets. Checklist only fires onAction for incomplete items (line 38 in DataHealthChecklist: !complete && onAction?.(item)). | Click an incomplete setup item to jump to the relevant tab. | works |
+| Download PDF (report preview card) | `src/pages/ReportsDashboard.jsx:526-531` | onClick calls exportReport(selectedReport.title); builds a PDF Blob via buildPdf, creates an object URL, programmatically clicks an <a download>, then revokes the URL. Functions buildPdf/exportReport are defined in-file. | Generate and download the selected report as a PDF. | works |
+| Close (report preview card) | `src/pages/ReportsDashboard.jsx:532-541` | onClick calls setSelectedReport(null), collapsing the preview. Correct setter. | Close the preview card. | works |
+| Preview (per report card) | `src/pages/ReportsDashboard.jsx:591-604` | onClick calls setSelectedReport(report). Disabled via !ready (reportIsReady(report)); title attribute explains requirements. Styling reflects disabled state. | Open preview for that report; disabled until its required setup is complete. | works |
+| Download PDF (per report card) | `src/pages/ReportsDashboard.jsx:605-612` | onClick calls exportReport(report.title). Disabled via !ready. report.title matches a reportCards entry so exportReport resolves the report record correctly. | Download that report as PDF; disabled until required setup complete. | works |
+| Date Range <select> | `src/pages/ReportsDashboard.jsx:627-632` | onChange calls updateFilter('dateRange', value), updating reportFilters state (used as PDF Period and as the controlled value). Options: dateRangeLabel, This Month, Last 30 Days, Custom Range. | Set the date-range filter shown in the PDF period field. | works |
+| Team <select> | `src/pages/ReportsDashboard.jsx:636-642` | onChange calls updateFilter('team', value). Options: All Teams plus team.name for each team. Feeds the PDF Team field. | Set the team filter (display-only metadata in PDF). | works — Filter only affects the PDF metadata label; it does not re-filter report content. Cosmetic/by-design, not a bug. |
+| Route / Contract <select> | `src/pages/ReportsDashboard.jsx:646-651` | onChange calls updateFilter('route', value). Options: All Routes, form.scenarioName. Feeds the PDF Route field. | Set the route filter (display-only metadata in PDF). | works |
+| Report Type <select> | `src/pages/ReportsDashboard.jsx:654-663` | onChange calls updateFilter('reportType', value). Drives visibleReports (line 216-219) and visibleExports (221-224) filtering — actually changes which report cards and export rows render. | Filter the visible report cards / export rows by type. | works |
+| Clear Filters | `src/pages/ReportsDashboard.jsx:665-674` | onClick calls clearFilters(), resetting all four reportFilters to defaults. Defined in-file. | Reset all report filters to defaults. | works |
+| View All Exports (header, top of Recent Exports) | `src/pages/ReportsDashboard.jsx:684` | onClick calls clearFilters(). Label implies showing all exports; clearing filters does reset reportType to 'All Reports' so all export rows become visible, which is consistent enough with the label. | Show all export rows (reset the type filter). | ambiguous — Label says 'View All Exports' but the handler is clearFilters. It does make all exports visible by resetting the type filter, so behavior is plausibly correct; just not a dedicated 'view all' route. Not a user-facing break. |
+| Download (per Recent Exports row) | `src/pages/ReportsDashboard.jsx:710-712` | onClick calls exportReport(row[1]). row[1] is always the string 'Daily Route Profit Report' (set in the exports map at lines 209-214), which matches a reportCards title, so exportReport resolves a real report and generates the PDF. | Download that historical export as a PDF. | works |
+| View All Exports (bottom, full-width) | `src/pages/ReportsDashboard.jsx:731-733` | onClick calls clearFilters(). Same behavior as the top button. | Show all export rows. | ambiguous — Same as the top 'View All Exports' — clearFilters resets the type filter so all exports show. Plausible but the label suggests a more specific action. |
+| View Full Insights | `src/pages/ReportsDashboard.jsx:759-768` | onClick calls setSelectedReport(reportCards.find(r => r.type === 'Owner Summary') \|\| reportCards[0]). Opens the Owner Summary report preview (or falls back to the first card). Not disabled by readiness, but Owner Summary always exists in reportCards. | Open the Owner Summary report preview. | works |
 
-## Login
+### Ask + AskCopilot
 
-| Clickable element | File/component | Current action | Expected action | Status |
+| Element | Location | Current action | Expected | Status |
 | --- | --- | --- | --- | --- |
-| Login theme toggle | `src/pages/LoginPage.jsx` | Toggles theme | Switch light/dark | Working |
-| Password eye icon | `src/pages/LoginPage.jsx` | Shows/hides password | Toggle password visibility | Working |
-| Remember me | `src/pages/LoginPage.jsx` | Toggles local form state | Capture preference | Working |
-| Forgot password? | `src/pages/LoginPage.jsx` | Shows setup message | No dead reset link until email backend configured | Working placeholder |
-| Sign In | `src/pages/LoginPage.jsx` | Demo or Supabase login | Authenticate user | Working, Supabase dependent for real users |
+| "Open {dailyBriefing.tab}" button (Daily AI Briefing) | `src/pages/AskBusinessDashboard.jsx:745` | onClick={() => navigateToTab(dailyBriefing.tab)}. dailyBriefing.tab is computed at line 423 and is always one of "Claims" \| "Profitability" \| "Operations" — all valid tab targets. | Navigate to the tab most relevant to today's briefing. | works |
+| Suggested-analysis cards (6 max: e.g. Find Money Leaks, Review Claims, Coach a Team, Build Action Plan) | `src/pages/AskBusinessDashboard.jsx:755-772` | onClick={() => askBusiness(mode.prompt)} — submits the canned prompt to the local/AI answer engine. Does NOT navigate; it generates an answer in the panel. mode is sourced from suggestedModes (lines 354-406). | Ask the prebuilt question and render the answer in the answer panel. | works — The mode.tab field on these objects is only used as a label hint inside analysisModes; the click handler calls askBusiness, not navigateToTab, so no invalid-target risk here. |
+| "Open {latest.tab}" button (answer panel CTA) | `src/pages/AskBusinessDashboard.jsx:845-851` | onClick={() => navigateToTab(latest.tab)}. latest is conversation[0] or getAnswer(...). getAnswer always sets tab to one of Dashboard/Profitability/Claims/Receipts/Teams/Operations/Contracts/Settings (all valid). AI answers are sanitized by normalizeAiAnswer line 171 (validTabs.has(...) else fallback.tab), so latest.tab is always a valid target. | Open the workspace tab the answer points to. | works |
+| Question textarea | `src/pages/AskBusinessDashboard.jsx:862-867` | Controlled input: onChange sets question state (line 864). | Capture the typed question. | works |
+| "Ask" / "Answering..." submit button | `src/pages/AskBusinessDashboard.jsx:868-875` | onClick={() => askBusiness()}; disabled={isAnswering}. askBusiness trims question, returns early if empty, otherwise posts to /api/ask-business with a local fallback. | Submit the typed question; disable while a request is in flight. | works — Empty input is handled gracefully by the early return in askBusiness (line 661), so an empty submit is a safe no-op rather than an error. |
+| Recent Questions list buttons | `src/pages/AskBusinessDashboard.jsx:885-897` | onClick={() => setQuestion(item.question)} — refills the textarea with a prior question. Keyed by item.id (Date.now()). | Re-populate the input with the previous question for re-asking. | works |
+| Floating Ask AI FAB (bottom-right) | `src/components/AskCopilot.jsx:193-199` | onClick={() => setOpen((value) => !value)} — toggles the chat panel open/closed; icon swaps Sparkles/X; aria-label updates. | Open and close the copilot panel. | works |
+| Panel header close (X) button | `src/components/AskCopilot.jsx:211-213` | onClick={() => setOpen(false)} — closes the panel. Correct setter. | Close the copilot panel. | works |
+| Suggestion chips (per-tab, from SUGGESTIONS map / DEFAULT_SUGGESTIONS) | `src/components/AskCopilot.jsx:221-225` | onClick={() => ask(suggestion)} — submits the suggestion as the query. | Ask the suggested question. | works |
+| Assistant message action button (e.g. "Draft all disputes", "Log today") | `src/components/AskCopilot.jsx:252-257` | onClick={() => runCopilotAction(message.action)}. runCopilotAction (lines 144-178) handles draftDisputes->navigateToTab("Claims")+dispatch fmm:draft-disputes; openClaim->navigateToTab("Claims")+dispatch fmm:open-claim; logDay->navigateToTab("Dashboard")+dispatch fmm:open-daylog; addReminder->addReminder()+toast+navigateToTab("Dashboard"); navigate->navigateToTab(action.tab). All target tabs valid; all three custom events have live listeners (ClaimsDashboard.jsx:862/878, DashboardHome.jsx:428); addReminder is a real export. | Execute the AI's suggested action, navigate to the right tab, and close the panel. | works — For action.type==="navigate", action.tab comes from the API. If the API returned an invalid tab string, navigateToTab would silently no-op, but the panel still closes — this is API-data-dependent, not a static bug, and the default fallback path never produces a navigate action. |
+| Assistant message "Go to {tab}" button (shown when message.tab !== activeTab and no action) | `src/components/AskCopilot.jsx:258-264` | onClick={() => { navigateToTab?.(message.tab); setOpen(false); }}. message.tab is data.tab from the API or buildFallback (Operations/Teams/Dashboard — all valid). | Navigate to the answer's tab and close the panel. | works — buildFallback always emits a valid tab. A malformed API tab would no-op navigation but still close the panel; data-dependent, not a static defect. |
+| Chat input field | `src/components/AskCopilot.jsx:284-290` | Controlled input; onChange sets question; onKeyDown Enter calls ask(). | Capture text and submit on Enter. | works |
+| "Ask" submit button (chat footer) | `src/components/AskCopilot.jsx:291-297` | onClick={() => ask()}; disabled={!question.trim() \|\| status==="loading"}. | Submit the typed question; disabled when empty or loading. | works |
+| Data-readiness tile buttons (Contracts, Teams, Expenses, Claims, Receipts, Snapshots) | `src/components/DataHealthChecklist.jsx:35-53` | onClick={() => !complete && onAction?.(item)} — only fires onAction when the item is incomplete; optional-chained so a missing onAction is a safe no-op. In AskBusinessDashboard this component is rendered by ReportsDashboard.jsx:513 with onAction={(item) => item?.tab && navigateToTab?.(item.tab)}. | When a checklist item is incomplete, navigate the user to the tab that lets them add the missing data; do nothing when already complete. | works — AskBusinessDashboard imports DataHealthChecklist but does not render it in the returned JSX (no <DataHealthChecklist .../> in the return); the only live render is ReportsDashboard.jsx:513. The button itself is sound: optional chaining guards both onAction and item.tab. When complete, the tile is intentionally inert (non-bug). |
 
-## Mobile App
+### AI Intake
 
-| Clickable element | File/component | Current action | Expected action | Status |
+| Element | Location | Current action | Expected | Status |
 | --- | --- | --- | --- | --- |
-| Mobile Sign In | `mobile/src/screens/LoginScreen.js` | Supabase email/password login | Authenticate user | Working, Supabase dependent |
-| Owner Mode | `mobile/App.js` | Sets mobile mode owner | Show owner tabs only | Working |
-| Driver Mode | `mobile/App.js` | Sets mobile mode driver | Show driver tabs only | Working |
-| Mobile mode pill | `mobile/App.js` | Returns to mode chooser | Switch owner/driver session view | Working |
-| Mobile Sign Out | `mobile/App.js` | Supabase sign out | Return to login | Working |
-| Mobile bottom Home | `mobile/App.js` | `setActiveTab("home")` | Show Home | Working |
-| Mobile bottom Receipts | `mobile/App.js` | `setActiveTab("receipts")` | Show Receipts | Working |
-| Mobile bottom Claims | `mobile/App.js` | `setActiveTab("claims")` | Show Claims | Working |
-| Mobile bottom Check In | `mobile/App.js` | Driver-only tab | Show Check In | Working |
-| Mobile bottom Evidence | `mobile/App.js` | Driver-only tab | Show Evidence | Working |
-| Owner action cards | `mobile/src/screens/HomeScreen.js` | Navigate when actionable, show Info when not | Owner actions route correctly | Fixed |
-| Claim status buttons | `mobile/src/screens/ClaimsScreen.js` | Updates claim status | Move claim through mobile states | Fixed current/busy disabled state |
-| Check In save | `mobile/src/screens/CheckInScreen.js` | Saves check-in after validation | Require route/truck | Fixed |
-| Receipts choose photo | `mobile/src/screens/ReceiptsScreen.js` | Opens image picker | Choose receipt image | Working |
-| Receipts take camera/upload prompt | `mobile/src/screens/ReceiptsScreen.js` | Opens camera/library choices | Capture or choose receipt | Working |
-| Analyze Receipt | `mobile/src/screens/ReceiptsScreen.js` | Calls receipt extraction API | Fill receipt fields from image | Working, OpenAI/API dependent |
-| Upload Receipt | `mobile/src/screens/ReceiptsScreen.js` | Uploads receipt/doc record | Send receipt to Supabase/document vault | Working, Supabase dependent |
-| Evidence upload | `mobile/src/screens/EvidenceScreen.js` | Uploads claim evidence photo | Send field evidence to Supabase | Working, Supabase dependent |
+| "AI Quick Intake" reopen button (collapsed embedded state) | `AiQuickIntake.jsx:653` | onClick={() => setIsOpen(true)} — re-expands the intake card when collapsed via Hide. Only rendered in non-standalone embedded mode. | Reopen the collapsed intake card | works |
+| "Hide" button (non-standalone header) | `AiQuickIntake.jsx:721` | onClick={() => setIsOpen(false)} — collapses the card to the reopen button at line 653. Only in embedded (non-standalone) mode. | Collapse the intake card | works |
+| Drop zone drag/drop handlers | `AiQuickIntake.jsx:730-739` | onDragEnter/onDragOver setIsDragging(true) + preventDefault; onDragLeave setIsDragging(false); onDrop=handleDrop reads dataTransfer files+text, sets attachedFiles and appends to inputText. | Accept dragged files/text into the intake textarea | works |
+| Main intake <textarea> | `AiQuickIntake.jsx:749-754` | onChange={(e)=>setInputText(e.target.value)} — controlled input. | Capture pasted/typed intake text | works |
+| Mock form chips (Claim Email, Route Sheet, Contract Terms, Receipt, Mixed Notes) — 5 buttons | `AiQuickIntake.jsx:758-768` | onClick={() => loadMockForm(mockForm)} — sets inputText to the sample text, clears drafts/files/confirmation, sets an info message. type="button". | Load a sample document into the textarea for testing | works |
+| "Analyze Intake" / "Analyzing..." primary button | `AiQuickIntake.jsx:772-778` | onClick={() => buildDrafts(inputText)}; disabled={isAnalyzingAi}. Calls /api/analyze-intake then falls back to local parser; builds drafts. | Analyze the current input and produce drafts; disabled while analyzing | works — Not disabled on empty input — clicking with empty text returns the 'I did not find enough detail yet' message. Intended graceful path, not a bug. |
+| "Attach Files" file input (label-wrapped hidden <input type=file multiple>) | `AiQuickIntake.jsx:779-794` | onChange async reads files via readFileAsText, setAttachedFiles, appends extracted text to inputText. Label makes the hidden input clickable. | Attach files and pull their text into the input | works |
+| "Clear" button (drop-zone) | `AiQuickIntake.jsx:795-797` | onClick={clearIntake} — resets inputText, drafts, activeDraftId, attachedFiles, message, saveConfirmation. | Clear the intake form and drafts | works |
+| Source chips (Email, Screenshot, PDF, Route Sheet, Contract Terms, Notes) | `AiQuickIntake.jsx:801-806` | Rendered as <span>, no handler — purely informational badges. | Display supported source types (non-interactive) | disabled-ok — Static labels by design; not buttons. |
+| Extracted field inputs (Source Type, Date, From, Customer, Reference, Route, Issue Type, Claim Amount, Driver) | `AiQuickIntake.jsx:875-890` | onChange={(e)=>updateActiveDraftData(key, e.target.value)} — edits the active draft's data; coerces numeric keys; recomputes risk for claim amount. | Edit extracted draft fields inline | works |
+| Notes / Summary <textarea> | `AiQuickIntake.jsx:896-901` | onChange={(e)=>updateActiveDraftData("notes", e.target.value)}. value falls back to inputText when no draft. updateActiveDraftData returns early if no activeDraft, so edits before analysis don't persist into a draft. | Edit the notes/summary of the active draft | works — With no active draft the field shows inputText but typing is a no-op (updateActiveDraftData early-returns). Minor; the field is meant to reflect a draft, not pre-analysis editing. |
+| "Not correct? Clear and start over" button | `AiQuickIntake.jsx:948-950` | onClick={clearIntake} — resets all intake state. | Clear the form and drafts | works |
+| "Open {tab}" button inside save confirmation | `AiQuickIntake.jsx:967-972` | onClick={() => navigateToTab(saveConfirmation.tab)}. tab is one of 'Claims','Profitability','Contracts','Dashboard' (set in applyDraft). All are exact valid navigateToTab targets. | Navigate to the tab the intake was saved into | works |
+| "Save to Claims Review" primary button (claim drafts only) | `AiQuickIntake.jsx:979-994` | onClick={() => applyDraft(activeDraft, "claim")} — builds claim object, calls onAddClaim (addAiClaim, defined App.jsx:1118), updates recentIntakes, sets message + saveConfirmation{tab:'Claims'}. | Save the claim draft to the Claims Needs Review lane | works |
+| Next-step buttons (Save to Claim / Save to Contract / Save to Profitability / Save to Snapshot) | `AiQuickIntake.jsx:998-1013` | onClick={() => applyDraft(activeDraft, destination)} with destination in {claim,contract,profitability,savedDay}. applyDraft routes: claim->onAddClaim, route/profitability->onApplyRoute, contract->localStorage+confirmation, savedDay->onSaveToDay?.(draft). Falsy activeDraft -> askForDraft() info message. For claim drafts the 'claim' entry is filtered out (Save to Claims Review shown instead). | Send the active draft to the chosen destination | works — All destination handlers (onAddClaim, onApplyRoute, onSaveToDay) are defined and passed from App.jsx:1554-1556. |
+| "View all drafts" button | `AiQuickIntake.jsx:1019-1021` | onClick={() => setActiveDraftId(drafts[0]?.id \|\| "")} — just selects the first draft. With 0 drafts it sets activeDraftId to "" (no visible effect). Does NOT open any expanded 'all drafts' view; the full list already renders below regardless. | Either expand/scroll to a full drafts list or be removed; label implies a view it does not provide | ambiguous — Label overpromises. Harmless (no throw, no bad nav) but does effectively nothing distinct from clicking the first draft chip; a no-op when drafts is empty. |
+| Draft selector chips (one per draft) | `AiQuickIntake.jsx:1033-1048` | onClick={() => setActiveDraftId(draft.id)} — selects that draft as active. | Switch the active draft | works |
+| "Open" button in Recent Intakes table rows | `AiQuickIntake.jsx:1086-1088` | onClick={() => setActiveDraftId(item.draftId)} — re-selects the draft that produced this recent-intake row. | Reopen the draft for the recent intake | works |
+| "Learn more about Intake" / "Hide Intake help" toggle | `AiQuickIntake.jsx:1106-1111` | onClick={() => setShowHelp((c)=>!c)} — toggles the help panel at line 1115. | Toggle the help explainer panel | works |
 
-## Intentionally Disabled or Backend-Later
+### Dashboard modals
 
-| Item | Reason |
-| --- | --- |
-| Claims Dispute Packet `Export PDF Soon` | Needs backend/server document generation before exporting claim packet PDFs. The button is disabled and has a tooltip. |
-| Supabase invite emails | The browser can save pending invite records, but sending real invite emails needs a secure backend function/service key. |
-| Ask / Intake / Receipt OCR AI | Requires an OpenAI API key with billing/quota and the deployed API routes. UI is wired; answers depend on backend/API availability. |
-| Receipt and evidence uploads | Wired to Supabase/document storage; production persistence depends on Supabase policies/buckets staying configured. |
-| Team photo 7-day deletion | Requires scheduled Supabase cleanup/retention job. Setup SQL exists separately. |
+| Element | Location | Current action | Expected | Status |
+| --- | --- | --- | --- | --- |
+| Close (header X-equivalent) | `src/components/dashboard/ImportModal.jsx:37-43` | onClick setIsImportModalOpen(false) — closes modal | Close the import modal | works |
+| Import-type chips (Contract Document / Claim Email / Receipt) | `src/components/dashboard/ImportModal.jsx:52-66` | onClick updateImportDraft('type', type) — sets draft.type, highlights selected | Select the import type | works |
+| Title/name text input | `src/components/dashboard/ImportModal.jsx:74-80` | onChange updateImportDraft('title', value) | Capture document/claim/receipt name | works |
+| Amount number input | `src/components/dashboard/ImportModal.jsx:89-97` | onChange updateImportDraft('amount', value) | Capture amount | works |
+| Notes textarea | `src/components/dashboard/ImportModal.jsx:103-108` | onChange updateImportDraft('notes', value) | Capture notes | works |
+| Next: Preview | `src/components/dashboard/ImportModal.jsx:125-132` | onClick openNextSetupStep('data') — defined in DashboardHome:571, advances setup wizard to next step; only shown when activeSetupStep==='data' and save succeeded | Advance guided setup to preview step | works |
+| Open Full Intake | `src/components/dashboard/ImportModal.jsx:133-142` | onClick closes modal then setActiveTab(type==='Claim Email'?'Operations':type==='Receipt'?'Finance':'Intake'). setActiveTab===navigateToTab (App.jsx:1547). All three targets are valid tabSlugs keys | Route to the matching full section based on import type | works — Destinations are deliberately type-dependent; all valid and consistent with content |
+| Skip For Now | `src/components/dashboard/ImportModal.jsx:145-156` | onClick closes modal then skipSetupStep('data') — defined DashboardHome:556; only shown when activeSetupStep==='data' and not yet saved | Skip the data import setup step | works |
+| Save Import (submit) | `src/components/dashboard/ImportModal.jsx:157-159` | form onSubmit saveQuickImport (DashboardHome:721) — validates, persists import, sets importSaveStatus | Save the quick import | works |
+| Form / modal container submit | `src/components/dashboard/ImportModal.jsx:25-28` | onSubmit={saveQuickImport} | Submit on Enter or Save | works |
+| Close (header) | `src/components/dashboard/ContractModal.jsx:39-45` | onClick setIsContractModalOpen(false) | Close the contract modal | works |
+| Contract Name input | `src/components/dashboard/ContractModal.jsx:51-58` | onChange updateContractDraft('contract', value) | Capture contract name | works |
+| Routes / Week input | `src/components/dashboard/ContractModal.jsx:63-70` | onChange updateContractDraft('routes', value) | Capture routes per week | works |
+| 8 cost inputs (routePay, stops, labor, fuel, truckInsurance, maintenance, claims, other) | `src/components/dashboard/ContractModal.jsx:83-98` | onChange updateContractDraft(key, value) for each | Capture per-route economics | works |
+| Next: Add Team | `src/components/dashboard/ContractModal.jsx:114-122` | onClick openNextSetupStep('contract') — advances wizard; only when activeSetupStep==='contract' and saved | Advance to team setup step | works |
+| Clear for Another | `src/components/dashboard/ContractModal.jsx:123-132` | onClick setContractDraft(emptyContractDraft) + setContractSaveStatus('') — resets form | Reset the form to enter another contract | works |
+| Open Profitability | `src/components/dashboard/ContractModal.jsx:133-142` | onClick closes modal then setActiveTab('Finance'). 'Finance' is a valid tabSlugs key | Route to Finance (Profitability lives under Finance) | works — Label says 'Profitability'; routes to parent 'Finance' tab which defaults its subtab to Profitability (App.jsx:174). Consistent. |
+| Skip For Now | `src/components/dashboard/ContractModal.jsx:145-156` | onClick closes modal then skipSetupStep('contract'); only when activeSetupStep==='contract' and not saved | Skip the contract setup step | works |
+| Save Contract (submit) | `src/components/dashboard/ContractModal.jsx:157-159` | form onSubmit saveQuickContract (DashboardHome:579) — validates name, persists, sets status | Save the contract | works |
+| Form / modal container submit | `src/components/dashboard/ContractModal.jsx:27-30` | onSubmit={saveQuickContract} | Submit on Enter or Save | works |
+| Close (header) | `src/components/dashboard/TeamModal.jsx:36-42` | onClick setIsTeamModalOpen(false) | Close the team modal | works |
+| 5 team inputs (name, lead, helper, truck, route) | `src/components/dashboard/TeamModal.jsx:55-61` | onChange updateTeamDraft(key, value) for each | Capture team/crew details | works |
+| Next: Set Expenses | `src/components/dashboard/TeamModal.jsx:79-86` | onClick openNextSetupStep('team') — advances wizard; only when activeSetupStep==='team' and saved | Advance to expenses setup step | works |
+| Open Operations | `src/components/dashboard/TeamModal.jsx:87-96` | onClick closes modal then setActiveTab('Operations'). 'Operations' is a valid tabSlugs key | Route to Operations | works |
+| Skip For Now | `src/components/dashboard/TeamModal.jsx:99-110` | onClick closes modal then skipSetupStep('team'); only when activeSetupStep==='team' and not saved | Skip the team setup step | works |
+| Save Team (submit) | `src/components/dashboard/TeamModal.jsx:111-113` | form onSubmit saveQuickTeam (DashboardHome:648) — validates name, prepends team, sets status | Save the team | works |
+| Form / modal container submit | `src/components/dashboard/TeamModal.jsx:24-27` | onSubmit={saveQuickTeam} | Submit on Enter or Save | works |
+| Close (header) | `src/components/dashboard/ExpenseModal.jsx:37-43` | onClick setIsExpenseModalOpen(false) | Close the expense modal | works |
+| 5 cost inputs (labor, fuel, truckInsurance, maintenance, other) | `src/components/dashboard/ExpenseModal.jsx:70-78` | onChange updateExpenseDraft(key, value) for each | Capture per-route cost estimates | works |
+| Next: Import Data | `src/components/dashboard/ExpenseModal.jsx:95-101` | onClick openNextSetupStep('expenses') — advances wizard; only when saved and activeSetupStep==='expenses' | Advance to data import step | works |
+| Skip For Now | `src/components/dashboard/ExpenseModal.jsx:104-113` | onClick closes modal then skipSetupStep('expenses'); only when activeSetupStep==='expenses' and not saved | Skip the expenses setup step | works |
+| Save Expenses (submit) | `src/components/dashboard/ExpenseModal.jsx:115-117` | form onSubmit saveExpenseSetup (DashboardHome:688) — persists, sets status | Save the expense setup | works |
+| Form / modal container submit | `src/components/dashboard/ExpenseModal.jsx:25-28` | onSubmit={saveExpenseSetup} | Submit on Enter or Save | works — ExpenseModal does NOT receive/use setActiveTab — correct, it has no navigation buttons (no 'Open X' button). |
+| Continue Setup | `src/components/dashboard/SetupWizard.jsx:43-45` | Button onClick={setupNextStep.onClick}. setupNextStep is a setupSteps element (DashboardHome:843); each element's onClick is defined (e.g. openSetupStep('contract'), setActiveTab('Settings')). Button spreads ...props so onClick passes through (shared.jsx:464) | Open the next incomplete setup step | works |
+| Preview Dashboard | `src/components/dashboard/SetupWizard.jsx:46-48` | Button onClick={() => openPreviewModal('preview')} — defined DashboardHome:545, opens preview modal | Open the dashboard preview modal | works |
+| NextActionCard action button | `src/components/dashboard/SetupWizard.jsx:91-96` | onAction={handleSetupStatusAction} (DashboardHome:873). NextActionCard.jsx:29 calls onAction?.(currentAction); handler navigates via setActiveTab(action.tab) when present, else Settings | Execute the next-best-action (navigate or open a step) | works |
+| Per-step CTA button (Review / Finish / cta) | `src/components/dashboard/SetupWizard.jsx:128-134` | onClick={onClick} from each setupStep (openSetupStep(id) or setActiveTab('Settings')) | Open the corresponding setup step/modal | works |
+| Skip (per step) | `src/components/dashboard/SetupWizard.jsx:136-143` | onClick={() => skipSetupStep(id)} — only rendered for incomplete contract/team/expenses/data steps | Skip that setup step | works |
 
-## Verification
+### AI panels
 
-- `npm run build` passed on June 4, 2026.
-- Build found no broken imports or missing components.
-- Browser automation could read the local app and verify the login surface. The in-app browser automation currently cannot fill forms because its virtual clipboard/storage support is unavailable, so form behavior was verified by source inspection plus build.
-- Route and button handlers were inspected across every page/component listed above.
+| Element | Location | Current action | Expected | Status |
+| --- | --- | --- | --- | --- |
+| Refresh button (RotateCcw icon + "Refresh") | `src/components/WatchdogPanel.jsx:127-134` | onClick={() => generate(true)} — generate is defined at line 42; forces a re-fetch of /api/watchdog bypassing cache, sets status loading then ready. Disabled while status === 'loading'. | Force-refresh the AI watchdog briefing | works — Disabled state is correct (only during loading). |
+| Anomaly row buttons (up to 5, e.g. "Net profit down …", "… high-risk open claims") | `src/components/WatchdogPanel.jsx:155-167` | onClick={() => navigateToTab?.(a.tab)} — a.tab comes from src/lib/watchdog.js and is always one of "Profitability","Claims","Compliance","Teams". All are valid navigateToTab targets (Claims/Compliance/Teams normalize to Operations subtab; Profitability to Finance subtab). Optional chaining guards against a missing prop. | Navigate to the tab relevant to the anomaly | works — Every possible a.tab value verified against tabSlugs/groupedTabs in App.jsx — all exact-case valid. NOTE: WatchdogPanel is not mounted anywhere in src/ (orphaned import-only component), so these buttons do not currently render for a user. |
+| Refresh button (RotateCcw icon + "Refresh") | `src/components/ForecastPanel.jsx:149-156` | onClick={() => generate(true)} — generate defined at line 30; force re-fetch of /api/forecast bypassing cache. Disabled while status === 'loading'. | Force-refresh the AI margin forecast | works |
+| "Open Profitability ›" link button | `src/components/ForecastPanel.jsx:243-245` | Rendered only when navigateToTab prop is truthy; onClick={() => navigateToTab("Profitability")}. In DashboardHome (src/pages/DashboardHome.jsx:1260) ForecastPanel is mounted with navigateToTab={setActiveTab}, and setActiveTab there is the real router (App.jsx passes navigateToTab as setActiveTab). "Profitability" is a valid groupedTabs target → sets Finance tab + Profitability subtab. | Navigate to the Profitability (Finance) view | works — Guarded by `navigateToTab && (...)` so it never renders as a dead button when no navigator is supplied. |
+| Claim Risk Forecast card (header, ranked team rows, score bars, hero summary) | `src/components/RiskForecast.jsx:112-170` | Pure presentational output. No <button>, onClick, anchor, select, toggle, or modal. Mounted at src/pages/OperationsDashboard.jsx:226 with only isDark/teams/claims props (no navigator). | Display ranked claim-risk per team (read-only) | works — No interactive elements to audit; nothing to break. |
+| Save & Sync Confidence panel (healthy collapsed view + full status grid) | `src/components/SyncConfidencePanel.jsx:43-91` | Pure presentational output (status chips, labels, truncated text with title tooltip). No <button>, onClick, anchor, select, toggle, or modal/close control. | Display workspace/claims/team sync status (read-only) | works — No interactive elements to audit. |
+
+### Document vault
+
+| Element | Location | Current action | Expected | Status |
+| --- | --- | --- | --- | --- |
+| Hidden multi-file <input type="file"> | `src/components/ProfitPlatformWidgets.jsx:241-247` | onChange={handleUploadDocuments}: reads event.target.files, uploads each via uploadVaultDocument() (Supabase), merges results into vaultDocuments + localStorage, sets uploadMessage, resets input value. handleUploadDocuments is defined at line 181; uploadVaultDocument is a real export of src/lib/documentRepository.js. | Accept selected files and upload them to the vault. | works — Triggered by the Upload Documents button via fileInputRef. Async handler; repository always returns {ok,error[,document]} so destructuring is safe even when Supabase is unconfigured. |
+| Upload Documents button (Upload icon) | `src/components/ProfitPlatformWidgets.jsx:248-256` | onClick={() => fileInputRef.current?.click()} opens the hidden file input. disabled={isUploading}; label toggles to 'Uploading...' while in flight. | Open the OS file picker so the user can upload documents. | works — Optional-chaining on the ref guard prevents any throw. disabled state is correct (only blocks during active upload). |
+| 'All Documents' category filter chip | `src/components/ProfitPlatformWidgets.jsx:267-279` | onClick={() => setSelectedCategory('All')} — resets the table filter to show all documents. Active styling keyed off selectedCategory==='All'. | Show all documents regardless of category. | works |
+| Per-category filter chips (mapped over documentCategoryOptions: Business Documents, Insurance, DOT Documents, Driver Files, Rate Cards, Retailer Compliance Documents, Vehicle Documents, Claims Documents, Other Documents) | `src/components/ProfitPlatformWidgets.jsx:286-300` | onClick={() => setSelectedCategory(category)} sets the active filter to that category; filteredVaultDocuments recomputes. Count badge shows categoryCounts[category]\|\|0. | Filter the table to the selected category. | works |
+| Document table row (role="button", tabIndex=0) | `src/components/ProfitPlatformWidgets.jsx:319-331` | onClick={() => openDocument(doc)} opens the preview modal (setSelectedDocument). onKeyDown opens on Enter/Space with preventDefault. openDocument defined at line 157. | Open the document preview modal when the row is clicked or activated via keyboard. | works — Proper keyboard affordance (Enter/Space) plus cursor-pointer styling. Accessible. |
+| Per-row Category <select> dropdown | `src/components/ProfitPlatformWidgets.jsx:344-353` | onChange={(e) => updateDocumentCategory(doc.id, e.target.value)} reassigns the document's category, persists to localStorage, and syncs selectedDocument if open. onClick={(e)=>e.stopPropagation()} prevents the select from also triggering the row's openDocument. | Change the document's category without opening the row's preview modal. | works — stopPropagation on the select's onClick is the correct fix for the nested-interactive-in-row pattern. |
+| 'View' button (per row, Action column) | `src/components/ProfitPlatformWidgets.jsx:360-369` | onClick stops propagation then calls openDocument(doc) — opens the preview modal. (Redundant with the row click but harmless.) | Open the document preview modal for that row. | works |
+| Document preview modal backdrop (overlay) | `src/components/ProfitPlatformWidgets.jsx:391-394` | onClick={closeDocument} closes the modal. closeDocument (line 158) = setSelectedDocument(null). | Close the modal when clicking outside the dialog. | works |
+| Modal dialog content wrapper | `src/components/ProfitPlatformWidgets.jsx:395-398` | onClick={(e)=>e.stopPropagation()} — prevents clicks inside the dialog from bubbling to the backdrop and closing the modal. | Keep the modal open when interacting with its contents. | works — Correct backdrop-vs-content click separation. |
+| 'Close' button (modal header) | `src/components/ProfitPlatformWidgets.jsx:410-416` | onClick={closeDocument} sets selectedDocument to null, closing the preview modal. | Close the document preview modal. | works — Modal has two working close paths (this button + backdrop click). No Escape-key handler exists, but a valid close path is present, so this is not a defect per the audit criteria. |
+
+### Misc components
+
+| Element | Location | Current action | Expected | Status |
+| --- | --- | --- | --- | --- |
+| Dismiss notification (X) | `src/components/Toast.jsx:61-67` | onClick={() => dismiss(id)} — removes this toast from the toasts state array via setToasts filter | Dismiss the individual toast | works — dismiss is a useCallback defined in the provider; id is the per-toast counter id. Toasts also auto-dismiss after duration (default 4000ms). |
+| primaryAction button (caller-supplied label) | `src/components/EmptyState.jsx:56-67 (renderAction)` | onClick={action.onClick}; disabled={action.disabled}. Invokes whatever onClick the parent passes in the primaryAction object | Run the caller's primary action | works — Generic/reusable. Guarded by `if (!action) return null` so an absent primaryAction renders nothing rather than a dead button. Correctness depends on each call site's onClick (out of scope of these files). |
+| secondaryActions[] buttons (caller-supplied labels) | `src/components/EmptyState.jsx:56-67 (renderAction)` | onClick={action.onClick}; disabled={action.disabled}. Maps over secondaryActions and renders one button each | Run each caller's secondary action | works — Same generic pattern; each button keyed `${action.label}-${index}`. |
+| actions[] buttons (caller-supplied labels) | `src/components/PageIntro.jsx:44-58` | onClick={action.onClick}; disabled={action.disabled}. First action styled primary, rest secondary. Only renders when actions.length > 0 | Run each caller's action | works — Generic/reusable header component. Behavior depends on call-site onClick. |
+| Try again / Reload Last Mile Margin | `src/components/ErrorBoundary.jsx:62-67` | onClick={isPage ? this.handleTryAgain : this.handleReload}. handleTryAgain resets {hasError:false,error:null} to re-render children; handleReload calls window.location.reload() | Recover the page (soft reset) or reload the whole app | works — Both handlers are defined class methods (arrow-bound). Label and action correctly switch on variant==='page'. |
+| Manage billing | `src/components/TrialBanner.jsx:40-52` | onClick={openCustomerPortal}. Opens VITE_STRIPE_PORTAL_URL in a new tab via window.open(...'_blank','noopener') | Open the Stripe customer portal | works — openCustomerPortal is imported from lib/subscription and is defined. If env var VITE_STRIPE_PORTAL_URL is unset it is a silent no-op — env-config gap, not a code bug. |
+| Dismiss banner (X) | `src/components/TrialBanner.jsx:53-60` | onClick={() => setDismissed(true)}. Hides the banner for the session (component returns null when dismissed) | Dismiss the trial banner for the session | works — Non-persistent dismissal by design (per component doc comment). |
+| Update payment method (past-due branch) | `src/components/PaywallScreen.jsx:106-112` | onClick={openCustomerPortal}. Opens Stripe portal URL in new tab | Send a past-due user to update their card | works — Only rendered when isPastDue. Handler imported and defined. |
+| Start 3-day free trial → / Reactivate — $99/month | `src/components/PaywallScreen.jsx:114-123` | onClick={handleCheckout}; disabled={loading}. handleCheckout calls startCheckout(), on error shows error + clears loading; on success Stripe redirect fires | Begin Stripe checkout / reactivation | works — disabled while loading is correct (prevents double-submit). Label text switches on loading/isCanceled. |
+| Sign out | `src/components/PaywallScreen.jsx:125-131` | onClick={onSignOut}. Calls the signOut prop passed from App.jsx (App.jsx:1289 onSignOut={signOut}; signOut is an async fn defined at App.jsx:1226) | Sign the user out | works — Prop confirmed passed and defined. |
+| Launch QA checklist (display only) | `src/components/LaunchQAChecklist.jsx (whole file)` | Renders readiness % and per-check cards. No buttons, links, or onClick handlers anywhere | Display launch-readiness status | works — Purely presentational — no interactive elements to audit. |
+| Skip tour | `src/tour/TourOverlay.jsx:188-194` | onClick={onSkip}. onSkip={skipTour} (App.jsx:1652); skipTour=()=>endTour() (App.jsx:902) | End/skip the tour | works — Prop defined and wired. |
+| Back | `src/tour/TourOverlay.jsx:196-200` | onClick={onBack}. onBack={goBackTourStep} (App.jsx:1651) decrements stepIndex (min 0). Only rendered when stepIndex > 0 | Go to previous tour step | works — Correctly hidden on first step. |
+| Next / Set up my workspace | `src/tour/TourOverlay.jsx:201-208` | onClick={isFinal ? onFinish : onNext}. onNext={goNextTourStep} advances stepIndex; onFinish={finishTour} ends tour then navigateToTab(next?.tab \|\| 'Settings') | Advance the tour, or finish and route to the next setup tab | works — finishTour navigates to a valid tab ('Settings' fallback; next.tab from getNextBestSetupAction returns valid tab names). Label switches on isFinal. |
+| Keyboard navigation (ArrowRight/Enter, ArrowLeft, Escape) | `src/tour/TourOverlay.jsx:63-82 (keydown handler)` | window keydown: ArrowRight/Enter -> isFinal?onFinish():onNext(); ArrowLeft -> onBack() if stepIndex>0; Escape -> onSkip(). Listener added/removed in effect cleanup | Drive the tour via keyboard and close on Escape | works — Escape provides a working close path for the dialog; preventDefault used; listener cleaned up on unmount/dep change. |
+| Auto-navigate to step tab | `src/tour/TourOverlay.jsx:36-42 (navigation effect)` | useEffect: if step.tab -> navigateToTab(step.tab). navigateToTab is the App.jsx router passed as prop (App.jsx:1654) | Switch to the tab a tour step lives on before spotlighting | works — Not a clickable element but is view-changing behavior. navigateToTab silently no-ops if step.tab is invalid; step.tab values come from tour step config (valid tab names). |
+| Auto-advance when anchor never mounts | `src/tour/TourOverlay.jsx:56-60 (auto-advance effect)` | useEffect: if resolved && !rect, after 60ms calls isFinal?onFinish():onNext() | Prevent the tour from getting stuck on a missing anchor | works — Defensive auto-advance; timeout cleared on cleanup. |
+| Backdrop / dim layer | `src/tour/TourOverlay.jsx:132-133 (pointer-capture layer)` | <div className='absolute inset-0' /> with no onClick. Captures pointer events so the dimmed page underneath isn't clickable | Block clicks to the page behind the tour (intentionally NOT a close-on-backdrop) | disabled-ok — By design there is no backdrop-click close; closing is via Skip button or Escape. Both work, so the dialog has valid close paths. |
