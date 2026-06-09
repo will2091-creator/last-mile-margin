@@ -19,6 +19,7 @@ import {
   YAxis,
 } from "../shared";
 import EmptyState from "../components/EmptyState";
+import { resolveCompanyMarginFactors } from "../lib/marginProfiles";
 import ContractChargeRules from "../components/profitability/ContractChargeRules";
 import RouteInputSections from "../components/profitability/RouteInputSections";
 import RollupEditorPanel from "../components/profitability/RollupEditorPanel";
@@ -353,7 +354,12 @@ function ProfitabilityDashboard({
   }, [activeChartKey]);
 
   const toNumber = (value) => Number(value || 0);
-  const marginFactors = appSettings?.marginFactors || {};
+  // Use this route's company-specific margin profile if one is configured in
+  // Settings; otherwise fall back to the global config (unchanged behavior).
+  const marginFactors = useMemo(
+    () => resolveCompanyMarginFactors(appSettings, form?.scenarioName),
+    [appSettings, form?.scenarioName],
+  );
   const enabledFactor = (category, key) => marginFactors?.[category]?.[key] !== false;
   const categoryHasVisibleFactors = (category) => {
     const values = Object.values(marginFactors?.[category] || {});

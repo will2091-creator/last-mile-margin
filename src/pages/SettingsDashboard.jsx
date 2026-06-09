@@ -14,6 +14,7 @@ import {
 } from "../shared";
 import { roleOptions } from "../lib/teamAccessRepository";
 import { resetStoredSetupProgress, restoreSetupPanel } from "../lib/onboarding";
+import { readCompanyNames } from "../lib/marginProfiles";
 import LaunchQAChecklist from "../components/LaunchQAChecklist";
 
 const defaultMarginFactors = {
@@ -172,12 +173,22 @@ function SettingsDashboard({
 }) {
   const selectedAccent = accentThemes?.[appSettings?.accentColor] || accentThemes?.blue || { from: "#2563eb", to: "#1d4ed8" };
   const isDark = appSettings?.themeMode === "dark";
+  // Per-company margin profiles. "__default__" edits the global config that
+  // applies to every company; selecting a company edits that company's override
+  // (seeded from the global config until it's first customized).
+  const companyList = useMemo(() => readCompanyNames(), []);
+  const [marginScope, setMarginScope] = useState("__default__");
+  const isDefaultScope = marginScope === "__default__";
+  const hasCompanyOverride = !isDefaultScope && Boolean(appSettings?.companyMarginProfiles?.[marginScope]);
+  const scopeFactors = isDefaultScope
+    ? appSettings?.marginFactors
+    : (appSettings?.companyMarginProfiles?.[marginScope] || appSettings?.marginFactors);
   const marginFactors = {
     ...defaultMarginFactors,
-    ...(appSettings?.marginFactors || {}),
-    revenue: { ...defaultMarginFactors.revenue, ...(appSettings?.marginFactors?.revenue || {}) },
-    costs: { ...defaultMarginFactors.costs, ...(appSettings?.marginFactors?.costs || {}) },
-    metrics: { ...defaultMarginFactors.metrics, ...(appSettings?.marginFactors?.metrics || {}) },
+    ...(scopeFactors || {}),
+    revenue: { ...defaultMarginFactors.revenue, ...(scopeFactors?.revenue || {}) },
+    costs: { ...defaultMarginFactors.costs, ...(scopeFactors?.costs || {}) },
+    metrics: { ...defaultMarginFactors.metrics, ...(scopeFactors?.metrics || {}) },
   };
 
   const [activeSettingsTab, setActiveSettingsTab] = useState("Margin Factors");
@@ -215,10 +226,27 @@ function SettingsDashboard({
   };
 
   const updateMarginFactors = (nextFactors) => {
-    setAppSettings((current) => ({
-      ...current,
-      marginFactors: nextFactors,
-    }));
+    setAppSettings((current) => {
+      if (isDefaultScope) {
+        return { ...current, marginFactors: nextFactors };
+      }
+      return {
+        ...current,
+        companyMarginProfiles: {
+          ...(current.companyMarginProfiles || {}),
+          [marginScope]: nextFactors,
+        },
+      };
+    });
+  };
+
+  const resetCompanyToDefault = () => {
+    if (isDefaultScope) return;
+    setAppSettings((current) => {
+      const next = { ...(current.companyMarginProfiles || {}) };
+      delete next[marginScope];
+      return { ...current, companyMarginProfiles: next };
+    });
   };
 
   const toggleFactor = (category, key) => {
@@ -968,7 +996,38 @@ function SettingsDashboard({
           <div className={cardClass}>
             <div className="grid gap-5 xl:grid-cols-[280px_1fr_360px]">
               <div>
-                <h2 className={`text-lg font-bold ${titleText}`}>Margin Profile</h2>
+                <h2 className={`text-lg font-bold ${titleText}`}>Configure for</h2>
+                <select
+                  value={marginScope}
+                  onChange={(event) => setMarginScope(event.target.value)}
+                  className={`${inputClass} mt-3`}
+                >
+                  <option value="__default__">All companies (default)</option>
+                  {companyList.map((company) => (
+                    <option key={company} value={company}>
+                      {company}{appSettings?.companyMarginProfiles?.[company] ? " — custom" : ""}
+                    </option>
+                  ))}
+                </select>
+                {!isDefaultScope && (
+                  <p className={`mt-2 text-xs font-semibold leading-5 ${hasCompanyOverride ? "text-emerald-600" : mutedText}`}>
+                    {hasCompanyOverride
+                      ? `Custom margin profile for ${marginScope}.`
+                      : `${marginScope} currently uses the default — edit any factor below to create its own profile.`}
+                    {hasCompanyOverride && (
+                      <button type="button" onClick={resetCompanyToDefault} className="ml-2 font-black text-blue-600 hover:underline">
+                        Reset to default
+                      </button>
+                    )}
+                  </p>
+                )}
+                {companyList.length === 0 && (
+                  <p className={`mt-2 text-xs leading-5 ${mutedText}`}>
+                    Add contracts in Finance → Contracts to set per-company profiles.
+                  </p>
+                )}
+
+                <h2 className={`mt-5 text-lg font-bold ${titleText}`}>Starting Template</h2>
                 <select
                   value={marginFactors.profile}
                   onChange={(event) => applyProfile(event.target.value)}
@@ -979,7 +1038,9 @@ function SettingsDashboard({
                   ))}
                 </select>
                 <p className={`mt-3 text-sm leading-6 ${mutedText}`}>
-                  Pick a starting profile, then customize the individual factors below.
+                  {isDefaultScope
+                    ? "Sets the default factors for every company. Pick a starting template, then customize below."
+                    : `Pick a starting template for ${marginScope}, then customize the factors below — this only affects ${marginScope}.`}
                 </p>
               </div>
 
