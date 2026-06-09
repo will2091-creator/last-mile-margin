@@ -18,16 +18,26 @@ export default function HomeScreen({ mobileMode, refreshToken, onNavigate }) {
     let isMounted = true;
 
     async function load() {
-      const [claimsResult, membershipResult, snapshotResult, ownerResult] = await Promise.all([
+      // Always load membership (drives the role label). Financial + claims data
+      // is owner-only — drivers never see profit, losses, or claim exposure, so
+      // we don't even fetch it in driver mode.
+      const membershipResult = await loadTeamMembership();
+      if (!isMounted) return;
+      if (membershipResult.ok) setMembership(membershipResult.membership);
+
+      if (mobileMode !== "owner") {
+        setStatus("Field tools ready.");
+        return;
+      }
+
+      const [claimsResult, snapshotResult, ownerResult] = await Promise.all([
         loadOpenClaims(),
-        loadTeamMembership(),
         loadDashboardSnapshot(),
         loadOwnerCommandCenter(),
       ]);
       if (!isMounted) return;
 
       if (claimsResult.ok) setClaims(claimsResult.claims);
-      if (membershipResult.ok) setMembership(membershipResult.membership);
       if (snapshotResult.ok) setSnapshot(snapshotResult.snapshot);
       if (ownerResult.ok) setOwnerSummary(ownerResult.summary);
 
@@ -38,7 +48,7 @@ export default function HomeScreen({ mobileMode, refreshToken, onNavigate }) {
     return () => {
       isMounted = false;
     };
-  }, [refreshToken]);
+  }, [refreshToken, mobileMode]);
 
   const totalExposure = claims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
   const displayExposure = snapshot?.claimsExposure ?? totalExposure;
@@ -134,6 +144,14 @@ export default function HomeScreen({ mobileMode, refreshToken, onNavigate }) {
   ];
   const recentActivity = buildRecentActivity({ claims, ownerSummary });
 
+  // Driver home is field-only — no profit, losses, claims, or money. Just the
+  // tools a driver uses on a route.
+  const driverActions = [
+    { id: "checkIn", title: "Check in for your route", note: "Log your start, truck, and route status.", targetTab: "checkIn" },
+    { id: "receipts", title: "Submit an expense receipt", note: "Snap fuel, tolls, or supplies and send it in.", targetTab: "receipts" },
+    { id: "evidence", title: "Upload field evidence", note: "Attach a photo to a claim ID from your dispatcher.", targetTab: "evidence" },
+  ];
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {isOwnerView ? (
@@ -179,21 +197,22 @@ export default function HomeScreen({ mobileMode, refreshToken, onNavigate }) {
         </>
       ) : (
         <>
-        <View style={styles.statusPill}>
-          <View style={styles.statusDot} />
-          <Text style={styles.status}>{status}</Text>
+        <View style={styles.driverHeader}>
+          <Text style={styles.driverKicker}>Driver</Text>
+          <Text style={styles.driverTitle}>Your field tools</Text>
+          <Text style={styles.driverSubtitle}>Check in, submit receipts, and upload evidence from the field.</Text>
         </View>
-        <View style={styles.heroGrid}>
-          <MetricCard title="Profit" value={currency.format(displayProfit)} note={snapshot?.label || "Current route snapshot"} tone={displayProfit >= 0 ? "green" : "red"} />
-          <MetricCard title="Claims" value={displayOpenClaims} note={`${currency.format(displayExposure)} open exposure`} tone="blue" />
-          <MetricCard title="Losses" value={currency.format(displayExposure)} note={`${highRiskClaims.length} high-risk claim${highRiskClaims.length === 1 ? "" : "s"}`} tone="red" />
-        </View>
-        <Section title="Today’s field focus" subtitle="Items assigned to your daily workflow">
-          {claims.slice(0, 3).map((claim) => (
-            <ClaimRow key={claim.id} claim={claim} />
+        <View style={styles.driverActions}>
+          {driverActions.map((action) => (
+            <TouchableOpacity key={action.id} style={styles.driverActionCard} onPress={() => onNavigate?.(action.targetTab)}>
+              <View style={styles.driverActionCopy}>
+                <Text style={styles.driverActionTitle}>{action.title}</Text>
+                <Text style={styles.driverActionNote}>{action.note}</Text>
+              </View>
+              <Text style={styles.driverActionButton}>Open</Text>
+            </TouchableOpacity>
           ))}
-          {!claims.length && <ActivityIndicator color={colors.blue} />}
-        </Section>
+        </View>
         </>
       )}
 
@@ -1213,6 +1232,70 @@ const createStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.green,
     borderRadius: 999,
     height: 10,
+  },
+  driverHeader: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 16,
+  },
+  driverKicker: {
+    color: colors.blue,
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  driverTitle: {
+    color: colors.ink,
+    fontSize: 28,
+    fontWeight: "900",
+    marginTop: 3,
+  },
+  driverSubtitle: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 19,
+    marginTop: 6,
+  },
+  driverActions: {
+    gap: 10,
+  },
+  driverActionCard: {
+    alignItems: "center",
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    padding: 16,
+  },
+  driverActionCopy: {
+    flex: 1,
+  },
+  driverActionTitle: {
+    color: colors.ink,
+    fontSize: 16,
+    fontWeight: "900",
+  },
+  driverActionNote: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800",
+    lineHeight: 17,
+    marginTop: 3,
+  },
+  driverActionButton: {
+    backgroundColor: colors.blue,
+    borderRadius: 999,
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "900",
+    overflow: "hidden",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
   roleCard: {
     borderColor: "#bfdbfe",

@@ -22,7 +22,7 @@ import { ThemeProvider, useTheme } from "./src/ThemeContext";
 
 const tabs = [
   { key: "home", label: "Home", ownerLabel: "Command", modes: ["owner", "driver"] },
-  { key: "claims", label: "Claims", modes: ["owner", "driver"] },
+  { key: "claims", label: "Claims", modes: ["owner"] },
   { key: "receipts", label: "Receipts", modes: ["owner", "driver"] },
   { key: "team", label: "Team", modes: ["owner"] },
   { key: "more", label: "More", modes: ["owner"] },

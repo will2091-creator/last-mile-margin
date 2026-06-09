@@ -9,9 +9,12 @@ import { extractReceiptInfo, loadOwnerCommandCenter, updateReceiptStatus, upload
 const receiptTabs = ["Pending Approval", "Approved", "Attached to Profit"];
 const categories = ["Fuel", "Repairs", "Tools", "Maintenance", "Tolls", "Supplies"];
 
-export default function ReceiptsScreen({ refreshToken, onDataChange }) {
+export default function ReceiptsScreen({ refreshToken, onDataChange, mobileMode }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  // Drivers only submit receipts; the approval workflow, totals, and
+  // profitability framing are owner-only.
+  const submitOnly = mobileMode !== "owner";
   const [receipts, setReceipts] = useState([]);
   const [activeTab, setActiveTab] = useState("Pending Approval");
   const [selectedReceiptId, setSelectedReceiptId] = useState(null);
@@ -26,6 +29,11 @@ export default function ReceiptsScreen({ refreshToken, onDataChange }) {
   const [showAddReceipt, setShowAddReceipt] = useState(false);
 
   useEffect(() => {
+    // Drivers don't load the approvals list (it's owner-scoped) — they just submit.
+    if (submitOnly) {
+      setStatus("Snap a receipt and send it in for approval.");
+      return;
+    }
     let isMounted = true;
     loadOwnerCommandCenter().then((result) => {
       if (!isMounted) return;
@@ -41,7 +49,7 @@ export default function ReceiptsScreen({ refreshToken, onDataChange }) {
     return () => {
       isMounted = false;
     };
-  }, [refreshToken]);
+  }, [refreshToken, submitOnly]);
 
   const groupedReceipts = useMemo(() => groupReceipts(receipts), [receipts]);
   const visibleReceipts = groupedReceipts[activeTab] || [];
@@ -159,32 +167,38 @@ export default function ReceiptsScreen({ refreshToken, onDataChange }) {
       <View style={styles.headerCard}>
         <View style={styles.headerTop}>
           <View style={styles.headerCopy}>
-            <Text style={styles.kicker}>Receipt Approvals</Text>
-            <Text style={styles.title}>Control expenses</Text>
-            <Text style={styles.copy}>{currency.format(pendingTotal)} pending approval</Text>
+            <Text style={styles.kicker}>{submitOnly ? "Expense Receipts" : "Receipt Approvals"}</Text>
+            <Text style={styles.title}>{submitOnly ? "Submit a receipt" : "Control expenses"}</Text>
+            <Text style={styles.copy}>
+              {submitOnly ? "Snap a field expense and send it in." : `${currency.format(pendingTotal)} pending approval`}
+            </Text>
           </View>
-          <TouchableOpacity style={styles.addButton} onPress={() => setShowAddReceipt((current) => !current)}>
-            <Text style={styles.addButtonText}>{showAddReceipt ? "Close" : "Add"}</Text>
-          </TouchableOpacity>
+          {!submitOnly && (
+            <TouchableOpacity style={styles.addButton} onPress={() => setShowAddReceipt((current) => !current)}>
+              <Text style={styles.addButtonText}>{showAddReceipt ? "Close" : "Add"}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      <View style={styles.tabs}>
-        {receiptTabs.map((tab) => {
-          const isActive = activeTab === tab;
-          return (
-            <TouchableOpacity key={tab} style={[styles.tab, isActive && styles.activeTab]} onPress={() => {
-              setActiveTab(tab);
-              setSelectedReceiptId((groupedReceipts[tab] || [])[0]?.id || null);
-            }}>
-              <Text style={[styles.tabText, isActive && styles.activeTabText]}>{tab}</Text>
-              <Text style={[styles.tabCount, isActive && styles.activeTabText]}>{groupedReceipts[tab]?.length || 0}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {!submitOnly && (
+        <View style={styles.tabs}>
+          {receiptTabs.map((tab) => {
+            const isActive = activeTab === tab;
+            return (
+              <TouchableOpacity key={tab} style={[styles.tab, isActive && styles.activeTab]} onPress={() => {
+                setActiveTab(tab);
+                setSelectedReceiptId((groupedReceipts[tab] || [])[0]?.id || null);
+              }}>
+                <Text style={[styles.tabText, isActive && styles.activeTabText]}>{tab}</Text>
+                <Text style={[styles.tabCount, isActive && styles.activeTabText]}>{groupedReceipts[tab]?.length || 0}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
 
-      {showAddReceipt && (
+      {(submitOnly || showAddReceipt) && (
         <View style={styles.addPanel}>
           <Text style={styles.panelTitle}>New receipt</Text>
           <View style={styles.categoryGrid}>
@@ -218,7 +232,7 @@ export default function ReceiptsScreen({ refreshToken, onDataChange }) {
         </View>
       )}
 
-      {selectedReceipt && (
+      {!submitOnly && selectedReceipt && (
         <View style={styles.detailCard}>
           <Text style={styles.detailKicker}>Next Action</Text>
           <Text style={styles.detailTitle}>{getReceiptNextAction(selectedReceipt)}</Text>
@@ -250,7 +264,13 @@ export default function ReceiptsScreen({ refreshToken, onDataChange }) {
 
       <Text style={styles.status}>{status}</Text>
 
-      {visibleReceipts.map((receipt) => (
+      {submitOnly && (
+        <View style={styles.driverNote}>
+          <Text style={styles.driverNoteText}>Your owner reviews and approves receipts on the web dashboard.</Text>
+        </View>
+      )}
+
+      {!submitOnly && visibleReceipts.map((receipt) => (
         <TouchableOpacity key={receipt.id} style={[styles.receiptCard, selectedReceipt?.id === receipt.id && styles.selectedReceiptCard]} onPress={() => setSelectedReceiptId(receipt.id)}>
           <View style={styles.receiptTop}>
             <View style={styles.receiptMain}>
@@ -263,7 +283,7 @@ export default function ReceiptsScreen({ refreshToken, onDataChange }) {
         </TouchableOpacity>
       ))}
 
-      {!visibleReceipts.length && (
+      {!submitOnly && !visibleReceipts.length && (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyTitle}>No receipts here</Text>
           <Text style={styles.emptyCopy}>This approval lane is clear.</Text>
@@ -607,6 +627,19 @@ const createStyles = (colors) => StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
+  },
+  driverNote: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+  },
+  driverNoteText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: "800",
+    lineHeight: 19,
   },
   receiptCard: {
     backgroundColor: colors.card,
