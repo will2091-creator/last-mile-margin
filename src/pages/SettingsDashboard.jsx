@@ -277,6 +277,38 @@ function SettingsDashboard({
     updateMarginFactors(buildPreset(profile));
   };
 
+  // ── Manage Factor Order ──────────────────────────────────────────────────
+  const [reorderMode, setReorderMode] = useState(false);
+
+  const orderItemsByCategory = (category, items) => {
+    const order = appSettings?.factorOrder?.[category];
+    if (!Array.isArray(order) || !order.length) return items;
+    const byKey = new Map(items.map((item) => [item[0], item]));
+    const ordered = order.map((key) => byKey.get(key)).filter(Boolean);
+    const remaining = items.filter((item) => !order.includes(item[0]));
+    return [...ordered, ...remaining];
+  };
+
+  const moveFactor = (category, items, key, direction) => {
+    const orderedKeys = orderItemsByCategory(category, items).map((item) => item[0]);
+    const index = orderedKeys.indexOf(key);
+    const target = direction === "up" ? index - 1 : index + 1;
+    if (index < 0 || target < 0 || target >= orderedKeys.length) return;
+    [orderedKeys[index], orderedKeys[target]] = [orderedKeys[target], orderedKeys[index]];
+    setAppSettings((current) => ({
+      ...current,
+      factorOrder: { ...(current.factorOrder || {}), [category]: orderedKeys },
+    }));
+  };
+
+  const resetFactorOrder = () => {
+    setAppSettings((current) => {
+      const next = { ...current };
+      delete next.factorOrder;
+      return next;
+    });
+  };
+
   const selectedCounts = useMemo(() => {
     const count = (category) => Object.values(marginFactors[category]).filter(Boolean).length;
     return {
@@ -495,10 +527,29 @@ function SettingsDashboard({
         </div>
 
         <div className={`space-y-3 border-t pt-4 ${rowBorder}`}>
-          {card.items.map(([key, label, description]) => (
+          {orderItemsByCategory(card.key, card.items).map(([key, label, description], index, arr) => (
             <div key={key} className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-start gap-3">
-                <span className={`mt-0.5 text-xs ${mutedText}`}>⋮⋮</span>
+                {reorderMode ? (
+                  <span className="mt-0.5 flex flex-col gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => moveFactor(card.key, card.items, key, "up")}
+                      disabled={index === 0}
+                      aria-label={`Move ${label} up`}
+                      className={`leading-none ${index === 0 ? "opacity-30" : "text-blue-600 hover:text-blue-500"}`}
+                    >▲</button>
+                    <button
+                      type="button"
+                      onClick={() => moveFactor(card.key, card.items, key, "down")}
+                      disabled={index === arr.length - 1}
+                      aria-label={`Move ${label} down`}
+                      className={`leading-none ${index === arr.length - 1 ? "opacity-30" : "text-blue-600 hover:text-blue-500"}`}
+                    >▼</button>
+                  </span>
+                ) : (
+                  <span className={`mt-0.5 text-xs ${mutedText}`}>⋮⋮</span>
+                )}
                 <div className="min-w-0">
                   <p className={`text-sm font-semibold ${titleText}`}>{label}</p>
                   {description && <p className={`text-xs leading-snug ${mutedText}`}>{description}</p>}
@@ -1136,23 +1187,47 @@ function SettingsDashboard({
               </div>
 
               <div className="space-y-3">
-                {[
-                  ["Create Custom Factor", "Add a factor unique to your business"],
-                  ["Manage Factor Order", "Reorder how factors appear in forms"],
-                ].map(([title, subtitle]) => (
-                  <div
-                    key={title}
-                    className={isDark ? "w-full rounded-xl border border-white/10 bg-white/5 p-4 text-left" : "w-full rounded-xl border border-slate-200 bg-white p-4 text-left"}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className={`font-black ${titleText}`}>{title}</p>
-                        <p className={`text-sm ${mutedText}`}>{subtitle}</p>
-                      </div>
-                      <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500"}>Planned</span>
+                {/* Manage Factor Order — functional */}
+                <div className={isDark ? "w-full rounded-xl border border-white/10 bg-white/5 p-4 text-left" : "w-full rounded-xl border border-slate-200 bg-white p-4 text-left"}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className={`font-black ${titleText}`}>Manage Factor Order</p>
+                      <p className={`text-sm ${mutedText}`}>Reorder how factors appear in the lists above.</p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setReorderMode((value) => !value)}
+                      className={
+                        reorderMode
+                          ? "shrink-0 rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500"
+                          : isDark
+                            ? "shrink-0 rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/5"
+                            : "shrink-0 rounded-xl border border-slate-200 px-4 py-2 text-sm font-black text-blue-600 hover:bg-slate-50"
+                      }
+                    >
+                      {reorderMode ? "Done" : "Reorder"}
+                    </button>
                   </div>
-                ))}
+                  {reorderMode && (
+                    <p className={`mt-3 text-xs font-semibold leading-5 ${mutedText}`}>
+                      Use the ▲▼ arrows next to each factor in the cards above to reorder them.
+                      <button type="button" onClick={resetFactorOrder} className="ml-2 font-black text-blue-600 hover:underline">
+                        Reset to default order
+                      </button>
+                    </p>
+                  )}
+                </div>
+
+                {/* Create Custom Factor — planned */}
+                <div className={isDark ? "w-full rounded-xl border border-white/10 bg-white/5 p-4 text-left" : "w-full rounded-xl border border-slate-200 bg-white p-4 text-left"}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className={`font-black ${titleText}`}>Create Custom Factor</p>
+                      <p className={`text-sm ${mutedText}`}>Add a factor unique to your business</p>
+                    </div>
+                    <span className={isDark ? "rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300" : "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500"}>Planned</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
