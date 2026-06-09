@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import {
   accentThemes,
+  AlertTriangle,
   BarChart3,
   CheckCircle2,
   currency,
@@ -10,11 +11,14 @@ import {
   Save,
   Settings,
   ShieldCheck,
+  Trash2,
   Truck,
 } from "../shared";
+import { Download } from "lucide-react";
 import { roleOptions } from "../lib/teamAccessRepository";
 import { resetStoredSetupProgress, restoreSetupPanel } from "../lib/onboarding";
 import { readCompanyNames } from "../lib/marginProfiles";
+import { exportMyData, deleteMyAccount } from "../lib/account";
 import LaunchQAChecklist from "../components/LaunchQAChecklist";
 
 const defaultMarginFactors = {
@@ -170,6 +174,8 @@ function SettingsDashboard({
   teamAccessStatus = "",
   onInviteTeamMember,
   onUpdateTeamMemberRole,
+  authUser = null,
+  onSignOut,
 }) {
   const selectedAccent = accentThemes?.[appSettings?.accentColor] || accentThemes?.blue || { from: "#2563eb", to: "#1d4ed8" };
   const isDark = appSettings?.themeMode === "dark";
@@ -196,6 +202,38 @@ function SettingsDashboard({
   const [settingsNotice, setSettingsNotice] = useState("");
   const [inviteDraft, setInviteDraft] = useState({ email: "", role: "dispatcher" });
   const [isInviting, setIsInviting] = useState(false);
+  const [exportState, setExportState] = useState("idle"); // idle | working | done | error
+  const [accountError, setAccountError] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleExportData = async () => {
+    setAccountError("");
+    setExportState("working");
+    const result = await exportMyData();
+    if (result.ok) {
+      setExportState("done");
+      window.setTimeout(() => setExportState("idle"), 4000);
+    } else {
+      setExportState("error");
+      setAccountError(result.error || "Could not export your data.");
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setAccountError("");
+    setIsDeleting(true);
+    const result = await deleteMyAccount();
+    if (result.ok) {
+      // Account is gone — sign out and return to the landing page.
+      if (onSignOut) await onSignOut();
+      window.location.reload();
+    } else {
+      setIsDeleting(false);
+      setAccountError(result.error || "Could not delete your account.");
+    }
+  };
 
   const titleText = isDark ? "text-white" : "text-slate-950";
   const mutedText = isDark ? "text-slate-400" : "text-slate-500";
@@ -342,7 +380,7 @@ function SettingsDashboard({
     showNotice("Setup guidance restored. The Dashboard will show onboarding prompts again.");
   };
 
-  const tabs = ["Company", "Team Access", "Margin Factors", "Targets", "Claims", "Employees", "Notifications"];
+  const tabs = ["Company", "Team Access", "Margin Factors", "Targets", "Claims", "Employees", "Notifications", "Account"];
 
   const categoryCards = [
     {
@@ -694,6 +732,7 @@ function SettingsDashboard({
                 {activeSettingsTab === "Claims" && "Set claim review rules, including amount thresholds for risk levels."}
                 {activeSettingsTab === "Employees" && "Control driver/helper readiness and accountability settings."}
                 {activeSettingsTab === "Notifications" && "Choose the alerts you want the app to surface."}
+                {activeSettingsTab === "Account" && "Export your data or permanently delete your account."}
               </p>
             </div>
           </div>
@@ -1039,6 +1078,105 @@ function SettingsDashboard({
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {activeSettingsTab === "Account" && (
+            <div className="mt-6 space-y-4">
+              {authUser?.email && (
+                <p className={`text-sm font-semibold ${mutedText}`}>
+                  Signed in as <span className={titleText}>{authUser.email}</span>.
+                </p>
+              )}
+
+              {accountError && (
+                <div className={isDark ? "rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300" : "rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-600"}>
+                  {accountError}
+                </div>
+              )}
+
+              {/* Export */}
+              <div className={softCard}>
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className={`font-black ${titleText}`}>Export my data</p>
+                    <p className={`text-sm ${mutedText}`}>
+                      Download everything in your workspace — claims, financials, documents, and settings — as a JSON file.
+                    </p>
+                    {exportState === "done" && (
+                      <p className="mt-1 text-sm font-bold text-emerald-600">Your data has been downloaded.</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleExportData}
+                    disabled={exportState === "working"}
+                    className="flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Download className="h-4 w-4" />
+                    {exportState === "working" ? "Preparing…" : "Export"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Delete */}
+              <div className={isDark ? "rounded-2xl border border-red-500/30 bg-red-500/5 p-5" : "rounded-2xl border border-red-200 bg-red-50/60 p-5"}>
+                <div className="flex items-start gap-3">
+                  <div className={isDark ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/15 text-red-300" : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600"}>
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <p className={`font-black ${isDark ? "text-red-200" : "text-red-700"}`}>Delete my account</p>
+                    <p className={`mt-1 text-sm leading-6 ${isDark ? "text-red-200/80" : "text-red-600/90"}`}>
+                      Permanently deletes your account and all associated data — claims, financials, documents, team, and
+                      settings. Any active subscription is cancelled. This cannot be undone.
+                    </p>
+
+                    {!deleteOpen ? (
+                      <button
+                        type="button"
+                        onClick={() => { setDeleteOpen(true); setAccountError(""); }}
+                        className={isDark ? "mt-4 flex items-center gap-2 rounded-xl border border-red-500/40 px-4 py-2.5 text-sm font-black text-red-300 hover:bg-red-500/10" : "mt-4 flex items-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-black text-red-600 hover:bg-red-50"}
+                      >
+                        <Trash2 className="h-4 w-4" /> Delete account
+                      </button>
+                    ) : (
+                      <div className="mt-4 space-y-3">
+                        <label className={`block text-sm font-bold ${isDark ? "text-red-200" : "text-red-700"}`}>
+                          Type <span className="font-black">DELETE</span> to confirm
+                        </label>
+                        <input
+                          type="text"
+                          value={deleteConfirm}
+                          onChange={(e) => setDeleteConfirm(e.target.value)}
+                          placeholder="DELETE"
+                          autoComplete="off"
+                          className={isDark ? "w-full max-w-xs rounded-xl border border-red-500/40 bg-slate-950/60 px-3 py-2 text-sm font-bold text-white outline-none focus:border-red-400" : "w-full max-w-xs rounded-xl border border-red-300 bg-white px-3 py-2 text-sm font-bold text-slate-900 outline-none focus:border-red-500"}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={handleDeleteAccount}
+                            disabled={deleteConfirm !== "DELETE" || isDeleting}
+                            className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            {isDeleting ? "Deleting…" : "Permanently delete"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setDeleteOpen(false); setDeleteConfirm(""); setAccountError(""); }}
+                            disabled={isDeleting}
+                            className={isDark ? "rounded-xl border border-white/10 px-4 py-2.5 text-sm font-bold text-slate-200 hover:bg-white/5 disabled:opacity-50" : "rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>

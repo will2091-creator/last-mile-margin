@@ -1656,6 +1656,8 @@ export default function App() {
                 onInviteTeamMember={inviteTeamMember}
                 onUpdateTeamMemberRole={changeTeamMemberRole}
                 isDemoMode={isDemoMode}
+                authUser={authUser}
+                onSignOut={signOut}
               />
             ) : activeTab === "Finance" ? (
               <FinanceDashboard
