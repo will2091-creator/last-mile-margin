@@ -138,6 +138,14 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       status: "All",
       risk: "All",
     });
+  // Intelligence cards are one-click filters: reset, apply the segment, scroll to the list.
+  const applyIntelFilter = (patch) => {
+    if (!patch) return;
+    setClaimFilters({ team: "All", driver: "All", claimType: "All", preventable: "All", status: "All", risk: "All", ...patch });
+    if (typeof document !== "undefined") {
+      setTimeout(() => document.querySelector("[data-claims-filters]")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+    }
+  };
   const claimMatchesFilters = (claim) => {
     const driver = getClaimDriver(claim);
     const team = claim.team || getDriverTeam(driver) || "Unassigned";
@@ -934,35 +942,39 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   const disputeWinRate = decidedDisputes.length ? Math.round((disputeWins / decidedDisputes.length) * 100) : null;
   const disputeRecovered = claims.reduce((sum, claim) => sum + (["won", "partial"].includes(claim.disputeOutcome) ? Number(claim.disputeRecovered || 0) : 0), 0);
   const intelligenceMetrics = [
-    ["Open claim exposure", currency.format(openClaimExposure), `${openClaims} open claim${openClaims === 1 ? "" : "s"}`, "text-red-600"],
-    ["Preventable %", `${preventablePercentage}%`, "Claims marked preventable", preventablePercentage >= 50 ? "text-amber-600" : "text-emerald-700"],
-    ["Trend vs last period", `${claimTrend > 0 ? "+" : ""}${claimTrend}%`, "Mock trend until date history is connected", claimTrend > 0 ? "text-red-600" : "text-emerald-700"],
-    ["Highest-risk team", highestRiskTeam.name, currency.format(highestRiskTeam.exposure), titleText],
-    ["Costliest claim type", mostExpensiveClaimType.name, currency.format(mostExpensiveClaimType.exposure), titleText],
-    ["Missing evidence", missingEvidenceCount, "Checklist gaps found", missingEvidenceCount ? "text-amber-600" : "text-emerald-700"],
-    ["Worth disputing", likelyDisputeClaims.length, "High-value claims to review", likelyDisputeClaims.length ? "text-blue-600" : "text-emerald-700"],
-    ["Dispute win rate", disputeWinRate === null ? "—" : `${disputeWinRate}%`, decidedDisputes.length ? `${currency.format(disputeRecovered)} recovered · ${decidedDisputes.length} decided` : "Log outcomes to track wins", disputeWinRate === null ? mutedText : disputeWinRate >= 50 ? "text-emerald-700" : "text-amber-600"],
+    ["Open claim exposure", currency.format(openClaimExposure), `${openClaims} open claim${openClaims === 1 ? "" : "s"}`, "text-red-600", openClaims ? { status: "Open" } : null],
+    ["Preventable %", `${preventablePercentage}%`, "Claims marked preventable", preventablePercentage >= 50 ? "text-amber-600" : "text-emerald-700", { preventable: "Yes" }],
+    ["Trend vs last period", `${claimTrend > 0 ? "+" : ""}${claimTrend}%`, "Mock trend until date history is connected", claimTrend > 0 ? "text-red-600" : "text-emerald-700", null],
+    ["Highest-risk team", highestRiskTeam.name, currency.format(highestRiskTeam.exposure), titleText, highestRiskTeam.name !== "None" ? { team: highestRiskTeam.name } : null],
+    ["Costliest claim type", mostExpensiveClaimType.name, currency.format(mostExpensiveClaimType.exposure), titleText, mostExpensiveClaimType.name !== "None" ? { claimType: mostExpensiveClaimType.name } : null],
+    ["Missing evidence", missingEvidenceCount, "Checklist gaps found", missingEvidenceCount ? "text-amber-600" : "text-emerald-700", null],
+    ["Worth disputing", likelyDisputeClaims.length, "High-value claims to review", likelyDisputeClaims.length ? "text-blue-600" : "text-emerald-700", likelyDisputeClaims.length ? { status: "Open", risk: "High" } : null],
+    ["Dispute win rate", disputeWinRate === null ? "—" : `${disputeWinRate}%`, decidedDisputes.length ? `${currency.format(disputeRecovered)} recovered · ${decidedDisputes.length} decided` : "Log outcomes to track wins", disputeWinRate === null ? mutedText : disputeWinRate >= 50 ? "text-emerald-700" : "text-amber-600", null],
   ];
   const intelligenceInsights = [
     {
       title: `${highestPropertyTeam.name} is responsible for ${propertyExposureShare}% of property damage exposure this month.`,
       detail: "Use this to decide where driver coaching, photo review, or route observation should start.",
       tone: "red",
+      filter: highestPropertyTeam.name !== "None" ? { team: highestPropertyTeam.name } : null,
     },
     {
       title: `${mostExpensiveClaimType.name} is the highest-cost claim type.`,
       detail: `${currency.format(mostExpensiveClaimType.exposure)} in exposure across ${mostExpensiveClaimType.count} claim${mostExpensiveClaimType.count === 1 ? "" : "s"}.`,
       tone: "amber",
+      filter: mostExpensiveClaimType.name !== "None" ? { claimType: mostExpensiveClaimType.name } : null,
     },
     {
       title: missingPhotoTeams.length ? "Missing photos are weakening dispute readiness." : "Photo readiness is currently clean.",
       detail: missingPhotoTeams.length ? `${missingPhotoTeams.join(", ")} need photo evidence before disputes are strong.` : "Uploaded route photos make claim review easier.",
       tone: "blue",
+      filter: missingPhotoTeams.length ? { team: missingPhotoTeams[0] } : null,
     },
     {
       title: `${likelyDisputeClaims.length} claim${likelyDisputeClaims.length === 1 ? "" : "s"} should be reviewed for dispute.`,
       detail: "High-value open claims should not become accepted losses without a packet review.",
       tone: "emerald",
+      filter: likelyDisputeClaims.length ? { status: "Open", risk: "High" } : null,
     },
   ];
 
@@ -1142,34 +1154,50 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
         </div>
 
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-          {intelligenceMetrics.map(([label, value, note, valueClass]) => {
+          {intelligenceMetrics.map(([label, value, note, valueClass, filter]) => {
             const isTextValue = /[A-Za-z]/.test(String(value));
-
+            const clickable = Boolean(filter);
+            const Tag = clickable ? "button" : "div";
+            const base = isDark ? "min-h-[116px] rounded-xl border border-white/10 bg-slate-950/40 p-3 text-left" : "min-h-[116px] rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-left";
+            const hover = clickable ? (isDark ? " w-full cursor-pointer transition hover:border-blue-500/40 hover:bg-blue-500/10" : " w-full cursor-pointer transition hover:border-blue-300 hover:bg-blue-50") : "";
             return (
-              <div key={label} className={isDark ? "min-h-[116px] rounded-xl border border-white/10 bg-slate-950/40 p-3" : "min-h-[116px] rounded-xl border border-slate-200 bg-slate-50/80 p-3"}>
+              <Tag
+                key={label}
+                type={clickable ? "button" : undefined}
+                onClick={clickable ? () => applyIntelFilter(filter) : undefined}
+                title={clickable ? "Filter claims to this" : String(value)}
+                className={base + hover}
+              >
                 <p className={`text-[10px] font-semibold uppercase leading-4 tracking-wide ${mutedText}`}>{label}</p>
-                <p
-                  className={`${isTextValue ? "mt-2 line-clamp-2 text-xl leading-6" : "safe-number mt-2 text-xl"} font-black ${valueClass}`}
-                  title={String(value)}
-                >
+                <p className={`${isTextValue ? "mt-2 line-clamp-2 text-xl leading-6" : "safe-number mt-2 text-xl"} font-black ${valueClass}`}>
                   {value}
                 </p>
                 <p className={`mt-1 line-clamp-2 text-xs font-semibold leading-4 ${mutedText}`} title={String(note)}>{note}</p>
-              </div>
+              </Tag>
             );
           })}
         </div>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-4">
-          {intelligenceInsights.map((insight) => (
-            <div key={insight.title} className={`min-h-[132px] rounded-xl border border-l-4 p-4 ${getInsightToneClass(insight.tone)}`}>
-              <p className="text-sm font-black leading-5">{insight.title}</p>
-              <p className={isDark ? "mt-3 text-xs font-semibold leading-5 text-slate-300" : "mt-3 text-xs font-semibold leading-5 text-slate-600"}>{insight.detail}</p>
-            </div>
-          ))}
+          {intelligenceInsights.map((insight) => {
+            const clickable = Boolean(insight.filter);
+            const Tag = clickable ? "button" : "div";
+            return (
+              <Tag
+                key={insight.title}
+                type={clickable ? "button" : undefined}
+                onClick={clickable ? () => applyIntelFilter(insight.filter) : undefined}
+                className={`min-h-[132px] rounded-xl border border-l-4 p-4 text-left ${getInsightToneClass(insight.tone)}${clickable ? " w-full cursor-pointer transition hover:-translate-y-0.5 hover:shadow-md" : ""}`}
+              >
+                <p className="text-sm font-black leading-5">{insight.title}</p>
+                <p className={isDark ? "mt-3 text-xs font-semibold leading-5 text-slate-300" : "mt-3 text-xs font-semibold leading-5 text-slate-600"}>{insight.detail}</p>
+                {clickable && <p className="mt-3 text-[11px] font-black uppercase tracking-wide opacity-70">View these claims →</p>}
+              </Tag>
+            );
+          })}
         </div>
 
-        <div className={isDark ? "mt-4 rounded-xl border border-white/10 bg-slate-950/40 p-3" : "mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-3"}>
+        <div data-claims-filters className={isDark ? "mt-4 scroll-mt-4 rounded-xl border border-white/10 bg-slate-950/40 p-3" : "mt-4 scroll-mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-3"}>
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className={`text-sm font-black ${titleText}`}>Claim filters</p>
