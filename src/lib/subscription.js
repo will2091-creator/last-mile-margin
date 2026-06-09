@@ -41,15 +41,29 @@ export async function startCheckout() {
 }
 
 /**
- * Open the Stripe Customer Portal so users can manage their subscription.
- * Requires a separate `create-portal-session` Edge Function (optional upgrade).
- * For now, opens Stripe's direct billing portal URL via your publishable key.
+ * Open the Stripe Billing Portal so users can manage/cancel their subscription,
+ * update their card, and view invoices. Calls the create-portal-session Edge
+ * Function (per-customer portal session) and redirects.
  */
-export function openCustomerPortal() {
-  // Replace with your Stripe Customer Portal link from:
-  // Stripe Dashboard → Billing → Customer portal → Copy link
-  const portalUrl = import.meta.env.VITE_STRIPE_PORTAL_URL;
-  if (portalUrl) window.open(portalUrl, "_blank", "noopener");
+export async function openCustomerPortal() {
+  if (!supabase) return { error: "Supabase not configured." };
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return { error: "Not signed in." };
+
+  const res = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    },
+  );
+  const json = await res.json();
+  if (json.error) { console.warn("openCustomerPortal:", json.error); return { error: json.error }; }
+  window.location.href = json.url;
+  return { ok: true };
 }
 
 /** Returns true if the subscription grants full access. */
