@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import MobileShowcase from "../components/MobileShowcase";
 import lastMileMarginLogo from "../assets/last-mile-margin-logo.png";
 import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-darkmode.png";
@@ -56,12 +56,134 @@ const GALLERY = [
 ];
 
 // Example demo metrics (clearly labeled, not a guarantee). Values match the demo workspace.
-const METRICS = [
-  { icon: DollarSign, value: "$14,640", label: "Weekly Revenue" },
-  { icon: TrendingUp, value: "$4,020", label: "Net Profit" },
-  { icon: Percent, value: "27.46%", label: "Average Margin" },
-  { icon: ShieldAlert, value: "$1,380", label: "Claims Exposure" },
-];
+// Demo strip is now an interactive calculator. The rates below are derived
+// from the original static demo numbers so the default state matches them:
+//   $4,020 / $14,640 = 27.46% margin · $1,380 / $14,640 = 9.43% claims exposure.
+const MARGIN_RATE = 0.2746;
+const CLAIMS_RATE = 1380 / 14640;
+const DEMO_REVENUE = 14640;
+
+const fmtMoney = (n) => `$${Math.round(n).toLocaleString("en-US")}`;
+const fmtPct = (n) => `${n.toFixed(2)}%`;
+
+// Fires once when the element scrolls into view.
+function useInView(ref, threshold = 0.3) {
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || inView) return undefined;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) { setInView(true); obs.disconnect(); }
+      },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [ref, inView, threshold]);
+  return inView;
+}
+
+// Tweens the displayed number toward `value`. Counts up from 0 on first reveal
+// and smoothly follows the slider on every change (each new target eases from
+// wherever the number currently is). Respects prefers-reduced-motion.
+function AnimatedNumber({ value, format, duration = 450 }) {
+  const [display, setDisplay] = useState(0);
+  const displayRef = useRef(0);
+  const rafRef = useRef(0);
+  useEffect(() => {
+    cancelAnimationFrame(rafRef.current);
+    const reduce = typeof window !== "undefined" && window.matchMedia
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const from = displayRef.current;
+    const to = value;
+    if (reduce || Math.abs(to - from) < 0.001) { displayRef.current = to; setDisplay(to); return undefined; }
+    const start = performance.now();
+    const tick = (now) => {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const cur = from + (to - from) * eased;
+      displayRef.current = cur;
+      setDisplay(cur);
+      if (p < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [value, duration]);
+  return format(display);
+}
+
+function DemoSavingsCalculator({ isDark, t }) {
+  const [revenue, setRevenue] = useState(DEMO_REVENUE);
+  const wrapRef = useRef(null);
+  const inView = useInView(wrapRef);
+
+  // Targets are 0 until the strip is in view, so the numbers count up on reveal.
+  const base = inView ? revenue : 0;
+  const cards = [
+    { icon: DollarSign,  value: base,                     format: fmtMoney, label: "Weekly Revenue" },
+    { icon: TrendingUp,  value: base * MARGIN_RATE,       format: fmtMoney, label: "Net Profit" },
+    { icon: Percent,     value: inView ? 27.46 : 0,       format: fmtPct,   label: "Average Margin" },
+    { icon: ShieldAlert, value: base * CLAIMS_RATE,       format: fmtMoney, label: "Claims Exposure" },
+  ];
+  const claimsAnnual = revenue * CLAIMS_RATE * 52;
+
+  return (
+    <div ref={wrapRef} className={`rounded-3xl border p-6 backdrop-blur sm:p-8 ${t.metricsCard}`}>
+      <p className={`text-center text-[11px] font-black uppercase tracking-wide ${t.metricsLabel}`}>
+        Example demo numbers — drag to see your own
+      </p>
+
+      {/* Revenue slider */}
+      <div className="mx-auto mt-5 max-w-md">
+        <div className="flex items-baseline justify-between">
+          <label htmlFor="demo-revenue" className={`text-xs font-bold ${t.metricSub}`}>Your weekly revenue</label>
+          <span className={`text-base font-black tracking-tight ${t.metricVal}`}>{fmtMoney(revenue)}</span>
+        </div>
+        <input
+          id="demo-revenue"
+          type="range"
+          min={4000}
+          max={60000}
+          step={20}
+          value={revenue}
+          onChange={(e) => setRevenue(Number(e.target.value))}
+          aria-label="Your weekly revenue"
+          className="mt-2 w-full cursor-pointer accent-blue-600"
+        />
+        <div className={`mt-1 flex justify-between text-[10px] font-semibold ${t.metricsLabel}`}>
+          <span>$4k</span>
+          <span>Drag to match your week</span>
+          <span>$60k</span>
+        </div>
+      </div>
+
+      {/* Live metrics */}
+      <div className="mt-6 grid grid-cols-2 gap-5 lg:grid-cols-4">
+        {cards.map(({ icon: Icon, value, format, label }) => (
+          <div key={label} className="text-center">
+            <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500">
+              <Icon className="h-5 w-5" />
+            </span>
+            <p className={`mt-3 text-2xl font-black tracking-tight tabular-nums sm:text-3xl ${t.metricVal}`}>
+              <AnimatedNumber value={value} format={format} />
+            </p>
+            <p className={`mt-1 text-xs font-bold ${t.metricSub}`}>{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Dynamic annual callout */}
+      <div className={`mx-auto mt-6 max-w-2xl rounded-2xl border p-4 text-center ${isDark ? "border-red-500/20 bg-red-500/5" : "border-red-100 bg-red-50/60"}`}>
+        <p className={`text-sm font-semibold leading-6 ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+          At <span className={isDark ? "font-black text-white" : "font-black text-slate-950"}>{fmtMoney(revenue)}/week</span>, that's about{" "}
+          <span className={isDark ? "font-black text-red-400" : "font-black text-red-600"}>{fmtMoney(claimsAnnual)}</span> a year in claims exposure — most of it recoverable when you dispute with the right evidence.
+        </p>
+        <p className={`mt-1 text-[10px] font-bold uppercase tracking-wide ${t.metricsLabel}`}>Example only — not a guarantee of results</p>
+      </div>
+    </div>
+  );
+}
 
 function BrowserFrame({ src, alt, className = "" }) {
   return (
@@ -197,22 +319,9 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
           </div>
         </section>
 
-        {/* ---------- DEMO METRICS STRIP ---------- */}
+        {/* ---------- DEMO METRICS STRIP (interactive calculator) ---------- */}
         <section className="mx-auto max-w-6xl px-5 pt-10 lg:px-8">
-          <div className={`rounded-3xl border p-6 backdrop-blur sm:p-8 ${t.metricsCard}`}>
-            <p className={`text-center text-[11px] font-black uppercase tracking-wide ${t.metricsLabel}`}>Example demo numbers — not a guarantee of results</p>
-            <div className="mt-5 grid grid-cols-2 gap-5 lg:grid-cols-4">
-              {METRICS.map(({ icon: Icon, value, label }) => (
-                <div key={label} className="text-center">
-                  <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <p className={`mt-3 text-2xl font-black tracking-tight sm:text-3xl ${t.metricVal}`}>{value}</p>
-                  <p className={`mt-1 text-xs font-bold ${t.metricSub}`}>{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          <DemoSavingsCalculator isDark={isDark} t={t} />
         </section>
 
         {/* ---------- CLAIMS MONEY CALLOUT ---------- */}
