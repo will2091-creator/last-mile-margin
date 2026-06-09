@@ -221,7 +221,7 @@ export default function FeatureShowcase({ onSignIn, onToggleTheme, isDark }) {
                   <span className={`text-xs font-black uppercase tracking-widest ${isDark ? "text-red-400" : "text-red-600"}`}>The quiet profit killer</span>
                 </div>
                 <h2 className="mt-4 text-3xl font-black leading-tight tracking-tight sm:text-4xl">
-                  Most chargebacks go unpaid — not because they're valid, but because nobody disputed them.
+                  Most chargebacks go undisputed — not because they're valid, but because nobody fought them.
                 </h2>
                 <p className={`mt-4 text-base font-semibold leading-7 ${isDark ? "text-slate-300" : "text-slate-600"}`}>
                   Every uncontested deduction is money you earned and quietly gave back. Final-mile contractors absorb chargebacks, short-pays, and damage claims every week — most of which have strong dispute grounds when the right evidence is captured.
