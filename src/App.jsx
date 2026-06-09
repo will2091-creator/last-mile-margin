@@ -18,6 +18,9 @@ import AppSidebar from "./components/app/AppSidebar";
 import AppToolbar from "./components/app/AppToolbar";
 import AppBottomNav from "./components/app/AppBottomNav";
 import ErrorBoundary from "./components/ErrorBoundary";
+import TrialBanner from "./components/TrialBanner";
+import PaywallScreen from "./components/PaywallScreen";
+import { fetchSubscription, isAccessGranted } from "./lib/subscription";
 import AskCopilot from "./components/AskCopilot";
 import TourOverlay from "./tour/TourOverlay";
 import { tourSteps } from "./tour/tourSteps";
@@ -233,6 +236,8 @@ export default function App() {
   );
   const [authUser, setAuthUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(isSupabaseConfigured);
+  const [subscription, setSubscription] = useState(null);
+  const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(false);
   const [teamMembers, setTeamMembers] = useState([]);
   const [currentUserRole, setCurrentUserRole] = useState("owner");
   const [teamAccessStatus, setTeamAccessStatus] = useState("Team access will load after sign in.");
@@ -287,6 +292,19 @@ export default function App() {
       listener.subscription.unsubscribe();
     };
   }, []);
+
+  // Load subscription whenever auth state changes
+  useEffect(() => {
+    if (!isLoggedIn) { setSubscription(null); return; }
+    let active = true;
+    setIsSubscriptionLoading(true);
+    fetchSubscription().then((sub) => {
+      if (!active) return;
+      setSubscription(sub);
+      setIsSubscriptionLoading(false);
+    });
+    return () => { active = false; };
+  }, [isLoggedIn]);
 
   useEffect(() => {
     if (!authUser) {
@@ -1235,6 +1253,18 @@ export default function App() {
     );
   }
 
+  // Subscription gate — show paywall if loading is done and access is not granted.
+  // While still loading we show nothing extra (avoids a flash of the paywall).
+  if (!isSubscriptionLoading && !isAccessGranted(subscription)) {
+    return (
+      <PaywallScreen
+        subscription={subscription}
+        onSignOut={signOut}
+        isDark={isDark}
+      />
+    );
+  }
+
   return (
     <div className={isDark ? "theme-dark min-h-screen bg-slate-950 text-white" : "theme-light min-h-screen bg-slate-100 text-slate-950"}>
       <style>{`
@@ -1411,6 +1441,7 @@ export default function App() {
         }
       `}</style>
 
+      <TrialBanner subscription={subscription} isDark={isDark} />
       <div className="flex min-h-screen overflow-x-hidden">
         <AppSidebar
           isDark={isDark}
