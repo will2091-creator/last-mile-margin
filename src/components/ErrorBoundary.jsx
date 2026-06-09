@@ -1,5 +1,6 @@
 import React from "react";
 import logo from "../assets/last-mile-margin-logo.png";
+import logoDark from "../assets/last-mile-margin-logo-darkmode.png";
 
 // The boundary can render before the themed app shell mounts, so read the
 // persisted theme straight from localStorage rather than threading isDark down.
@@ -50,7 +51,7 @@ export default class ErrorBoundary extends React.Component {
 
     const card = (
       <div className={`w-full max-w-md rounded-2xl border p-8 text-center shadow-card ${isDark ? "border-white/10 bg-slate-900" : "border-slate-200 bg-white"}`}>
-        <img src={logo} alt="Last Mile Margin" className="mx-auto h-14 w-32 object-contain" />
+        <img src={isDark ? logoDark : logo} alt="Last Mile Margin" className="mx-auto h-14 w-32 object-contain" />
         <h1 className={`mt-5 text-xl font-black ${isDark ? "text-white" : "text-slate-950"}`}>
           {isPage ? "This section hit a snag" : "Something went wrong"}
         </h1>

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import lastMileMarginLogo from "./assets/last-mile-margin-logo.png";
-import lastMileMarginLogoDark from "./assets/last-mile-margin-logo.png";
+import lastMileMarginLogoDark from "./assets/last-mile-margin-logo-darkmode.png";
 import LoginPage from "./pages/LoginPage";
 // Heavy authenticated pages (charts, AI, big forms) are code-split so the
 // initial load — and especially the logged-out login screen — stays lean.

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import lastMileMarginLogo from "../assets/last-mile-margin-logo.png";
-import lastMileMarginLogoDark from "../assets/last-mile-margin-logo.png";
+import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-darkmode.png";
 import loginRoadLakeTruck from "../assets/login-road-lake-truck-branded.jpg";
 import FeatureShowcase from "./FeatureShowcase";
 import { supabase } from "../lib/supabaseClient";

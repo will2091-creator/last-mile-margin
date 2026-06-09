@@ -1,6 +1,6 @@
 import React from "react";
 import lastMileMarginLogo from "../../assets/last-mile-margin-logo.png";
-import lastMileMarginLogoDark from "../../assets/last-mile-margin-logo.png";
+import lastMileMarginLogoDark from "../../assets/last-mile-margin-logo-darkmode.png";
 import { Moon, Sun } from "../../shared";
 
 export default function AppSidebar({

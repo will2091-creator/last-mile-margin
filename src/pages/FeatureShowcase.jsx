@@ -1,7 +1,7 @@
 import { useState } from "react";
 import MobileShowcase from "../components/MobileShowcase";
 import lastMileMarginLogo from "../assets/last-mile-margin-logo.png";
-import lastMileMarginLogoDark from "../assets/last-mile-margin-logo.png";
+import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-darkmode.png";
 import frameDashboard from "../assets/inside-preview/frame-01.webp";
 import frameIntake from "../assets/inside-preview/intake.webp";
 import frameClaims from "../assets/inside-preview/claims.webp";
