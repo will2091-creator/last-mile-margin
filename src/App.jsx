@@ -54,6 +54,13 @@ const usernameEmailMap = {
   "william.mckoy": "william.mckoy2@gmail.com",
 };
 
+// Accounts that bypass the subscription paywall entirely (owner / comped /
+// internal). These never see the trial gate regardless of Stripe status.
+const COMP_ACCESS_EMAILS = new Set([
+  "william.mckoy2@gmail.com",
+]);
+const hasCompAccess = (email) => COMP_ACCESS_EMAILS.has((email || "").trim().toLowerCase());
+
 const tabSlugs = {
   Dashboard: "dashboard",
   Intake: "intake",
@@ -1281,8 +1288,9 @@ export default function App() {
   }
 
   // Subscription gate — show paywall if loading is done and access is not granted.
-  // While still loading we show nothing extra (avoids a flash of the paywall).
-  if (!isSubscriptionLoading && !isAccessGranted(subscription)) {
+  // Owner / comped accounts bypass it entirely. While still loading we show
+  // nothing extra (avoids a flash of the paywall).
+  if (!hasCompAccess(authUser?.email) && !isSubscriptionLoading && !isAccessGranted(subscription)) {
     return (
       <PaywallScreen
         subscription={subscription}
