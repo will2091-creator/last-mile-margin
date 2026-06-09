@@ -1,4 +1,5 @@
 import { useState } from "react";
+import MobileShowcase from "../components/MobileShowcase";
 import lastMileMarginLogo from "../assets/last-mile-margin-logo-transparent.svg";
 import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-transparent-dark.svg";
 import frameDashboard from "../assets/inside-preview/frame-01.webp";
@@ -366,6 +367,9 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
             </div>
           </div>
         </section>
+
+        {/* ---------- MOBILE APP ---------- */}
+        <MobileShowcase isDark={isDark} />
 
         {/* ---------- BUILT FOR CONTRACTORS ---------- */}
         <section className="mx-auto max-w-5xl px-5 pb-16 lg:px-8 lg:pb-24">
