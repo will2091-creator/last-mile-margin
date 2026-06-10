@@ -14,7 +14,6 @@ import {
   Banknote,
   Bot,
   CheckCircle2,
-  Clock,
   FileSpreadsheet,
   Gauge,
   ListChecks,
@@ -143,7 +142,7 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
                 onClick={onSignUp}
                 className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-500"
               >
-                <Clock className="h-4 w-4" /> Coming soon
+                Start free trial <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -174,7 +173,7 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
                   onClick={onSignUp}
                   className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 py-3.5 text-base font-black text-white shadow-xl shadow-blue-600/30 transition hover:-translate-y-0.5 hover:bg-blue-500"
                 >
-                  <Clock className="h-5 w-5" /> Coming soon
+                  Start free trial <ArrowRight className="h-5 w-5" />
                 </button>
                 <button
                   onClick={onSignIn}
@@ -217,7 +216,7 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
                   onClick={onSignUp}
                   className={`mt-7 flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 ${isDark ? "bg-red-600 shadow-red-600/30 hover:bg-red-500" : "bg-red-600 shadow-red-600/20 hover:bg-red-500"}`}
                 >
-                  <Clock className="h-4 w-4" /> Coming soon
+                  Start free trial <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-1">
@@ -373,7 +372,7 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
                 onClick={onSignUp}
                 className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 py-3.5 text-base font-black text-white shadow-xl shadow-blue-600/30 transition hover:-translate-y-0.5 hover:bg-blue-500"
               >
-                <Clock className="h-5 w-5" /> Coming soon
+                Start free trial <ArrowRight className="h-5 w-5" />
               </button>
               <button
                 onClick={onSignIn}

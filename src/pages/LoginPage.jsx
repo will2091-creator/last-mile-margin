@@ -479,15 +479,134 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, onResetPassword, isDark, 
                 <p className={`mt-5 text-center text-sm ${mutedText}`}>
                   No account yet?{" "}
                   <button type="button" onClick={() => switchMode("signup")} className={`font-bold ${isDark ? "text-blue-400 hover:underline" : "text-blue-600 hover:underline"}`}>
-                    Join the waitlist →
+                    Create one →
                   </button>
                 </p>
               </>
             )}
 
-            {/* ── COMING SOON (sign-up disabled) ── */}
+            {/* ── SIGN UP FORM ── */}
             {!signupDone && mode === "signup" && (
-              <ComingSoon isDark={isDark} mutedText={mutedText} onSignIn={() => switchMode("signin")} />
+              <>
+                <h1 id="auth-modal-title" className="sr-only">Create your workspace</h1>
+
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <div>
+                    <label htmlFor="signup-company" className={labelClass}>
+                      Business name <span className={`font-semibold ${mutedText}`}>(optional)</span>
+                    </label>
+                    <div className="relative">
+                      <Building2 className={`absolute left-4 top-3.5 h-5 w-5 ${mutedText}`} />
+                      <input
+                        ref={firstFieldRef}
+                        id="signup-company"
+                        value={signupForm.companyName}
+                        onChange={(e) => setSignupForm((c) => ({ ...c, companyName: e.target.value }))}
+                        className={inputClass}
+                        placeholder="Acme Delivery LLC"
+                        type="text"
+                        autoComplete="organization"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="signup-email" className={labelClass}>Email</label>
+                    <div className="relative">
+                      <Mail className={`absolute left-4 top-3.5 h-5 w-5 ${mutedText}`} />
+                      <input
+                        id="signup-email"
+                        value={signupForm.email}
+                        onChange={(e) => setSignupForm((c) => ({ ...c, email: e.target.value }))}
+                        className={inputClass}
+                        placeholder="you@example.com"
+                        type="email"
+                        autoComplete="email"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="signup-password" className={labelClass}>Password</label>
+                    <div className="relative">
+                      <Lock className={`absolute left-4 top-3.5 h-5 w-5 ${mutedText}`} />
+                      <input
+                        id="signup-password"
+                        value={signupForm.password}
+                        onChange={(e) => setSignupForm((c) => ({ ...c, password: e.target.value }))}
+                        className={`${inputClass} pr-12`}
+                        placeholder="At least 8 characters"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className={`absolute right-4 top-3.5 ${mutedText}`}
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="signup-confirm" className={labelClass}>Confirm password</label>
+                    <div className="relative">
+                      <Lock className={`absolute left-4 top-3.5 h-5 w-5 ${mutedText}`} />
+                      <input
+                        id="signup-confirm"
+                        value={signupForm.confirm}
+                        onChange={(e) => setSignupForm((c) => ({ ...c, confirm: e.target.value }))}
+                        className={`${inputClass} pr-12`}
+                        placeholder="Re-enter your password"
+                        type={showConfirm ? "text" : "password"}
+                        autoComplete="new-password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirm((v) => !v)}
+                        aria-label={showConfirm ? "Hide password" : "Show password"}
+                        className={`absolute right-4 top-3.5 ${mutedText}`}
+                      >
+                        {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {formError && (
+                    <div role="alert" className={isDark ? "rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm font-bold text-red-300" : "rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-600"}>
+                      {formError}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-500 hover:to-indigo-500 hover:shadow-blue-600/40 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {isSubmitting ? "Creating your account…" : "Create account"}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+
+                  <p className={`text-center text-xs leading-5 ${mutedText}`}>
+                    Starts with a free trial. By creating an account you agree to our{" "}
+                    <a href="#/terms" className={isDark ? "font-bold text-blue-400 hover:underline" : "font-bold text-blue-600 hover:underline"}>Terms</a>{" "}
+                    and{" "}
+                    <a href="#/privacy" className={isDark ? "font-bold text-blue-400 hover:underline" : "font-bold text-blue-600 hover:underline"}>Privacy Policy</a>.
+                  </p>
+                </form>
+
+                <p className={`mt-5 text-center text-sm ${mutedText}`}>
+                  Already have an account?{" "}
+                  <button type="button" onClick={() => switchMode("signin")} className={`font-bold ${isDark ? "text-blue-400 hover:underline" : "text-blue-600 hover:underline"}`}>
+                    Sign in →
+                  </button>
+                </p>
+              </>
             )}
           </section>
         </div>
