@@ -127,9 +127,16 @@ function GoogleIcon() {
 // Hidden until then so the button can't error on click.
 const GOOGLE_LOGIN_ENABLED = false;
 
+function readAuthParam() {
+  if (typeof window === "undefined") return null;
+  const value = new URLSearchParams(window.location.search).get("auth");
+  return value === "signup" || value === "signin" ? value : null;
+}
+
 function LoginPage({ onLogin, onSignUp, onGoogleLogin, onResetPassword, isDark, setAppSettings }) {
-  const [showModal, setShowModal] = useState(false);
-  const [mode, setMode] = useState("signin"); // "signin" | "signup"
+  // Links from the public tool pages open straight into sign-up/sign-in: /?auth=signup&from=<tool>
+  const [showModal, setShowModal] = useState(() => readAuthParam() !== null);
+  const [mode, setMode] = useState(() => readAuthParam() || "signin"); // "signin" | "signup"
   const [loginForm, setLoginForm] = useState({ identifier: "", password: "", remember: false });
   const [signupForm, setSignupForm] = useState({ email: "", password: "", confirm: "", companyName: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -158,6 +165,21 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, onResetPassword, isDark, 
     setShowModal(true);
   };
   const closeModal = () => setShowModal(false);
+
+  // Remember which free tool sent this visitor (attached to the account at sign-up),
+  // then drop the auth params from the address bar.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const from = (url.searchParams.get("from") || "").replace(/[^a-z0-9-]/gi, "").slice(0, 64);
+    if (from) {
+      try { sessionStorage.setItem("lmmSignupSource", from); } catch { /* storage blocked */ }
+    }
+    if (url.searchParams.has("auth") || url.searchParams.has("from")) {
+      url.searchParams.delete("auth");
+      url.searchParams.delete("from");
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+  }, []);
 
   const switchMode = (next) => {
     setFormError("");

@@ -257,58 +257,7 @@ export const initialClaims = [
 ];
 
 
-export const claimTypeOptions = {
-  Penalty: [
-    "Missed delivery window",
-    "Late arrival",
-    "No call-ahead",
-    "Failed photo compliance",
-    "Incomplete paperwork",
-    "Failed install requirement",
-    "Service level failure",
-    "Retailer chargeback",
-    "Refused route / no coverage",
-    "Improper status update",
-    "Late departure",
-    "No access / no attempt penalty",
-    "Customer not contacted",
-    "Route abandonment",
-    "Failure to scan / status order",
-  ],
-  Cargo: [
-    "Product damage",
-    "Concealed damage",
-    "Missing parts",
-    "Wrong item delivered",
-    "Improper securement",
-    "Appliance dent / scratch",
-    "Furniture damage",
-    "Lost item",
-    "Failed return pickup",
-    "Unreported damage",
-    "Crushed box / packaging damage",
-    "Water line kit damage",
-    "Haul-away item issue",
-    "Product not secured in truck",
-  ],
-  Property: [
-    "Wall damage",
-    "Floor scratch",
-    "Door frame damage",
-    "Stair damage",
-    "Railing damage",
-    "Driveway damage",
-    "Yard / lawn damage",
-    "Water leak",
-    "Home fixture damage",
-    "Customer personal property damage",
-    "Cabinet damage",
-    "Countertop damage",
-    "Ceiling damage",
-    "Garage door damage",
-    "Appliance install leak",
-  ],
-};
+export { claimTypeOptions } from "./lib/claimTypes";
 
 export const defaultSettings = {
   companyName: "",
@@ -412,40 +361,7 @@ export const accentThemes = {
   },
 };
 
-export function toNum(value) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-export function getGrade(results) {
-  const { netProfit, profitMargin, profitPerStop, revenuePerMile, costPerMile } = results;
-  let score = 0;
-
-  if (netProfit >= 500) score += 35;
-  else if (netProfit >= 350) score += 28;
-  else if (netProfit >= 200) score += 18;
-  else if (netProfit >= 100) score += 8;
-
-  if (profitMargin >= 0.3) score += 25;
-  else if (profitMargin >= 0.2) score += 20;
-  else if (profitMargin >= 0.12) score += 12;
-  else if (profitMargin >= 0.06) score += 5;
-
-  if (profitPerStop >= 25) score += 20;
-  else if (profitPerStop >= 15) score += 15;
-  else if (profitPerStop >= 8) score += 8;
-
-  if (revenuePerMile - costPerMile >= 2.5) score += 20;
-  else if (revenuePerMile - costPerMile >= 1.5) score += 14;
-  else if (revenuePerMile - costPerMile >= 0.75) score += 8;
-
-  if (netProfit < 0) return { grade: "F", label: "Losing Money", score, color: "text-red-400" };
-  if (score >= 85) return { grade: "A", label: "Strong Route", score, color: "text-emerald-400" };
-  if (score >= 70) return { grade: "B", label: "Good Route", score, color: "text-emerald-300" };
-  if (score >= 50) return { grade: "C", label: "Thin Margin", score, color: "text-yellow-300" };
-  if (score >= 30) return { grade: "D", label: "High Risk", score, color: "text-orange-400" };
-  return { grade: "F", label: "Do Not Take", score, color: "text-red-400" };
-}
+export { getGrade, toNum } from "./lib/routeProfit";
 
 export function Card({ children, className = "" }) {
   return (

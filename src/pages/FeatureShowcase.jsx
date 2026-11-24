@@ -161,6 +161,9 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
                   {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </button>
               )}
+              <a href="/tools" className={`hidden px-3 py-2 text-sm font-bold transition md:flex ${t.navLink}`}>
+                Free tools
+              </a>
               <button
                 type="button"
                 onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth", block: "start" })}
@@ -490,6 +493,8 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
             <TrendingUp className="h-3.5 w-3.5" /> Last Mile Margin — margin protection for final-mile delivery contractors.
           </p>
           <p className={`mt-3 flex items-center justify-center gap-4 text-center text-xs font-semibold ${t.footer}`}>
+            <a href="/tools" className="hover:underline">Free tools</a>
+            <span aria-hidden="true">·</span>
             <a href="#/terms" className="hover:underline">Terms of Service</a>
             <span aria-hidden="true">·</span>
             <a href="#/privacy" className="hover:underline">Privacy Policy</a>

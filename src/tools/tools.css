@@ -1,0 +1,109 @@
+/* Styles for the public free-tool pages (/tools/...). Separate from the app's
+   index.css so these pages ship only the classes they use. */
+@import "tailwindcss" source(none);
+@source "../../tools";
+@source "./";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-brand-navy: #0d2a5e;
+  --color-brand-green: #4f9a24;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+}
+
+/* Long-form copy under each tool. */
+.tool-copy > h2 {
+  @apply mt-12 text-2xl font-extrabold tracking-tight text-slate-950 first:mt-0 sm:text-[1.7rem];
+}
+.tool-copy > h3 {
+  @apply mt-8 text-lg font-extrabold text-slate-950;
+}
+.tool-copy > p {
+  @apply mt-3 text-base leading-7 text-slate-700;
+}
+.tool-copy > ul,
+.tool-copy > ol {
+  @apply mt-3 space-y-2 pl-5 text-base leading-7 text-slate-700;
+}
+.tool-copy > ul {
+  @apply list-disc;
+}
+.tool-copy > ol {
+  @apply list-decimal;
+}
+.tool-copy strong {
+  @apply font-bold text-slate-900;
+}
+.tool-copy a {
+  @apply font-semibold text-blue-700 underline decoration-blue-300 underline-offset-2 hover:decoration-blue-700;
+}
+
+/* FAQ disclosure rows. */
+.faq {
+  @apply rounded-2xl border border-slate-200 bg-white px-5 py-4 open:shadow-sm;
+}
+.faq > summary {
+  @apply flex cursor-pointer list-none items-center justify-between gap-4 text-base font-bold text-slate-950;
+}
+.faq > summary::-webkit-details-marker {
+  display: none;
+}
+.faq > summary::after {
+  content: "+";
+  @apply text-xl font-black leading-none text-slate-400;
+}
+.faq[open] > summary::after {
+  content: "–";
+}
+.faq > p,
+.faq > ul {
+  @apply mt-3 text-[0.95rem] leading-7 text-slate-600;
+}
+.faq > ul {
+  @apply list-disc space-y-1 pl-5;
+}
+
+/* Number inputs: no spinners (we use text inputs with inputmode, but just in case). */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Printing the dispute letter prints only the letter. */
+@media print {
+  body.print-letter * {
+    visibility: hidden;
+  }
+  body.print-letter .letter-print,
+  body.print-letter .letter-print * {
+    visibility: visible;
+  }
+  body.print-letter .letter-print {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    display: block !important;
+  }
+}

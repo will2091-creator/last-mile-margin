@@ -34,6 +34,7 @@ import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 import { applySyncedLocalData, claimLocalDataFor, readSyncedLocalData, syncedLocalFingerprint } from "./lib/localDataSync";
 import { addTeamMember, loadTeamAccess, updateTeamMemberRole } from "./lib/teamAccessRepository";
 import { getSetupStatus, getNextBestSetupAction } from "./lib/onboarding";
+import { computeRouteResults, getRouteRisks } from "./lib/routeProfit";
 import {
   accentThemes,
   Bot,
@@ -47,7 +48,6 @@ import {
   LayoutDashboard,
   number,
   Settings,
-  toNum,
   Upload,
 } from "./shared";
 import { FolderArchive } from "lucide-react";
@@ -735,71 +735,11 @@ export default function App() {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
-  const results = useMemo(() => {
-    const routePay = toNum(form.routePay);
-    const stops = toNum(form.stops);
-    const miles = toNum(form.miles);
-    const mpg = Math.max(toNum(form.mpg), 0.01);
-    const routeHours = Math.max(toNum(form.routeHours), 0.01);
-
-    const totalRevenue =
-      routePay +
-      toNum(form.perStopPay) * stops +
-      toNum(form.installPay) +
-      toNum(form.accessorialPay) +
-      toNum(form.fuelSurcharge) +
-      toNum(form.reattemptPay);
-
-    const fuelCost = (miles / mpg) * toNum(form.fuelPrice);
-    const maintenanceCost = miles * toNum(form.maintenancePerMile);
-    const laborCosts = toNum(form.driverPay) + toNum(form.helperPay);
-    const fixedCosts = toNum(form.dailyTruckPayment) + toNum(form.dailyInsurance) + toNum(form.phoneSoftware);
-    const variableCosts = fuelCost + maintenanceCost + laborCosts + toNum(form.tollsParking) + toNum(form.claimsChargebacks) + toNum(form.otherCosts);
-    const totalCost = fixedCosts + variableCosts;
-    const netProfit = totalRevenue - totalCost;
-    const profitMargin = totalRevenue > 0 ? netProfit / totalRevenue : 0;
-    const profitPerStop = stops > 0 ? netProfit / stops : 0;
-    const profitPerMile = miles > 0 ? netProfit / miles : 0;
-    const profitPerHour = routeHours > 0 ? netProfit / routeHours : 0;
-    const revenuePerMile = miles > 0 ? totalRevenue / miles : 0;
-    const costPerMile = miles > 0 ? totalCost / miles : 0;
-    const requiredRevenue = totalCost + toNum(form.targetProfit);
-    const requiredPerStop = stops > 0 ? requiredRevenue / stops : 0;
-    const requiredRoutePay = Math.max(requiredRevenue - (totalRevenue - routePay), 0);
-
-    return {
-      totalRevenue,
-      fuelCost,
-      maintenanceCost,
-      laborCosts,
-      fixedCosts,
-      variableCosts,
-      totalCost,
-      netProfit,
-      profitMargin,
-      profitPerStop,
-      profitPerMile,
-      profitPerHour,
-      revenuePerMile,
-      costPerMile,
-      requiredRevenue,
-      requiredPerStop,
-      requiredRoutePay,
-    };
-  }, [form]);
+  const results = useMemo(() => computeRouteResults(form), [form]);
 
   const grade = useMemo(() => getGrade(results), [results]);
 
-  const risks = useMemo(() => {
-    const list = [];
-    if (results.netProfit < 200) list.push("Net profit is low for a full route.");
-    if (results.profitMargin < 0.15) list.push("Profit margin is thin. One claim or repair could wipe out the day.");
-    if (results.laborCosts > results.totalRevenue * 0.35) list.push("Labor is taking more than 35% of revenue.");
-    if (toNum(form.claimsChargebacks) > 100) list.push("Claims and chargebacks are eating too much margin.");
-    if (results.profitPerStop < 10) list.push("Profit per stop is weak. Busy truck, sad wallet.");
-    if (!list.length) list.push("Route looks healthy based on the numbers entered.");
-    return list;
-  }, [form, results]);
+  const risks = useMemo(() => getRouteRisks(form, results), [form, results]);
 
   const workflowSetupStatus = useMemo(
     () => getSetupStatus({
@@ -1255,6 +1195,14 @@ export default function App() {
       return { ok: false, error: "Supabase Auth is not configured." };
     }
 
+    // signup_source: which free tool (/tools/...) sent them, if any.
+    let signupSource = "";
+    try { signupSource = sessionStorage.getItem("lmmSignupSource") || ""; } catch { /* storage blocked */ }
+    const signupMeta = {
+      ...(companyName ? { company_name: companyName } : {}),
+      ...(signupSource ? { signup_source: signupSource } : {}),
+    };
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -1264,7 +1212,7 @@ export default function App() {
       // email in a different tab (where this tab's local state isn't present).
       options: {
         emailRedirectTo: window.location.origin,
-        ...(companyName ? { data: { company_name: companyName } } : {}),
+        ...(Object.keys(signupMeta).length ? { data: signupMeta } : {}),
       },
     });
     if (error) return { ok: false, error: error.message };
