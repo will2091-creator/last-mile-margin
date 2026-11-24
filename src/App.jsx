@@ -377,7 +377,18 @@ export default function App() {
     localStorage.setItem("finalMileClaims", JSON.stringify(claims));
   }, [claims, tourActive]);
 
+  // Remote workspace + claims are loaded per signed-in user. They used to load
+  // once on page mount, before sign-in: an anonymous visitor's request was
+  // rejected, the "loaded" flags flipped anyway, and a user who then signed in
+  // never got their cloud data — while auto-save (gated only on those flags)
+  // happily wrote local defaults over it. Now: no requests while signed out,
+  // a fresh load whenever the signed-in user changes, and saves stay held until
+  // that user's data has actually arrived.
+  const authUserId = authUser?.id || null;
+
   useEffect(() => {
+    setHasLoadedRemoteAppState(false);
+    if (!authUserId) return undefined;
     let isMounted = true;
 
     const loadRemoteAppState = async () => {
@@ -435,9 +446,11 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [authUserId]);
 
   useEffect(() => {
+    setHasLoadedRemoteClaims(false);
+    if (!authUserId) return undefined;
     let isMounted = true;
 
     const loadRemoteClaims = async () => {
@@ -460,7 +473,7 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [authUserId]);
 
   useEffect(() => {
     if (tourActive) return;
