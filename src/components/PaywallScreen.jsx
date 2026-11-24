@@ -36,7 +36,7 @@ export default function PaywallScreen({ draftId, user, subscription, onSignOut, 
   };
 
   return (
-    <div className={`flex min-h-screen flex-col items-center justify-center p-6 ${isDark ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-950"}`}>
+    <div data-tool-auth={draftId ? "" : undefined} className={`flex min-h-screen flex-col items-center justify-center p-6 ${isDark ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-950"}`}>
       <div className={`w-full max-w-lg rounded-3xl border p-8 sm:p-10 ${isDark ? "border-white/10 bg-slate-900" : "border-slate-200 bg-white shadow-xl"}`}>
 
         <div className="text-center">

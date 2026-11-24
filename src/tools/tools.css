@@ -1,14 +1,13 @@
 /* Styles for the public free-tool pages (/tools/...). Separate from the app's
    index.css so these pages ship only the classes they use. */
 @import "tailwindcss" source(none);
+@import "../journey/type.css";
 @source "../../tools";
 @source "./";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui,
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-display: "Barlow Semi Condensed", "Arial Narrow", sans-serif;
   --color-brand-navy: #0d2a5e;
   --color-brand-green: #4f9a24;
 }
@@ -189,7 +188,7 @@ input[type="number"]::-webkit-outer-spin-button {
   margin-top: 18px;
   font-size: clamp(2.75rem, 5.2vw, 5rem);
   font-weight: 750;
-  letter-spacing: -.05em;
+  letter-spacing: -.018em;
   word-spacing: .035em;
   line-height: 1.06;
   text-wrap: balance;
@@ -221,7 +220,7 @@ input[type="number"]::-webkit-outer-spin-button {
   font-family: var(--font-display);
   font-size: clamp(3.1rem, 5.8vw, 5.3rem);
   font-weight: 750;
-  letter-spacing: -.085em;
+  letter-spacing: -.018em;
   line-height: 1.08;
 }
 .demo-grade { text-align: right; white-space: nowrap; }
@@ -242,7 +241,7 @@ input[type="number"]::-webkit-outer-spin-button {
 .hub-tools h2, .hub-paid h2 {
   font-size: clamp(2.15rem, 4.6vw, 4rem);
   line-height: 1.08;
-  letter-spacing: -.065em;
+  letter-spacing: -.018em;
   font-weight: 750;
   text-wrap: balance;
 }
@@ -265,7 +264,7 @@ input[type="number"]::-webkit-outer-spin-button {
 .hub-card p, .hub-card-value span { color: var(--muted); font-size: .83rem; line-height: 1.55; }
 .hub-card p { margin-top: 6px; }
 .hub-card-value { padding-right: 12px; border-right: 1px solid var(--line); }
-.hub-card-value strong { display: block; font-size: clamp(1.05rem, 1.8vw, 1.55rem); font-weight: 750; letter-spacing: -.055em; }
+.hub-card-value strong { display: block; font-size: clamp(1.05rem, 1.8vw, 1.55rem); font-weight: 750; letter-spacing: -.018em; }
 .hub-card-value[data-tone=warn] strong { color: #86540b; }
 .hub-card-arrow { position: absolute; right: 17px; top: 18px; color: var(--blue); font-size: 1.12rem; }
 
@@ -303,7 +302,7 @@ input[type="number"]::-webkit-outer-spin-button {
 .tool-intro h1 {
   font-size: clamp(2.35rem, 5vw, 4.4rem);
   line-height: 1.05;
-  letter-spacing: -.048em;
+  letter-spacing: -.018em;
   word-spacing: .035em;
   font-weight: 750;
   text-wrap: balance;
@@ -331,7 +330,7 @@ input[type="number"]::-webkit-outer-spin-button {
   font-size: clamp(2.75rem, 5.3vw, 4.7rem);
   line-height: 1.1;
   font-weight: 750;
-  letter-spacing: -.08em;
+  letter-spacing: -.018em;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
@@ -365,7 +364,7 @@ input[type="number"]::-webkit-outer-spin-button {
   min-width: 0;
 }
 .tool-upgrade .site-kicker { color: #adcaff; }
-.tool-upgrade h3 { margin-top: 8px; font-size: clamp(1.45rem, 2.35vw, 2rem); line-height: 1.17; letter-spacing: -.055em; font-weight: 750; text-wrap: balance; }
+.tool-upgrade h3 { margin-top: 8px; font-size: clamp(1.45rem, 2.35vw, 2rem); line-height: 1.17; letter-spacing: -.018em; font-weight: 750; text-wrap: balance; }
 .tool-upgrade h3 + p { margin-top: 9px; color: #d2deee; font-size: .9rem; line-height: 1.6; }
 .tool-upgrade .site-button { margin-top: 16px; }
 .upgrade-price, .hub-paid-copy > .upgrade-price:not(.site-kicker) { margin-top: 10px; font-size: .76rem; color: #c6d4e7; line-height: 1.55; }
