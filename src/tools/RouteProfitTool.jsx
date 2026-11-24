@@ -3,38 +3,14 @@ import { computeRouteResults, getGrade, getRouteRisks } from "../lib/routeProfit
 import { clamp, cleanForm, money, money2, pct } from "./format";
 import { useInView } from "./useInView";
 import { useToolState } from "./useToolState";
-import { Badge, BarList, FieldGrid, MobileSummary, Notes, NumberField, Panel, Stat, ToolActions } from "./ui";
-
-// Same example route as the app's Route Profit Check.
-const DEFAULTS = {
-  routePay: "1200",
-  perStopPay: "0",
-  stops: "20",
-  installPay: "0",
-  accessorialPay: "0",
-  fuelSurcharge: "0",
-  reattemptPay: "0",
-  miles: "120",
-  mpg: "10",
-  fuelPrice: "3.75",
-  routeHours: "10",
-  driverPay: "220",
-  helperPay: "180",
-  dailyTruckPayment: "90",
-  dailyInsurance: "65",
-  maintenancePerMile: "0.5",
-  phoneSoftware: "15",
-  tollsParking: "25",
-  claimsChargebacks: "75",
-  otherCosts: "0",
-  targetProfit: "500",
-  daysPerWeek: "5",
-};
+import { Badge, BarList, FieldGrid, MobileSummary, ResultNav, Notes, NumberField, Panel, Stat, ToolActions } from "./ui";
+import ToolUpgrade from "./ToolUpgrade";
+import { ROUTE_EXAMPLE } from "./lib/routeExample";
 
 const GRADE_TONE = { A: "good", B: "good", C: "warn", D: "warn", F: "bad" };
 
 export default function RouteProfitTool() {
-  const { values: v, set, reset, shareUrl } = useToolState("lmm-tool-route-profit", DEFAULTS);
+  const { values: v, set, reset, shareUrl } = useToolState("lmm-tool-route-profit", ROUTE_EXAMPLE);
   const n = cleanForm(v);
   const r = computeRouteResults(n);
   const grade = getGrade(r);
@@ -43,7 +19,6 @@ export default function RouteProfitTool() {
   const days = clamp(n.daysPerWeek, 0, 7);
   const weekly = r.netProfit * days;
   const profitTone = r.netProfit < 0 ? "bad" : r.profitMargin < 0.15 ? "warn" : "good";
-  const profitText = { bad: "text-red-600", warn: "text-amber-600", good: "text-emerald-600" }[profitTone];
 
   const stopPayTotal = n.perStopPay * n.stops;
   const otherPay = r.totalRevenue - n.routePay - stopPayTotal;
@@ -62,26 +37,35 @@ export default function RouteProfitTool() {
     { label: "Your profit", value: Math.max(0, r.netProfit), className: "bg-emerald-500" },
   ];
 
-  const inputsRef = useRef(null);
   const resultsRef = useRef(null);
-  const inputsInView = useInView(inputsRef);
   const resultsInView = useInView(resultsRef);
 
   const field = (key, label, extra = {}) => <NumberField label={label} value={v[key]} onChange={(value) => set(key, value)} {...extra} />;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
-      <div ref={inputsRef} className="space-y-5">
+    <div className="calculator-layout">
+      <MobileSummary
+        show={!resultsInView}
+        label="Net profit per route day"
+        value={`${money(r.netProfit)} · ${pct(r.profitMargin)}`}
+        tone={profitTone}
+      />
+      <div id="inputs" tabIndex={-1} className="calculator-inputs">
         <Panel title="What the route pays" description="For one route day. Fill in whichever pay your contract uses: flat, per stop, or both.">
           <FieldGrid>
             {field("routePay", "Flat route pay", { prefix: "$", suffix: "per day" })}
             {field("perStopPay", "Pay per stop", { prefix: "$", suffix: "per stop" })}
             {field("stops", "Stops", { suffix: "stops" })}
-            {field("installPay", "Install / assembly pay", { prefix: "$" })}
-            {field("accessorialPay", "Accessorial pay", { prefix: "$", hint: "Haul-away, stairs, extra crew, and similar." })}
-            {field("fuelSurcharge", "Fuel surcharge", { prefix: "$" })}
-            {field("reattemptPay", "Re-attempt pay", { prefix: "$" })}
           </FieldGrid>
+          <details className="input-details">
+            <summary>Other revenue and surcharges</summary>
+            <FieldGrid>
+              {field("installPay", "Install / assembly pay", { prefix: "$" })}
+              {field("accessorialPay", "Accessorial pay", { prefix: "$", hint: "Haul-away, stairs, extra crew, and similar." })}
+              {field("fuelSurcharge", "Fuel surcharge", { prefix: "$" })}
+              {field("reattemptPay", "Re-attempt pay", { prefix: "$" })}
+            </FieldGrid>
+          </details>
         </Panel>
 
         <Panel title="Miles and time">
@@ -132,13 +116,14 @@ export default function RouteProfitTool() {
       <div
         id="results"
         ref={resultsRef}
-        className="scroll-mt-24 space-y-5 lg:sticky lg:top-24 lg:-m-1 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:p-1"
+        tabIndex={-1} className="calculator-results"
         aria-live="polite"
       >
-        <Panel>
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Net profit per route day</p>
-          <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-            <p className={`font-display text-5xl font-extrabold tracking-tight tabular-nums ${profitText}`}>{money(r.netProfit)}</p>
+        <ResultNav />
+        <Panel className="result-panel">
+          <p className="result-kicker">Net profit per route day</p>
+          <div className="result-heading">
+            <p className="result-number" data-tone={profitTone}>{money(r.netProfit)}</p>
             <Badge tone={GRADE_TONE[grade.grade]}>
               Grade {grade.grade} · {grade.label}
             </Badge>
@@ -161,7 +146,7 @@ export default function RouteProfitTool() {
           </div>
         </Panel>
 
-        <Panel title={`To make ${money(n.targetProfit)} a day`}>
+        <Panel title={`To make ${money(n.targetProfit)} a day`} className="goal-panel">
           {shortBy <= 0 ? (
             <p className="text-sm leading-6 text-slate-700">
               You clear it by <strong className="text-emerald-700">{money(-shortBy)}</strong> a day. The route could pay{" "}
@@ -195,6 +180,9 @@ export default function RouteProfitTool() {
           )}
         </Panel>
 
+        <ToolActions getShareUrl={shareUrl} onReset={reset} />
+        <ToolUpgrade source="route-profit-calculator" />
+
         <Panel title="Where the money goes" description="Each cost as a share of the day's revenue.">
           <BarList items={costItems} total={r.totalRevenue} formatValue={money} />
         </Panel>
@@ -203,15 +191,7 @@ export default function RouteProfitTool() {
           <Notes items={risks} tone={risks.length === 1 && risks[0].startsWith("Route looks healthy") ? "good" : "warn"} />
         </Panel>
 
-        <ToolActions getShareUrl={shareUrl} onReset={reset} />
       </div>
-
-      <MobileSummary
-        show={inputsInView && !resultsInView}
-        label="Net profit per route day"
-        value={`${money(r.netProfit)} · ${pct(r.profitMargin)}`}
-        tone={profitTone}
-      />
     </div>
   );
 }

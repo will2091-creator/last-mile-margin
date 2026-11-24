@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { claimTypeOptions } from "../lib/claimTypes";
 import { CATEGORIES, EVIDENCE, FAULT_OPTIONS, REQUESTS, buildDisputeLetter, forCategory } from "./lib/disputeLetter";
+import { useInView } from "./useInView";
 import { useToolState } from "./useToolState";
-import { CheckRow, FieldGrid, Notes, NumberField, Panel, Segmented, SelectField, TextField } from "./ui";
+import { CheckRow, FieldGrid, Notes, MobileSummary, ResultNav, NumberField, Panel, Segmented, SelectField, TextField } from "./ui";
+import ToolUpgrade from "./ToolUpgrade";
 
 // Sender details are remembered on this device; claim details are not.
 const SENDER_DEFAULTS = { company: "", name: "", title: "", phone: "", email: "" };
@@ -30,6 +32,8 @@ export default function DisputeLetterTool() {
   const [claim, setClaim] = useState(CLAIM_DEFAULTS);
   const [override, setOverride] = useState(null);
   const [status, setStatus] = useState("");
+  const resultsRef = useRef(null);
+  const resultsInView = useInView(resultsRef);
 
   const setField = (key, value) => setClaim((current) => ({ ...current, [key]: value }));
   const toggle = (key, id, on) =>
@@ -75,8 +79,9 @@ export default function DisputeLetterTool() {
   const types = claimTypeOptions[claim.category] || [];
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_460px] lg:items-start">
-      <div className="space-y-5">
+    <div className="calculator-layout calculator-layout-letter">
+      <MobileSummary show={!resultsInView} label="Dispute letter" action="View draft" />
+      <div id="inputs" tabIndex={-1} className="calculator-inputs">
         <Panel title="The claim">
           <div className="space-y-4">
             <Segmented
@@ -88,7 +93,7 @@ export default function DisputeLetterTool() {
               options={CATEGORIES}
             />
             <FieldGrid>
-              <SelectField label="Claim type" value={claim.claimType} onChange={(value) => setField("claimType", value)} options={types} />
+              <SelectField label="Claim type" value={claim.claimType} onChange={(value) => setField("claimType", value)} options={types} wide />
               <TextField label="Claim number" value={claim.claimId} onChange={(value) => setField("claimId", value)} placeholder="e.g. CLM-48213" />
               <NumberField label="Amount deducted" value={claim.amount} onChange={(value) => setField("amount", value)} prefix="$" placeholder="450" />
               <TextField label="Order, PO, or route number" value={claim.orderRef} onChange={(value) => setField("orderRef", value)} placeholder="Optional" />
@@ -153,8 +158,9 @@ export default function DisputeLetterTool() {
         </Panel>
       </div>
 
-      <div id="results" className="scroll-mt-24 space-y-5 lg:sticky lg:top-24 lg:-m-1 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:p-1">
-        <Panel title="Your letter">
+      <div ref={resultsRef} id="results" tabIndex={-1} className="calculator-results">
+        <ResultNav />
+        <Panel title="Your letter" className="result-panel letter-panel">
           <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Subject</p>
           <p className="mt-1 text-sm font-semibold text-slate-900">{letter.subject}</p>
           <label htmlFor="letter-body" className="mt-4 block text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -165,7 +171,7 @@ export default function DisputeLetterTool() {
             value={text}
             onChange={(event) => setOverride(event.target.value)}
             rows={18}
-            className="mt-1.5 block w-full resize-y rounded-xl border border-slate-300 bg-white p-3.5 text-sm leading-6 text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
+            className="letter-draft"
           />
           {edited && (
             <p className="mt-2 text-xs leading-5 text-amber-700">
@@ -176,16 +182,16 @@ export default function DisputeLetterTool() {
             </p>
           )}
           <div className="mt-4 flex flex-wrap gap-2">
-            <button type="button" onClick={copy} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500">
+            <button type="button" onClick={copy} className="site-button site-button-small">
               Copy letter
             </button>
-            <a href={mailto} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100">
+            <a href={mailto} className="site-button site-button-quiet site-button-small">
               Open in email
             </a>
-            <button type="button" onClick={download} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100">
+            <button type="button" onClick={download} className="site-button site-button-quiet site-button-small">
               Download .txt
             </button>
-            <button type="button" onClick={print} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100">
+            <button type="button" onClick={print} className="site-button site-button-quiet site-button-small">
               Print
             </button>
           </div>
@@ -193,6 +199,8 @@ export default function DisputeLetterTool() {
             {status}
           </p>
         </Panel>
+
+        <ToolUpgrade source="chargeback-dispute-letter" />
 
         <Panel title="Your strongest argument">
           <p className="text-sm leading-6 text-slate-700">{letter.angle}</p>

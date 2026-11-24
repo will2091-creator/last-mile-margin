@@ -3,7 +3,8 @@ import { clamp, cleanNum, money, money2 } from "./format";
 import { CONTRACT_TERMS, checkContract, describeContract } from "./lib/contractCheck";
 import { useInView } from "./useInView";
 import { useToolState } from "./useToolState";
-import { Badge, CheckRow, FieldGrid, MobileSummary, NumberField, Panel, Segmented, Stat, TextField, ToolActions } from "./ui";
+import { Badge, CheckRow, FieldGrid, MobileSummary, ResultNav, NumberField, Panel, Segmented, Stat, TextField, ToolActions } from "./ui";
+import ToolUpgrade from "./ToolUpgrade";
 
 // Example: a $950/day offer against a $700/day cost base plus weekly claims and fees.
 const DEFAULTS = {
@@ -81,16 +82,20 @@ export default function ContractCheckerTool() {
 
   const toggleTerm = (id, on) => set("terms", on ? [...new Set([...v.terms, id])] : v.terms.filter((t) => t !== id));
 
-  const inputsRef = useRef(null);
   const resultsRef = useRef(null);
-  const inputsInView = useInView(inputsRef);
   const resultsInView = useInView(resultsRef);
 
   const field = (key, label, extra = {}) => <NumberField label={label} value={v[key]} onChange={(value) => set(key, value)} {...extra} />;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
-      <div ref={inputsRef} className="space-y-5">
+    <div className="calculator-layout">
+      <MobileSummary
+        show={!resultsInView}
+        label="Verdict"
+        value={`${verdict.label} · ${result.margin}% margin`}
+        tone={verdict.tone === "good" ? "good" : verdict.tone === "warn" ? "warn" : "bad"}
+      />
+      <div id="inputs" tabIndex={-1} className="calculator-inputs">
         <Panel title="The offer">
           <div className="space-y-4">
             <Segmented
@@ -155,7 +160,7 @@ export default function ContractCheckerTool() {
         <Panel title="Compare with your current routes" description="Optional. Add up to three routes you run now, per route day.">
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="grid grid-cols-[1.3fr_1fr_1fr] gap-3">
+              <div key={i} className="route-compare-grid">
                 <TextField label={`Route ${i}`} value={v[`r${i}n`]} onChange={(value) => set(`r${i}n`, value)} placeholder="Name" maxLength={40} />
                 {field(`r${i}r`, "Revenue", { prefix: "$", placeholder: "" })}
                 {field(`r${i}c`, "Cost", { prefix: "$", placeholder: "" })}
@@ -176,15 +181,19 @@ export default function ContractCheckerTool() {
       <div
         id="results"
         ref={resultsRef}
-        className="scroll-mt-24 space-y-5 lg:sticky lg:top-24 lg:-m-1 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:p-1"
+        tabIndex={-1} className="calculator-results"
         aria-live="polite"
       >
-        <Panel>
-          <div className="flex items-center justify-between gap-3">
-            <Badge tone={verdict.tone}>{verdict.label}</Badge>
-            <p className="text-sm font-bold text-slate-500">{result.margin}% margin</p>
+        <ResultNav />
+        <Panel className="result-panel">
+          <p className="result-kicker">Contract verdict</p>
+          <div className="result-heading">
+            <p className="result-number" data-tone={verdict.tone}>{verdict.label}</p>
+            <Badge tone={verdict.tone}>{result.margin}% margin</Badge>
           </div>
-          <p className="mt-3 font-display text-2xl font-extrabold tracking-tight text-slate-950">{story.headline}</p>
+          <p className="mt-2 text-sm font-semibold text-slate-700">
+            Offer of {rateLabel(check.offerRate)} {unit}.
+          </p>
           <p className="mt-2 text-sm leading-6 text-slate-700">{story.body}</p>
           <p className="mt-3 rounded-xl bg-slate-50 px-3.5 py-3 text-sm font-semibold leading-6 text-slate-800 ring-1 ring-slate-100">{story.move}</p>
           <div className="mt-4 grid grid-cols-2 gap-2">
@@ -236,6 +245,9 @@ export default function ContractCheckerTool() {
           </Panel>
         )}
 
+        <ToolActions getShareUrl={shareUrl} onReset={reset} />
+        <ToolUpgrade source="contract-rate-checker" />
+
         <Panel title="Push back on these">
           {flagged.length ? (
             <ul className="space-y-3">
@@ -253,15 +265,7 @@ export default function ContractCheckerTool() {
           )}
         </Panel>
 
-        <ToolActions getShareUrl={shareUrl} onReset={reset} />
       </div>
-
-      <MobileSummary
-        show={inputsInView && !resultsInView}
-        label="Verdict"
-        value={`${verdict.label} · ${result.margin}% margin`}
-        tone={verdict.tone === "good" ? "good" : verdict.tone === "warn" ? "warn" : "bad"}
-      />
     </div>
   );
 }

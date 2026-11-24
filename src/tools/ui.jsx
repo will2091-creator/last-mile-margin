@@ -4,11 +4,11 @@ import { isBadNumber } from "./format";
 
 export function Panel({ title, description, aside, children, className = "" }) {
   return (
-    <section className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 ${className}`}>
+    <section className={`tool-panel ${className}`}>
       {(title || aside) && (
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            {title && <h3 className="text-base font-extrabold text-slate-950">{title}</h3>}
+            {title && <h3 className="text-[1.06rem] font-bold tracking-tight text-slate-950">{title}</h3>}
             {description && <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>}
           </div>
           {aside}
@@ -20,24 +20,24 @@ export function Panel({ title, description, aside, children, className = "" }) {
 }
 
 export function FieldGrid({ children, cols = 2 }) {
-  return <div className={`grid gap-4 ${cols === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>{children}</div>;
+  return <div className="field-grid" data-columns={cols}>{children}</div>;
 }
 
 const inputBase =
-  "block w-full rounded-xl border bg-white py-2.5 text-[0.95rem] font-semibold text-slate-950 shadow-xs outline-none transition placeholder:font-medium placeholder:text-slate-300 focus:ring-4";
+  "tool-field block w-full rounded-xl border font-semibold text-slate-950 outline-none transition placeholder:font-medium placeholder:text-slate-500 focus:ring-4";
 
 export function NumberField({ label, value, onChange, prefix, suffix, hint, placeholder = "0", wide = false }) {
   const id = useId();
   const bad = isBadNumber(value);
-  const describedBy = [hint ? `${id}-hint` : null, bad ? `${id}-err` : null].filter(Boolean).join(" ") || undefined;
+  const describedBy = [hint && !bad ? `${id}-hint` : null, bad ? `${id}-err` : null].filter(Boolean).join(" ") || undefined;
   return (
-    <div className={wide ? "sm:col-span-2" : ""}>
+    <div className={wide ? "wide-field" : undefined}>
       <label htmlFor={id} className="block text-sm font-bold text-slate-700">
         {label}
       </label>
       <div className="relative mt-1.5">
         {prefix && (
-          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm font-semibold text-slate-400">{prefix}</span>
+          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm font-semibold text-slate-500">{prefix}</span>
         )}
         <input
           id={id}
@@ -50,11 +50,11 @@ export function NumberField({ label, value, onChange, prefix, suffix, hint, plac
           aria-invalid={bad || undefined}
           aria-describedby={describedBy}
           className={`${inputBase} tabular-nums ${prefix ? "pl-7" : "pl-3"} ${suffix ? (suffix.length > 4 ? "pr-20" : "pr-12") : "pr-3"} ${
-            bad ? "border-red-400 focus:border-red-500 focus:ring-red-500/15" : "border-slate-300 focus:border-blue-500 focus:ring-blue-500/15"
+            bad ? "border-red-400 focus:border-red-500 focus:ring-red-500/15" : "border-slate-200 focus:border-blue-500 focus:ring-blue-500/15"
           }`}
         />
         {suffix && (
-          <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-slate-400">{suffix}</span>
+          <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-slate-500">{suffix}</span>
         )}
       </div>
       {bad && (
@@ -74,7 +74,7 @@ export function NumberField({ label, value, onChange, prefix, suffix, hint, plac
 export function TextField({ label, value, onChange, type = "text", placeholder, hint, wide = false, autoComplete = "off", maxLength = 120 }) {
   const id = useId();
   return (
-    <div className={wide ? "sm:col-span-2" : ""}>
+    <div className={wide ? "wide-field" : undefined}>
       <label htmlFor={id} className="block text-sm font-bold text-slate-700">
         {label}
       </label>
@@ -87,7 +87,7 @@ export function TextField({ label, value, onChange, type = "text", placeholder, 
         maxLength={maxLength}
         onChange={(event) => onChange(event.target.value)}
         aria-describedby={hint ? `${id}-hint` : undefined}
-        className={`${inputBase} mt-1.5 border-slate-300 px-3 focus:border-blue-500 focus:ring-blue-500/15`}
+        className={`${inputBase} mt-1.5 border-slate-200 px-3 focus:border-blue-500 focus:ring-blue-500/15`}
       />
       {hint && (
         <p id={`${id}-hint`} className="mt-1 text-xs leading-5 text-slate-500">
@@ -101,7 +101,7 @@ export function TextField({ label, value, onChange, type = "text", placeholder, 
 export function SelectField({ label, value, onChange, options, wide = false }) {
   const id = useId();
   return (
-    <div className={wide ? "sm:col-span-2" : ""}>
+    <div className={wide ? "wide-field" : undefined}>
       <label htmlFor={id} className="block text-sm font-bold text-slate-700">
         {label}
       </label>
@@ -109,7 +109,7 @@ export function SelectField({ label, value, onChange, options, wide = false }) {
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={`${inputBase} mt-1.5 border-slate-300 pl-3 pr-8 focus:border-blue-500 focus:ring-blue-500/15`}
+        className={`${inputBase} mt-1.5 border-slate-200 pl-3 pr-8 focus:border-blue-500 focus:ring-blue-500/15`}
       >
         {options.map((option) => {
           const opt = typeof option === "string" ? { value: option, label: option } : option;
@@ -140,7 +140,7 @@ export function Segmented({ label, value, onChange, options, hint }) {
               onChange={() => onChange(option.value)}
               className="peer sr-only"
             />
-            <span className="block rounded-lg px-3 py-1.5 text-sm font-bold text-slate-600 transition hover:text-slate-900 peer-checked:bg-white peer-checked:text-slate-950 peer-checked:shadow-sm peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500">
+            <span className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-600 transition hover:text-slate-900 peer-checked:bg-white peer-checked:text-slate-950 peer-checked:shadow-sm peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500">
               {option.label}
             </span>
           </label>
@@ -177,9 +177,9 @@ const TONE_TEXT = {
 
 export function Stat({ label, value, sub, tone = "default" }) {
   return (
-    <div className="rounded-xl bg-slate-50 px-3.5 py-3 ring-1 ring-slate-100">
+    <div className="tool-stat">
       <p className="text-[0.7rem] font-bold uppercase tracking-wide text-slate-500">{label}</p>
-      <p className={`mt-1 text-lg font-extrabold tabular-nums ${TONE_TEXT[tone]}`}>{value}</p>
+      <p className={`tool-stat-value ${TONE_TEXT[tone]}`}>{value}</p>
       {sub && <p className="text-xs font-medium text-slate-500">{sub}</p>}
     </div>
   );
@@ -261,7 +261,7 @@ export function ToolActions({ getShareUrl, onReset, shareLabel = "Copy link with
         </button>
       )}
       {onReset && (
-        <button type="button" onClick={onReset} className="rounded-xl px-3.5 py-2 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800">
+        <button type="button" onClick={onReset} className="tool-reset">
           Reset to example
         </button>
       )}
@@ -272,24 +272,21 @@ export function ToolActions({ getShareUrl, onReset, shareLabel = "Copy link with
   );
 }
 
-// Slim bar pinned to the bottom of small screens while results are off screen.
-export function MobileSummary({ show, label, value, tone = "default", targetId = "results" }) {
+export function ResultNav() {
+  return <a className="result-back" href="#inputs">Edit inputs <span aria-hidden="true">↑</span></a>;
+}
+
+// In-flow sticky summary leaves the lower viewport clear for input and the keyboard.
+export function MobileSummary({ show, label, value, tone = "default", targetId = "results", action = "See results" }) {
   return (
-    <div
-      className={`fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-5 py-3 shadow-[0_-8px_24px_-12px_rgba(15,23,42,0.25)] backdrop-blur transition-transform duration-200 lg:hidden ${
-        show ? "translate-y-0" : "pointer-events-none translate-y-full"
-      }`}
-      aria-hidden={!show}
-    >
-      <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
-        <div>
-          <p className="text-[0.7rem] font-bold uppercase tracking-wide text-slate-500">{label}</p>
-          <p className={`text-lg font-extrabold tabular-nums ${TONE_TEXT[tone]}`}>{value}</p>
-        </div>
-        <a href={`#${targetId}`} tabIndex={show ? 0 : -1} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white">
-          See results
-        </a>
+    <div className="mobile-result" data-show={show} aria-hidden={!show}>
+      <div>
+        <p className="mobile-result-label">{label}</p>
+        {value && <p className={`mobile-result-value ${TONE_TEXT[tone]}`}>{value}</p>}
       </div>
+      <a href={`#${targetId}`} tabIndex={show ? 0 : -1} className="site-button site-button-quiet site-button-small">
+        {action} <span aria-hidden="true">↓</span>
+      </a>
     </div>
   );
 }

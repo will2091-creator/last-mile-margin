@@ -3,7 +3,8 @@ import { clamp, cleanNum, money, money2, pct } from "./format";
 import { computeCrewPay } from "./lib/driverPay";
 import { useInView } from "./useInView";
 import { useToolState } from "./useToolState";
-import { CheckRow, FieldGrid, MobileSummary, Notes, NumberField, Panel, Segmented, Stat, ToolActions } from "./ui";
+import { CheckRow, FieldGrid, MobileSummary, ResultNav, Notes, NumberField, Panel, Segmented, Stat, ToolActions } from "./ui";
+import ToolUpgrade from "./ToolUpgrade";
 
 const DEFAULTS = {
   driverType: "day",
@@ -52,15 +53,14 @@ export default function DriverPayTool() {
   if (n.driverType === "stop") notes.push("Per-stop pay moves with volume, so a light day costs you less and your driver earns less. See the table below.");
   if (!notes.length) notes.push("Crew cost looks in line with the route revenue you entered.");
 
-  const inputsRef = useRef(null);
   const resultsRef = useRef(null);
-  const inputsInView = useInView(inputsRef);
   const resultsInView = useInView(resultsRef);
   const field = (key, label, extra = {}) => <NumberField label={label} value={v[key]} onChange={(value) => set(key, value)} {...extra} />;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
-      <div ref={inputsRef} className="space-y-5">
+    <div className="calculator-layout">
+      <MobileSummary show={!resultsInView} label="Crew cost per day" value={money(c.dailyCost)} />
+      <div id="inputs" tabIndex={-1} className="calculator-inputs">
         <Panel title="Driver">
           <div className="space-y-4">
             <Segmented label="How you pay" value={v.driverType} onChange={(value) => set("driverType", value)} options={PAY_TYPES} />
@@ -105,12 +105,13 @@ export default function DriverPayTool() {
       <div
         id="results"
         ref={resultsRef}
-        className="scroll-mt-24 space-y-5 lg:sticky lg:top-24 lg:-m-1 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:p-1"
+        tabIndex={-1} className="calculator-results"
         aria-live="polite"
       >
-        <Panel>
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Crew cost per truck, per day</p>
-          <p className="mt-1 font-display text-5xl font-extrabold tracking-tight tabular-nums text-slate-950">{money(c.dailyCost)}</p>
+        <ResultNav />
+        <Panel className="result-panel">
+          <p className="result-kicker">Crew cost per truck, per day</p>
+          <p className="result-number">{money(c.dailyCost)}</p>
           <p className="mt-2 text-sm font-semibold text-slate-600">
             Wages plus {n.burdenPct}% payroll costs{c.laborShare != null ? `, ${pct(c.laborShare)} of route revenue` : ""}.
           </p>
@@ -167,14 +168,14 @@ export default function DriverPayTool() {
           </table>
         </Panel>
 
+        <ToolActions getShareUrl={shareUrl} onReset={reset} />
+        <ToolUpgrade source="driver-pay-calculator" />
+
         <Panel title="What to watch">
           <Notes items={notes} tone={heavyLabor || (c.otHours > 0 && !n.overtime) ? "warn" : "info"} />
         </Panel>
 
-        <ToolActions getShareUrl={shareUrl} onReset={reset} />
       </div>
-
-      <MobileSummary show={inputsInView && !resultsInView} label="Crew cost per day" value={money(c.dailyCost)} />
     </div>
   );
 }
