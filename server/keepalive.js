@@ -1,19 +1,19 @@
 // Keep-alive for the Supabase free tier.
 //
 // Supabase pauses free projects after ~7 days without activity, which takes the
-// whole backend (auth, checkout, AI) offline. A Vercel cron (see vercel.json)
-// calls this once a day; it runs one tiny read so the project always counts as
-// active. Harmless if called by anyone else: it reads nothing back to the caller.
+// whole backend (auth, checkout, AI) offline. A daily scheduled request to
+// GET /api/keepalive runs one tiny read so the project always counts as active.
+// Harmless if called by anyone else: it returns nothing from the database.
 //
-// Optional: set CRON_SECRET in Vercel and this endpoint will only accept
-// requests carrying it (Vercel crons send it automatically as a Bearer token).
+// Optional: set CRON_SECRET in Vercel and only requests carrying it are
+// accepted (Vercel crons send it automatically as a Bearer token).
 
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
-export default async function handler(request, response) {
+export async function runKeepalive(request, response) {
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret && request.headers?.authorization !== `Bearer ${cronSecret}`) {
     response.status(401).json({ ok: false, error: "Unauthorized." });
