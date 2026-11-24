@@ -16,6 +16,35 @@ import { Check, ChevronLeft, ChevronRight, Mail, Paperclip } from "lucide-react"
 import EmptyState, { InlineEmpty } from "../components/EmptyState";
 import { fileToCompressedImage } from "../lib/imagePrep";
 import { uploadClaimEvidence, loadClaimEvidence } from "../lib/evidenceRepository";
+import {
+  claimRetailer,
+  extractDisputeDeadline,
+  getDeadlineStatus,
+  getDisputeStage,
+  getFollowUpStatus,
+  parseClaimDate,
+  summarizeDisputes,
+} from "../lib/disputeTracker";
+
+// Common final-mile retailers, offered alongside the user's own contracts.
+const COMMON_RETAILERS = [
+  "Lowe's", "Home Depot", "Best Buy", "Costco", "Wayfair", "Ashley", "Mattress Firm",
+  "IKEA", "Amazon", "Walmart", "Target", "Rooms To Go", "Sam's Club", "Sears", "Overstock",
+];
+
+const readContractNames = () => {
+  try {
+    const rows = JSON.parse(localStorage.getItem("finalMileRollupRows") || "[]");
+    return Array.isArray(rows) ? rows.map((row) => String(row?.contract || "").trim()).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+};
+
+const formatShortDate = (value) => {
+  const date = value && !Number.isNaN(new Date(value).getTime()) ? new Date(value) : null;
+  return date ? date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+};
 
 function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backendStatus, navigateToTab }) {
   const unassignedDriverLabel = "Unassigned";
@@ -49,6 +78,9 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     preventable: "Yes",
     date: "Today",
     risk: "Medium",
+    retailer: "",
+    disputeDeadline: "",
+    notes: "",
   };
 
   const [showForm, setShowForm] = useState(false);
@@ -103,6 +135,21 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   const riskThresholds = {
     medium: Number(appSettings?.claimRiskThresholds?.medium ?? 200),
     high: Number(appSettings?.claimRiskThresholds?.high ?? 500),
+  };
+
+  // Contracts live in localStorage (edited on another page), so read them fresh each render.
+  const contractNames = readContractNames();
+  const retailerOptions = Array.from(new Set([...contractNames, ...claims.map(claimRetailer).filter(Boolean), ...COMMON_RETAILERS]));
+  // Best guess at who issued a claim: one of the user's contracts first, then a known retailer.
+  const detectRetailer = (text) => {
+    const normalized = String(text || "").toLowerCase();
+    const normalize = (value) => value.toLowerCase().replace(/[’']/g, "'");
+    const contractHit = contractNames.find((name) => normalized.includes(normalize(name)));
+    if (contractHit) return contractHit;
+    const retailerHit = [...claims.map(claimRetailer).filter(Boolean), ...COMMON_RETAILERS].find((name) =>
+      normalized.replace(/[’']/g, "'").includes(normalize(name))
+    );
+    return retailerHit || "";
   };
 
   const scrollToClaimActionPanel = () => {
@@ -184,7 +231,6 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   const openClaimExposure = filteredClaims
     .filter((claim) => claim.status !== "Closed")
     .reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
-  const profitLostPerStop = filteredExposure / 1038;
 
   const pageClass = isDark ? "space-y-6 text-white" : "space-y-6 text-slate-950";
   const cardClass = isDark
@@ -314,6 +360,9 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       date: dateMatch?.[0] || (normalized.includes("yesterday") ? "Yesterday" : "Today"),
       risk,
       senderEmail,
+      retailer: detectRetailer(text),
+      disputeDeadline: extractDisputeDeadline(text),
+      notes: "",
     });
     setImportConfidence(Math.round((confidenceSignals / 5) * 100));
   };
@@ -650,6 +699,37 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     return isDark ? "bg-red-500/10 text-red-300" : "bg-red-50 text-red-700";
   };
 
+  const formatDeadline = (value) => parseClaimDate(value)?.toLocaleDateString("en-US", { month: "short", day: "numeric" }) || value;
+  const chipTone = {
+    emerald: isDark ? "bg-emerald-500/10 text-emerald-300" : "bg-emerald-50 text-emerald-700",
+    amber: isDark ? "bg-amber-500/10 text-amber-300" : "bg-amber-50 text-amber-700",
+    red: isDark ? "bg-red-500/10 text-red-300" : "bg-red-50 text-red-700",
+    blue: isDark ? "bg-blue-500/10 text-blue-300" : "bg-blue-50 text-blue-700",
+    slate: isDark ? "bg-white/10 text-slate-300" : "bg-slate-100 text-slate-600",
+  };
+  // One short badge for where a claim's dispute stands (or how close its deadline is).
+  const getDisputeChip = (claim) => {
+    const stage = getDisputeStage(claim);
+    if (stage === "won") return { label: `Won · ${currency.format(Number(claim.disputeRecovered || 0))} back`, tone: "emerald" };
+    if (stage === "partial") return { label: `Partial · ${currency.format(Number(claim.disputeRecovered || 0))} back`, tone: "amber" };
+    if (stage === "lost") return { label: "Dispute lost", tone: "slate" };
+    if (stage === "sent") {
+      const followUp = getFollowUpStatus(claim);
+      return followUp?.due
+        ? { label: `Follow up · sent ${followUp.daysSinceSent} days ago`, tone: "amber" }
+        : { label: `Dispute sent ${formatShortDate(claim.disputeSentAt)}`, tone: "blue" };
+    }
+    const deadline = getDeadlineStatus(claim);
+    if (!deadline) return null;
+    if (deadline.tone === "ok") return { label: `Dispute by ${formatDeadline(claim.disputeDeadline)}`, tone: "slate" };
+    return { label: deadline.label, tone: deadline.tone === "soon" ? "amber" : "red" };
+  };
+  const renderDisputeChip = (claim, className = "") => {
+    const chip = getDisputeChip(claim);
+    if (!chip) return null;
+    return <span className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-black ${chipTone[chip.tone]} ${className}`}>{chip.label}</span>;
+  };
+
   const getClaimTeam = (claim) => claim.team || getDriverTeam(getClaimDriver(claim)) || "Unassigned";
   const getClaimTeamRecord = (claim) => teams.find((team) => team.name === getClaimTeam(claim));
   // Logic lives in src/lib/claims.js (shared with the dashboard action feed); the team
@@ -683,6 +763,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       .map((c) => ({
         c,
         relevance:
+          (forClaim && claimRetailer(c) && claimRetailer(c) === claimRetailer(forClaim) ? 3 : 0) +
           (forClaim && (getClaimTeam(c) === getClaimTeam(forClaim) || (c.route && c.route === forClaim.route)) ? 2 : 0) +
           (forClaim && c.type === forClaim.type ? 1 : 0) +
           (forClaim && c.category === forClaim.category ? 1 : 0),
@@ -690,6 +771,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       .sort((a, b) => b.relevance - a.relevance)
       .slice(0, 10)
       .map(({ c }) => ({
+        retailer: claimRetailer(c) || "",
         route: c.route || getClaimTeam(c),
         type: c.type,
         category: c.category,
@@ -708,8 +790,11 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       category: claim.category,
       amount: Number(claim.amount || 0),
       amountFormatted: currency.format(Number(claim.amount || 0)),
+      retailer: claimRetailer(claim),
       route: claim.route || "",
       date: claim.date || "",
+      disputeDeadline: claim.disputeDeadline || "",
+      contractorNotes: String(claim.notes || "").trim(),
       driver: getClaimDriver(claim),
       team: getClaimTeam(claim),
       status: claim.status,
@@ -726,9 +811,10 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
 
   const buildFallbackDisputeLetter = (claim, selection = null) => {
     const ctx = buildDisputeClaimContext(claim, selection);
+    const recipient = ctx.retailer ? `${ctx.retailer} Claims Department` : "Retailer Claims Department";
     const paragraphs = [
       `Re: Dispute of claim ${ctx.id} — ${ctx.type} (${ctx.amountFormatted})`,
-      `To whom it may concern,`,
+      ctx.retailer ? `Dear ${recipient},` : `To whom it may concern,`,
       `We are writing to formally dispute the deduction of ${ctx.amountFormatted} associated with claim ${ctx.id}${ctx.route ? ` on the ${ctx.route} route` : ""}${ctx.date ? `, dated ${ctx.date}` : ""}.`,
       ctx.preventable === "No"
         ? `This incident was not preventable on our part. We ask that you provide documentation tying the reported damage directly to this delivery before any deduction is applied.`
@@ -742,7 +828,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     ];
     return {
       subject: `Dispute of claim ${ctx.id} — ${ctx.type} (${ctx.amountFormatted})`,
-      recipient: "Retailer Claims Department",
+      recipient,
       letter: paragraphs.join("\n\n"),
       strongestArgument: ctx.recommendedAngle,
       evidenceCited: ctx.evidencePresent.slice(0, 5),
@@ -819,15 +905,49 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     const recovered = outcome === "lost" ? 0 : outcome === "won" ? Number(claim.amount || 0) : Number(claim.disputeRecovered || claim.amount || 0);
     updateClaimDispute(claim.id, outcome, recovered);
   };
+  // Patch any fields on one claim, keeping the open packet in step.
+  const patchClaim = (claimId, patch) => {
+    setClaims((current) => current.map((c) => (c.id === claimId ? { ...c, ...patch } : c)));
+    setDisputePacketClaim((current) => (current && current.id === claimId ? { ...current, ...patch } : current));
+  };
+  const markDisputeSent = (claimIds) => {
+    const ids = new Set([].concat(claimIds));
+    const sentAt = new Date().toISOString();
+    setClaims((current) => current.map((c) => (ids.has(c.id) && !c.disputeSentAt ? { ...c, disputeSentAt: sentAt } : c)));
+    setDisputePacketClaim((current) => (current && ids.has(current.id) && !current.disputeSentAt ? { ...current, disputeSentAt: sentAt } : current));
+  };
+  const clearDisputeSent = (claimId) => patchClaim(claimId, { disputeSentAt: "" });
+  // "I have this" for a checklist item — stored on the claim so it counts everywhere.
+  const setEvidenceConfirmed = (claim, label, value) => {
+    const withEvidence = (c) => {
+      const evidence = { ...(c.evidence || {}) };
+      if (value) evidence[label] = true;
+      else delete evidence[label];
+      return { ...c, evidence };
+    };
+    setClaims((current) => current.map((c) => (c.id === claim.id ? withEvidence(c) : c)));
+    setDisputePacketClaim((current) => (current && current.id === claim.id ? withEvidence(current) : current));
+  };
 
   // ---- Agentic: batch-draft dispute letters for every contestable claim ----
   const [batchOpen, setBatchOpen] = useState(false);
   const [batchStatus, setBatchStatus] = useState("idle"); // idle | running | done
   const [batchLetters, setBatchLetters] = useState([]);
-  const contestableClaims = claims.filter(isLikelyWorthDisputing);
+  // Worth disputing, plus anything with a dispute deadline this week; soonest deadline first.
+  const getBatchTargets = () =>
+    claims
+      .filter((claim) => {
+        if (claim.status === "Closed") return false;
+        const deadline = getDeadlineStatus(claim);
+        return isLikelyWorthDisputing(claim) || Boolean(deadline && deadline.days >= 0 && deadline.days <= 7);
+      })
+      .map((claim) => ({ claim, days: getDeadlineStatus(claim)?.days ?? 9999 }))
+      .sort((a, b) => a.days - b.days || Number(b.claim.amount || 0) - Number(a.claim.amount || 0))
+      .map(({ claim }) => claim);
+  const contestableClaims = getBatchTargets();
 
   const generateAllDisputes = async () => {
-    const targets = claims.filter(isLikelyWorthDisputing);
+    const targets = getBatchTargets();
     setBatchOpen(true);
     setBatchStatus("running");
     setBatchLetters([]);
@@ -844,6 +964,13 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       setBatchLetters([...collected]);
     }
     setBatchStatus("done");
+  };
+
+  const emailBatchLetter = (claim, letter) => {
+    const to = (claim.senderEmail || defaultClaimsEmail || "").trim();
+    const mailto = `mailto:${to}?subject=${encodeURIComponent(letter.subject || "")}&body=${encodeURIComponent(letter.letter || "")}`;
+    window.open(mailto, "_blank", "noopener");
+    markDisputeSent(claim.id);
   };
 
   const copyAllDisputes = async () => {
@@ -896,6 +1023,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     const to = (recipientEmail || "").trim();
     const mailto = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(disputeLetterBody)}`;
     window.open(mailto, "_blank", "noopener");
+    if (disputePacketClaim) markDisputeSent(disputePacketClaim.id);
   };
 
   // Build a clean, print-ready dispute packet (claim summary + cited evidence +
@@ -913,10 +1041,12 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
     const summaryRows = [
       ["Claim ID", claim.id],
       ["Claim amount", currency.format(Number(claim.amount || 0))],
+      ["Retailer", claimRetailer(claim) || "Not set"],
       ["Route / date", `${claim.route || "No route"} · ${claim.date || "No date"}`],
       ["Team / driver", `${getClaimTeam(claim)} · ${getClaimDriver(claim) || "Unassigned"}`],
       ["Claim type", claim.type],
       ["Preventability", claim.preventable || "Unknown"],
+      ...(claim.disputeDeadline ? [["Dispute deadline", claim.disputeDeadline]] : []),
     ];
     const evidence = getEvidenceChecklist(claim).filter((item) => selectedEvidence.has(item.label));
     const letterHtml = esc(disputeLetterBody || "Generate the dispute letter before exporting to include it here.")
@@ -995,7 +1125,8 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       setAttachedEvidence(map);
     });
     return () => { cancelled = true; };
-  }, [disputePacketClaim]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disputePacketClaim?.id]);
 
   const openEvidencePicker = (label) => {
     evidenceTargetLabel.current = label;
@@ -1016,6 +1147,7 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       return;
     }
     setAttachedEvidence((current) => ({ ...current, [label]: { name: file.name, file_path: result.evidence?.file_path } }));
+    setEvidenceConfirmed(disputePacketClaim, label, true);
     // An attached file satisfies the checklist item — make sure it's cited.
     setSelectedEvidence((current) => new Set(current).add(label));
   };
@@ -1057,7 +1189,38 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   const mostExpensiveClaimType = typeRiskRows[0] || { name: "None", exposure: 0, count: 0 };
   const missingEvidenceCount = filteredClaims.reduce((count, claim) => count + getMissingEvidence(claim).length, 0);
   const likelyDisputeClaims = filteredClaims.filter(isLikelyWorthDisputing);
-  const claimTrend = filteredClaims.length ? 18.2 : 0;
+  // Real trend: claim dollars dated in the last 30 days vs the 30 before (only claims with readable dates).
+  const claimTrend = (() => {
+    const now = new Date();
+    const dayMs = 86400000;
+    let recent = 0;
+    let prior = 0;
+    filteredClaims.forEach((claim) => {
+      const date = parseClaimDate(claim.date, now);
+      if (!date) return;
+      const age = (now.getTime() - date.getTime()) / dayMs;
+      if (age < 30) recent += Number(claim.amount || 0);
+      else if (age < 60) prior += Number(claim.amount || 0);
+    });
+    if (!prior) return null;
+    return Math.round(((recent - prior) / prior) * 1000) / 10;
+  })();
+  const disputeSummary = summarizeDisputes(claims);
+  const deadlineAlerts = disputeSummary.dueSoon + disputeSummary.overdue;
+  // Claims needing a dispute action now: deadlines this week, quiet sent disputes, then missed deadlines.
+  const disputeAttention = claims
+    .map((claim) => {
+      const deadline = getDeadlineStatus(claim);
+      const followUp = getFollowUpStatus(claim);
+      let rank = null;
+      if (deadline && deadline.days >= 0 && deadline.days <= 7) rank = deadline.days;
+      else if (followUp?.due) rank = 100 - Math.min(followUp.daysSinceSent, 99) / 100;
+      else if (deadline && deadline.days < 0 && deadline.days >= -30) rank = 200 - deadline.days;
+      return rank === null ? null : { claim, rank };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.rank - b.rank || Number(b.claim.amount || 0) - Number(a.claim.amount || 0))
+    .map(({ claim }) => claim);
   const highestPropertyTeam = teamRiskRows.slice().sort((a, b) => b.propertyExposure - a.propertyExposure)[0] || highestRiskTeam;
   const propertyExposureShare = propertyTotal ? Math.round((highestPropertyTeam.propertyExposure / propertyTotal) * 100) : 0;
   const missingPhotoTeams = teams.filter((team) => team.photoStatus === "Missing").map((team) => team.name);
@@ -1068,7 +1231,9 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
   const intelligenceMetrics = [
     ["Open claim exposure", currency.format(openClaimExposure), `${openClaims} open claim${openClaims === 1 ? "" : "s"}`, "text-red-600", openClaims ? { status: "Open" } : null],
     ["Preventable %", `${preventablePercentage}%`, "Claims marked preventable", preventablePercentage >= 50 ? "text-amber-600" : "text-emerald-700", { preventable: "Yes" }],
-    ["Trend vs last period", `${claimTrend > 0 ? "+" : ""}${claimTrend}%`, "Mock trend until date history is connected", claimTrend > 0 ? "text-red-600" : "text-emerald-700", null],
+    claimTrend === null
+      ? ["Dispute deadlines", deadlineAlerts, deadlineAlerts ? `${disputeSummary.dueSoon} due this week${disputeSummary.overdue ? ` · ${disputeSummary.overdue} passed` : ""}` : "None due this week", deadlineAlerts ? "text-red-600" : "text-emerald-700", null]
+      : ["Trend vs last 30 days", `${claimTrend > 0 ? "+" : ""}${claimTrend}%`, "Claim dollars, last 30 days vs the 30 before", claimTrend > 0 ? "text-red-600" : "text-emerald-700", null],
     ["Highest-risk team", highestRiskTeam.name, currency.format(highestRiskTeam.exposure), titleText, highestRiskTeam.name !== "None" ? { team: highestRiskTeam.name } : null],
     ["Costliest claim type", mostExpensiveClaimType.name, currency.format(mostExpensiveClaimType.exposure), titleText, mostExpensiveClaimType.name !== "None" ? { claimType: mostExpensiveClaimType.name } : null],
     ["Missing evidence", missingEvidenceCount, "Checklist gaps found", missingEvidenceCount ? "text-amber-600" : "text-emerald-700", null],
@@ -1124,14 +1289,14 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
       valueClass: "text-red-600",
     },
     {
-      label: "Profit Lost / Stop",
-      value: currency.format(profitLostPerStop),
-      note: "Based on 1,038 stops",
+      label: "Recovered from Disputes",
+      value: currency.format(disputeSummary.recovered),
+      note: disputeSummary.decided ? `${disputeSummary.winRate}% win rate · ${disputeSummary.decided} decided` : "Log dispute results to track this",
       icon: BarChart3,
-      accent: "blue",
-      bar: "bg-blue-600",
-      iconClass: isDark ? "bg-blue-500/10 text-blue-300" : "bg-blue-50 text-blue-700",
-      valueClass: titleText,
+      accent: "emerald",
+      bar: "bg-emerald-500",
+      iconClass: isDark ? "bg-emerald-500/10 text-emerald-300" : "bg-emerald-50 text-emerald-700",
+      valueClass: isDark ? "text-emerald-300" : "text-emerald-700",
     },
   ];
 
@@ -1204,6 +1369,9 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
 
   return (
     <div className={pageClass}>
+      <datalist id="fmm-retailer-options">
+        {retailerOptions.map((name) => <option key={name} value={name} />)}
+      </datalist>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-sm font-semibold text-blue-600">Last Mile Margin</p>
@@ -1373,6 +1541,100 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
         />
       )}
 
+      {claims.length > 0 && (
+        <div className={cardClass}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Dispute Tracker</p>
+              <h2 className={`mt-1 text-xl font-bold leading-tight ${titleText}`}>Every dispute, from deadline to dollars back</h2>
+              <p className={`mt-1 max-w-3xl text-sm ${mutedText}`}>
+                Emailing a letter marks the dispute as sent. Log the result when the retailer answers, and your win rates fill in below.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
+            {[
+              ["Win rate", disputeSummary.winRate === null ? "—" : `${disputeSummary.winRate}%`, disputeSummary.decided ? `${disputeSummary.wins} of ${disputeSummary.decided} decided` : "No results logged yet", disputeSummary.winRate === null ? mutedText : disputeSummary.winRate >= 50 ? "text-emerald-600" : "text-amber-600"],
+              ["Recovered", currency.format(disputeSummary.recovered), "Won back from retailers", isDark ? "text-emerald-300" : "text-emerald-700"],
+              ["Awaiting reply", disputeSummary.pending, disputeSummary.followUps ? `${disputeSummary.followUps} need${disputeSummary.followUps === 1 ? "s" : ""} a follow-up` : "Sent, no result yet", disputeSummary.followUps ? "text-amber-600" : titleText],
+              ["Due this week", disputeSummary.dueSoon, disputeSummary.overdue ? `${disputeSummary.overdue} deadline${disputeSummary.overdue === 1 ? "" : "s"} passed` : "Dispute deadlines", disputeSummary.dueSoon ? "text-red-600" : titleText],
+            ].map(([label, value, note, valueClass]) => (
+              <div key={label} className={isDark ? "rounded-xl border border-white/10 bg-slate-950/40 p-3" : "rounded-xl border border-slate-200 bg-slate-50/80 p-3"}>
+                <p className={`text-[10px] font-semibold uppercase tracking-wide ${mutedText}`}>{label}</p>
+                <p className={`safe-number mt-1 text-2xl font-black ${valueClass}`}>{value}</p>
+                <p className={`mt-1 text-xs font-semibold ${mutedText}`}>{note}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+            <div>
+              <p className={`mb-2 text-sm font-black ${titleText}`}>Needs attention</p>
+              {disputeAttention.length === 0 ? (
+                <div className={isDark ? "rounded-xl border border-dashed border-white/10 p-4 text-sm font-semibold text-slate-400" : "rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-500"}>
+                  Nothing due. Add the retailer's dispute deadline to a claim and it shows up here before time runs out.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {disputeAttention.slice(0, 6).map((claim) => (
+                    <div key={claim.id} className={isDark ? "flex flex-col gap-2 rounded-xl border border-white/10 bg-slate-950/40 p-3 sm:flex-row sm:items-center sm:justify-between" : "flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"}>
+                      <div className="min-w-0">
+                        <p className={`truncate text-sm font-black ${titleText}`}>
+                          {claim.type} · <span className="text-red-600">{currency.format(Number(claim.amount || 0))}</span>
+                        </p>
+                        <p className={`truncate text-xs font-semibold ${mutedText}`}>{claim.id}{claimRetailer(claim) ? ` · ${claimRetailer(claim)}` : ""}{claim.route ? ` · ${claim.route}` : ""}</p>
+                      </div>
+                      <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        {renderDisputeChip(claim)}
+                        <button type="button" onClick={() => setDisputePacketClaim(claim)} className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white hover:bg-blue-500">
+                          {getDisputeStage(claim) === "sent" ? "Log result" : "Open packet"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {disputeAttention.length > 6 && <p className={`text-xs font-bold ${mutedText}`}>+ {disputeAttention.length - 6} more</p>}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <p className={`mb-2 text-sm font-black ${titleText}`}>Results by retailer</p>
+              {disputeSummary.byRetailer.length === 0 ? (
+                <div className={isDark ? "rounded-xl border border-dashed border-white/10 p-4 text-sm font-semibold text-slate-400" : "rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-500"}>
+                  Once you send disputes, you'll see which retailers pay out and which ones fight every claim.
+                </div>
+              ) : (
+                <div className={isDark ? "overflow-hidden rounded-xl border border-white/10" : "overflow-hidden rounded-xl border border-slate-200"}>
+                  <table className="w-full text-left text-sm">
+                    <thead className={isDark ? "bg-white/5" : "bg-slate-50"}>
+                      <tr className={`text-[10px] uppercase tracking-wide ${mutedText}`}>
+                        <th className="px-3 py-2">Retailer</th>
+                        <th className="px-3 py-2 text-right">Sent</th>
+                        <th className="px-3 py-2 text-right">Win rate</th>
+                        <th className="px-3 py-2 text-right">Recovered</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {disputeSummary.byRetailer.slice(0, 6).map((row) => (
+                        <tr key={row.name} className={`border-t ${rowBorder}`}>
+                          <td className={`max-w-[10rem] truncate px-3 py-2 font-bold ${titleText}`}>{row.name}</td>
+                          <td className={`px-3 py-2 text-right font-semibold ${mutedText}`}>{row.disputed}</td>
+                          <td className={`px-3 py-2 text-right font-black ${row.winRate === null ? mutedText : row.winRate >= 50 ? "text-emerald-600" : "text-amber-600"}`}>
+                            {row.winRate === null ? "Pending" : `${row.winRate}%`}
+                          </td>
+                          <td className={`px-3 py-2 text-right font-black ${titleText}`}>{currency.format(row.recovered)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={isDark ? "rounded-xl border border-white/10 bg-slate-900/80 px-5 py-4 text-center" : "rounded-xl border border-slate-300 bg-slate-200 px-5 py-4 text-center"}>
         <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Claim Workflow Board</p>
         <h2 className={`mt-1 text-xl font-bold ${titleText}`}>Drag claims between columns to update status</h2>
@@ -1477,9 +1739,11 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                     </div>
 
                     <p className={`mt-3 truncate text-xs font-semibold ${mutedText}`}>
+                      {claimRetailer(claim) ? `${claimRetailer(claim)} · ` : ""}
                       {claim.route || claim.team || "No route assigned"}
                       {confidence ? ` · ${confidence}% confidence` : ""}
                     </p>
+                    {renderDisputeChip(claim, "mt-2")}
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       {source === "queue" ? (
@@ -1811,6 +2075,15 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                       <input type="number" value={importDraft.amount} onChange={(e) => updateImportDraft("amount", e.target.value)} className={inputClass} />
                     </div>
                     <div>
+                      <label className={`mb-1 block text-xs font-semibold ${mutedText}`}>Retailer</label>
+                      <input list="fmm-retailer-options" value={importDraft.retailer || ""} onChange={(e) => updateImportDraft("retailer", e.target.value)} className={inputClass} placeholder="Who sent the claim" />
+                    </div>
+                    <div>
+                      <label className={`mb-1 block text-xs font-semibold ${mutedText}`}>Dispute deadline</label>
+                      <input type="date" value={importDraft.disputeDeadline || ""} onChange={(e) => updateImportDraft("disputeDeadline", e.target.value)} className={inputClass} />
+                      {importDraft.disputeDeadline && <p className={`mt-1 text-[11px] ${mutedText}`}>Read from the email. Double-check it against the notice.</p>}
+                    </div>
+                    <div>
                       <label className={`mb-1 block text-xs font-semibold ${mutedText}`}>Status</label>
                       <select value={importDraft.status} onChange={(e) => updateImportDraft("status", e.target.value)} className={inputClass}>
                         {["Open", "Under Review", "Closed"].map((option) => (
@@ -2052,6 +2325,29 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
               <label className={`mb-1 block text-xs font-semibold ${mutedText}`}>Date</label>
               <input value={claimForm.date} onChange={(e) => updateClaimField("date", e.target.value)} className={inputClass} placeholder="Today" />
             </div>
+
+            <div>
+              <label className={`mb-1 block text-xs font-semibold ${mutedText}`}>Retailer</label>
+              <input list="fmm-retailer-options" value={claimForm.retailer || ""} onChange={(e) => updateClaimField("retailer", e.target.value)} className={inputClass} placeholder="Who sent the claim" />
+            </div>
+
+            <div>
+              <label className={`mb-1 block text-xs font-semibold ${mutedText}`}>Dispute deadline</label>
+              <input type="date" value={claimForm.disputeDeadline || ""} onChange={(e) => updateClaimField("disputeDeadline", e.target.value)} className={inputClass} />
+              <p className={`mt-1 text-[11px] leading-4 ${mutedText}`}>Last day to dispute, from the claim notice. Many retailers allow about 30 days.</p>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className={`mb-1 block text-xs font-semibold ${mutedText}`}>What happened (optional)</label>
+              <textarea
+                value={claimForm.notes || ""}
+                onChange={(e) => updateClaimField("notes", e.target.value)}
+                rows={3}
+                className={inputClass}
+                placeholder="e.g. Customer signed with no damage noted. Wall scuff was reported 4 days later."
+              />
+              <p className={`mt-1 text-[11px] leading-4 ${mutedText}`}>Facts here go into the dispute letter.</p>
+            </div>
           </div>
 
           <div className="mt-5 flex gap-3">
@@ -2169,7 +2465,8 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                       </td>
                       <td className="py-4">
                         <p className={`font-bold ${isDark ? "text-slate-200" : "text-slate-800"}`}>{claim.type}</p>
-                        <p className={`text-xs ${mutedText}`}>{claim.route}</p>
+                        <p className={`text-xs ${mutedText}`}>{[claimRetailer(claim), claim.route].filter(Boolean).join(" · ")}</p>
+                        {renderDisputeChip(claim, "mt-1")}
                       </td>
                       <td className={`py-4 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                         <p className="font-bold">{getClaimDriver(claim) || "Unassigned"}</p>
@@ -2269,6 +2566,17 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
             </div>
 
             <div className="max-h-[calc(90vh-96px)] overflow-y-auto p-5">
+              {(() => {
+                const chip = getDisputeChip(disputePacketClaim);
+                if (!chip || chip.tone === "slate" || chip.tone === "emerald") return null;
+                return (
+                  <div className={`mb-4 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-black ${chipTone[chip.tone]}`}>
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    {chip.label}
+                    {getDisputeStage(disputePacketClaim) === "sent" ? " — send a follow-up or log the result below." : getDeadlineStatus(disputePacketClaim)?.days < 0 ? " — you can still send it, but the retailer may refuse." : " — send the letter before then."}
+                  </div>
+                );
+              })()}
               <div className="grid gap-5 lg:grid-cols-[1fr_1.1fr]">
                 <div className="space-y-5">
                   <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5" : "rounded-2xl border border-slate-200 bg-slate-50 p-5"}>
@@ -2287,12 +2595,31 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                           <p className={`mt-1 text-sm font-black ${label === "Claim amount" ? "text-red-600" : titleText}`}>{value}</p>
                         </div>
                       ))}
+                      <label className={isDark ? "block rounded-xl border border-white/10 bg-slate-950/60 p-4" : "block rounded-xl border border-slate-200 bg-white p-4"}>
+                        <span className={`text-[11px] font-semibold uppercase tracking-wide ${mutedText}`}>Retailer</span>
+                        <input
+                          list="fmm-retailer-options"
+                          value={disputePacketClaim.retailer || ""}
+                          onChange={(event) => patchClaim(disputePacketClaim.id, { retailer: event.target.value })}
+                          placeholder="Who sent the claim"
+                          className={`${inputClass} mt-1`}
+                        />
+                      </label>
+                      <label className={isDark ? "block rounded-xl border border-white/10 bg-slate-950/60 p-4" : "block rounded-xl border border-slate-200 bg-white p-4"}>
+                        <span className={`text-[11px] font-semibold uppercase tracking-wide ${mutedText}`}>Dispute deadline</span>
+                        <input
+                          type="date"
+                          value={disputePacketClaim.disputeDeadline || ""}
+                          onChange={(event) => patchClaim(disputePacketClaim.id, { disputeDeadline: event.target.value })}
+                          className={`${inputClass} mt-1`}
+                        />
+                      </label>
                     </div>
                   </div>
 
                   <div className={isDark ? "rounded-2xl border border-white/10 bg-slate-900/80 p-5" : "rounded-2xl border border-slate-200 bg-slate-50 p-5"}>
                     <h3 className={`text-lg font-bold ${titleText}`}>Evidence Checklist</h3>
-                    <p className={`mt-1 text-xs font-semibold ${mutedText}`}>AI pre-selected what to cite. Check or uncheck to control what goes in the letter — and attach the actual file for each item.</p>
+                    <p className={`mt-1 text-xs font-semibold ${mutedText}`}>What wins this kind of claim. Tap <span className="font-black">Missing</span> once you have an item, or attach the file. Checked items are cited in the letter.</p>
                     <input
                       ref={evidenceInputRef}
                       type="file"
@@ -2329,15 +2656,28 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                               </span>
                               <span className="min-w-0">
                                 <span className={`block text-sm font-bold ${titleText}`}>{item.label}</span>
-                                {attached && (
+                                {attached ? (
                                   <span className={`block truncate text-[11px] font-semibold ${mutedText}`}>{attached.name}</span>
-                                )}
+                                ) : !item.present && item.tip ? (
+                                  <span className={`block text-[11px] font-semibold leading-4 ${mutedText}`}>{item.tip}</span>
+                                ) : null}
                               </span>
                             </button>
                             <div className="flex shrink-0 items-center gap-2">
-                              <span className={(attached || item.present) ? "rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-black text-emerald-700" : "rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-black text-red-600"}>
-                                {attached ? "Attached" : item.present ? "Ready" : "Missing"}
-                              </span>
+                              {attached || item.auto ? (
+                                <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-black text-emerald-700">
+                                  {attached ? "Attached" : "Ready"}
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setEvidenceConfirmed(disputePacketClaim, item.label, !item.present)}
+                                  title={item.present ? "Click if you don't actually have this" : "Click once you have this"}
+                                  className={item.present ? "rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-black text-emerald-700 hover:bg-emerald-500/20" : "rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-black text-red-600 hover:bg-red-500/20"}
+                                >
+                                  {item.present ? "Have it ✓" : "Missing"}
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => openEvidencePicker(item.label)}
@@ -2479,14 +2819,37 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                       >
                         Regenerate
                       </button>
+                      {!disputePacketClaim.disputeSentAt && (
+                        <button
+                          type="button"
+                          onClick={() => markDisputeSent(disputePacketClaim.id)}
+                          title="Sent it through the retailer's portal or another way? Mark it so the tracker can remind you to follow up."
+                          className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:bg-white/5" : "rounded-xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
+                        >
+                          Mark as sent
+                        </button>
+                      )}
                     </div>
+                    <p className={`text-[11px] ${mutedText}`}>Emailing the letter marks the dispute as sent. Used the retailer's portal instead? Click Mark as sent.</p>
                   </div>
                 )}
               </div>
 
               <div className={isDark ? "mt-5 rounded-2xl border border-white/10 bg-slate-900/80 p-5" : "mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5"}>
-                <h3 className={`text-lg font-bold ${titleText}`}>Dispute outcome</h3>
-                <p className={`mt-1 text-sm ${mutedText}`}>Log the result — the AI learns which arguments win and leans on them for similar claims.</p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className={`text-lg font-bold ${titleText}`}>Dispute outcome</h3>
+                  {disputePacketClaim.disputeSentAt && (
+                    <span className="flex items-center gap-2">
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${chipTone.blue}`}>Sent {formatShortDate(disputePacketClaim.disputeSentAt)}</span>
+                      {!disputePacketClaim.disputeOutcome && (
+                        <button type="button" onClick={() => clearDisputeSent(disputePacketClaim.id)} className={`text-[11px] font-bold underline ${mutedText}`}>
+                          Undo
+                        </button>
+                      )}
+                    </span>
+                  )}
+                </div>
+                <p className={`mt-1 text-sm ${mutedText}`}>Log the result when the retailer answers. The AI learns which arguments win and uses them on similar claims.</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {[["won", "Won"], ["partial", "Partial"], ["lost", "Lost"]].map(([val, label]) => {
                     const active = disputePacketClaim.disputeOutcome === val;
@@ -2530,9 +2893,17 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                 <h2 className={`mt-1 text-2xl font-black ${titleText}`}>Batch dispute letters</h2>
                 <p className={`mt-1 text-sm ${mutedText}`}>{batchStatus === "running" ? `Drafting ${batchLetters.length} of ${contestableClaims.length}…` : `${batchLetters.length} letter${batchLetters.length === 1 ? "" : "s"} drafted for your contestable claims.`}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap justify-end gap-2">
                 {batchStatus === "done" && batchLetters.length > 0 && (
                   <button onClick={copyAllDisputes} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500">Copy all</button>
+                )}
+                {batchStatus === "done" && batchLetters.some(({ claim }) => !claims.find((c) => c.id === claim.id)?.disputeSentAt) && (
+                  <button
+                    onClick={() => markDisputeSent(batchLetters.map(({ claim }) => claim.id))}
+                    className={isDark ? "rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-white hover:bg-white/10" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}
+                  >
+                    Mark all sent
+                  </button>
                 )}
                 <button onClick={() => setBatchOpen(false)} className={isDark ? "rounded-xl bg-white/10 px-4 py-2 text-sm font-black text-white hover:bg-white/15" : "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"}>Close</button>
               </div>
@@ -2549,6 +2920,22 @@ function ClaimsDashboard({ claims, setClaims, teams, isDark, appSettings, backen
                   </div>
                   <p className={`mt-1 text-xs ${mutedText}`}>{letter.subject}</p>
                   <textarea readOnly value={letter.letter} rows={7} className={isDark ? "mt-2 w-full rounded-xl border border-white/10 bg-slate-950/70 p-3 text-xs leading-6 text-slate-100" : "mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 text-xs leading-6 text-slate-800"} />
+                  {(() => {
+                    const live = claims.find((c) => c.id === claim.id) || claim;
+                    return (
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <button type="button" onClick={() => emailBatchLetter(live, letter)} className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-black text-white hover:bg-emerald-500">
+                          <Mail className="h-3.5 w-3.5" /> Email
+                        </button>
+                        {!live.disputeSentAt && (
+                          <button type="button" onClick={() => markDisputeSent(live.id)} className={isDark ? "rounded-lg border border-white/10 px-3 py-1.5 text-xs font-black text-slate-200 hover:bg-white/5" : "rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50"}>
+                            Mark sent
+                          </button>
+                        )}
+                        {renderDisputeChip(live)}
+                      </div>
+                    );
+                  })()}
                 </div>
               ))}
               {batchStatus === "running" && (

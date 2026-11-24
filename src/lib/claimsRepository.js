@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
+import { decodeClaimNotes, encodeClaimNotes, hasClaimDetails, mergeLocalClaimDetails } from "./claimDetails";
 
 const toSupabaseClaim = (claim, ownerId) => ({
   app_claim_id: claim.id,
@@ -14,26 +15,38 @@ const toSupabaseClaim = (claim, ownerId) => ({
   preventable: claim.preventable || "Maybe",
   risk: claim.risk || "Low",
   claim_date: claim.date || "",
-  notes: claim.notes || "",
+  notes: encodeClaimNotes(claim),
   source_type: claim.sourceType || claim.source_type || "",
   updated_at: new Date().toISOString(),
 });
 
-const fromSupabaseClaim = (row) => ({
-  id: row.app_claim_id || row.claim_number || row.id,
-  category: row.category || "Property",
-  type: row.type || "Claim",
-  amount: Number(row.amount || 0),
-  driver: row.driver || "",
-  team: row.team || "",
-  route: row.route || "",
-  status: row.status || "Under Review",
-  preventable: row.preventable || "Maybe",
-  risk: row.risk || "Low",
-  date: row.claim_date || "Today",
-  notes: row.notes || "",
-  sourceType: row.source_type || "",
-});
+const fromSupabaseClaim = (row) => {
+  const { notes, details } = decodeClaimNotes(row.notes);
+  return {
+    ...details,
+    id: row.app_claim_id || row.claim_number || row.id,
+    category: row.category || "Property",
+    type: row.type || "Claim",
+    amount: Number(row.amount || 0),
+    driver: row.driver || "",
+    team: row.team || "",
+    route: row.route || "",
+    status: row.status || "Under Review",
+    preventable: row.preventable || "Maybe",
+    risk: row.risk || "Low",
+    date: row.claim_date || "Today",
+    notes,
+    sourceType: row.source_type || "",
+  };
+};
+
+const readLastSyncedClaims = () => {
+  try {
+    return JSON.parse(localStorage.getItem("finalMileLastSyncedClaims") || "[]");
+  } catch {
+    return [];
+  }
+};
 
 export const loadClaimsFromSupabase = async () => {
   if (!isSupabaseConfigured || !supabase) {
@@ -54,7 +67,10 @@ export const loadClaimsFromSupabase = async () => {
   const { data, error } = await query;
 
   if (error) return { ok: false, claims: [], error: error.message };
-  return { ok: true, claims: (data || []).map(fromSupabaseClaim) };
+  const rows = data || [];
+  const claims = rows.map(fromSupabaseClaim);
+  const legacyIds = new Set(claims.filter((_, index) => !hasClaimDetails(rows[index].notes)).map((claim) => claim.id));
+  return { ok: true, claims: mergeLocalClaimDetails(claims, readLastSyncedClaims(), legacyIds) };
 };
 
 export const syncClaimsToSupabase = async ({ previousClaims, nextClaims }) => {

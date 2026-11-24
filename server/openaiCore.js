@@ -178,6 +178,9 @@ Hard rules:
 - Make the strongest legitimate argument based on preventability and the evidence gaps. If preventable is "No", press that the contractor is not responsible and the retailer must prove the damage occurred during this delivery. If evidence is missing on the retailer's side, argue the claim is not yet substantiated and the deduction is premature.
 - Always make a clear ask: reverse/refund the deduction (state the dollar amount) and a path to provide or exchange evidence.
 - Do not promise outcomes, admit fault, or offer settlement amounts.
+- If "retailer" is supplied, address the letter to that retailer's claims team (e.g. "Lowe's Claims Department") and set "recipient" to match.
+- "contractorNotes" are the contractor's own account of what happened. Treat them as facts the contractor asserts and use the useful ones, but do not embellish them.
+- If "disputeDeadline" is supplied, the letter is being sent within the dispute window; you may note it was submitted in a timely manner. Never invent a deadline.
 
 LEARN FROM HISTORY: the context may include "pastOutcomes" — prior disputes for this contractor with their result (won/lost/partial) and the angle used, most-relevant first (same route/retailer or claim type). Lean on the framing and arguments that WON for similar claims; steer away from angles that LOST. If a closely matching past dispute won, mirror its winning approach. Never mention the past outcomes or this learning in the letter itself — just let it shape the strongest argument.
 

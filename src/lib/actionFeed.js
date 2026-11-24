@@ -4,6 +4,7 @@
 // identically client-side and in tests. It does NOT recompute signals — callers pass the
 // already-computed inputs (getSetupStatus / detectAnomalies / loadReminders / computeForecast).
 import { isLikelyWorthDisputing, draftDisputesPhrase } from "./claims.js";
+import { DEADLINE_WARN_DAYS, claimRetailer, getDeadlineStatus, getFollowUpStatus } from "./disputeTracker.js";
 
 const SEVERITY_WEIGHT = { high: 300, medium: 150, low: 60 };
 const SOURCE_TIE = { claim: 6, anomaly: 4, reminder: 3, setup: 2, forecast: 1 };
@@ -27,6 +28,7 @@ export function buildActionFeed({
   teams = [],
   appSettings = {},
   canAccess = null,
+  now = new Date(),
 } = {}) {
   const items = [];
   const today = todayKey();
@@ -65,19 +67,29 @@ export function buildActionFeed({
   }
 
   // ---- 2) Contestable claims (the money-on-the-table items) ----
+  // Worth disputing, plus any claim whose dispute deadline is within the week — a
+  // deadline the owner entered means they intend to dispute, whatever the amount.
+  const deadlineOf = (c) => getDeadlineStatus(c, now);
+  const dueSoon = (c) => {
+    const d = deadlineOf(c);
+    return Boolean(d && d.days >= 0 && d.days <= DEADLINE_WARN_DAYS);
+  };
   const contestable = (claims || [])
-    .filter((c) => c.status !== "Closed" && isLikelyWorthDisputing(c, { resolveTeam, riskThresholds }))
+    .filter((c) => c.status !== "Closed" && (isLikelyWorthDisputing(c, { resolveTeam, riskThresholds }) || dueSoon(c)))
     .sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0));
   if (allow("Claims") && notify("highClaims")) {
     contestable.forEach((claim) => {
+      const deadline = deadlineOf(claim);
+      const showDeadline = deadline && deadline.days >= 0 && deadline.days <= DEADLINE_WARN_DAYS;
       items.push({
         id: `claim:${claim.id}`,
         source: "claim",
         severity: "high",
         title: `Dispute ${claim.type || "claim"} — ${money(claim.amount)}`,
-        detail: `${claim.route ? `${claim.route} · ` : ""}${claim.preventable ? `${claim.preventable} preventable · ` : ""}${claim.risk || "review"} risk`,
+        detail: `${showDeadline ? `${deadline.label} · ` : ""}${claimRetailer(claim) ? `${claimRetailer(claim)} · ` : ""}${claim.route ? `${claim.route} · ` : ""}${claim.preventable ? `${claim.preventable} preventable · ` : ""}${claim.risk || "review"} risk`,
         tab: "Claims",
         impact: Number(claim.amount || 0),
+        urgency: showDeadline ? (deadline.days <= 2 ? 200 : 100) : 0,
         action: { type: "openClaim", label: "Open claim", claimId: claim.id },
         icon: "FileText",
       });
@@ -96,6 +108,24 @@ export function buildActionFeed({
         icon: "Sparkles",
       });
     }
+
+    // Sent disputes that have gone quiet.
+    (claims || []).forEach((claim) => {
+      const followUp = getFollowUpStatus(claim, now);
+      if (!followUp?.due) return;
+      const retailer = claimRetailer(claim);
+      items.push({
+        id: `claim-followup:${claim.id}`,
+        source: "claim",
+        severity: "medium",
+        title: `Follow up on ${claim.type || "claim"} dispute — ${money(claim.amount)}`,
+        detail: `Sent ${followUp.daysSinceSent} days ago${retailer ? ` to ${retailer}` : ""} with no result logged.`,
+        tab: "Claims",
+        impact: Number(claim.amount || 0),
+        action: { type: "openClaim", label: "Open claim", claimId: claim.id },
+        icon: "FileText",
+      });
+    });
   }
 
   // ---- 3) Watchdog anomalies ----
