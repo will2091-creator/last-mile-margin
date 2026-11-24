@@ -66,12 +66,11 @@ export default function ToolUpgrade({ source, payload, example }) {
     }
   }
   return <section className="tool-upgrade" ref={root}>
-    <p className="site-kicker">Last Mile Margin</p>
-    <h3>{payload.title}</h3>
-    <ResultPreview payload={payload} example={example} />
-    <p>Keep this {payload.kind} in your workspace.</p>
-    <button className="site-button" onClick={start}>{actions[source]} and start my trial</button>
+    <ResultPreview payload={payload} example={example} heading="h3" />
+    <div className="journey-offer">
+    <button className="site-button" onClick={start}>{actions[source]} and start my trial <span aria-hidden="true">→</span></button>
     <p className="upgrade-price">3 days free. Card required. Then $99/month for 12 months, then $199/month. Cancel anytime.</p>
     {error && <p role="alert">{error}</p>}
+    </div>
   </section>;
 }
