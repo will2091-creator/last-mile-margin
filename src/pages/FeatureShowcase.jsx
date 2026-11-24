@@ -60,6 +60,26 @@ function BrowserFrame({ src, alt, className = "" }) {
   );
 }
 
+const PRICING_INCLUDES = [
+  "Profit tracking on every route",
+  "AI claims & dispute packets",
+  "Route Profit Check before you say yes",
+  "AI action feed, ranked by dollar impact",
+  "Ask your business — plain-English answers",
+  "Unlimited snapshots, contracts & team",
+  "Email dispute letters from the app",
+  "Field-capture mobile companion",
+];
+
+const FAQS = [
+  { q: "How does the free trial work?", a: "You get 3 days free. We ask for a card up front, but you can cancel anytime before the trial ends and you won't be charged a cent." },
+  { q: "What does it cost after the trial?", a: "$99/month for your first 12 months — locked in as an early adopter. After that it's $199/month, and you can cancel anytime from your billing settings." },
+  { q: "Who is Last Mile Margin for?", a: "Final-mile delivery contractors — appliance, big-and-bulky, parcel, and DSP-style operations — plus the owners and managers who need to see where the money's actually going." },
+  { q: "Do I have to connect anything or sign a contract?", a: "No integrations, no contract, no setup fees. Enter your route numbers and claims and the app does the rest. Cancel whenever you want." },
+  { q: "Is my data secure, and is it mine?", a: "Yes. Your data is encrypted, it belongs to you, and you can export or permanently delete everything from your account at any time." },
+  { q: "Can my drivers use it in the field?", a: "There's a companion mobile app for field capture — check-ins, receipts, and damage evidence — so claims get documented the moment they happen." },
+];
+
 export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isDark }) {
   const [tab, setTab] = useState(0);
   const active = GALLERY[tab];
@@ -106,6 +126,15 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
     ctaPara:     isDark ? "text-slate-300"  : "text-slate-600",
     ctaSec:      isDark ? "border-white/15 bg-white/5 text-slate-100 hover:bg-white/10" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100",
     footer:      isDark ? "text-slate-500"  : "text-slate-400",
+    priceCard:   isDark ? "border-blue-400/25 bg-gradient-to-b from-blue-500/10 via-white/[0.02] to-white/[0.01] shadow-black/40"
+                        : "border-blue-200 bg-gradient-to-b from-blue-50/80 to-white shadow-blue-900/10",
+    priceMuted:  isDark ? "text-slate-400"  : "text-slate-500",
+    priceFeature:isDark ? "text-slate-200"  : "text-slate-700",
+    priceRule:   isDark ? "border-white/10" : "border-slate-200",
+    faqItem:     isDark ? "border-white/10 bg-white/[0.03] open:bg-white/[0.05]" : "border-slate-200 bg-white open:shadow-sm",
+    faqQ:        isDark ? "text-white"      : "text-slate-950",
+    faqA:        isDark ? "text-slate-400"  : "text-slate-600",
+    navLink:     isDark ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-slate-950",
   };
 
   return (
@@ -132,6 +161,13 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
                   {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className={`hidden px-3 py-2 text-sm font-bold transition sm:flex ${t.navLink}`}
+              >
+                Pricing
+              </button>
               <button
                 onClick={onSignIn}
                 className={`hidden rounded-xl border px-4 py-2 text-sm font-bold transition sm:flex ${t.heroSec}`}
@@ -362,11 +398,79 @@ export default function FeatureShowcase({ onSignIn, onSignUp, onToggleTheme, isD
           </div>
         </section>
 
+        {/* ---------- PRICING ---------- */}
+        <section id="pricing" className="mx-auto max-w-3xl scroll-mt-24 px-5 pb-16 lg:px-8 lg:pb-24">
+          <div className="text-center">
+            <p className={`text-xs font-black uppercase tracking-wider ${t.aiLabel}`}>Pricing</p>
+            <h2 className="mx-auto mt-3 max-w-2xl text-3xl font-black leading-tight tracking-tight sm:text-4xl">
+              One plan. Pays for itself with a single won dispute.
+            </h2>
+            <p className={`mx-auto mt-3 max-w-xl text-base font-semibold ${t.sectionSub}`}>
+              No setup fees, no contracts, no per-seat pricing.
+            </p>
+          </div>
+
+          <div className={`mt-10 overflow-hidden rounded-3xl border p-8 shadow-xl sm:p-10 ${t.priceCard}`}>
+            <div className="flex flex-col items-center text-center">
+              <span className={`rounded-full border px-3 py-1 text-xs font-black ${t.badge}`}>
+                Early adopter price — locked for 12 months
+              </span>
+              <div className="mt-5 flex items-end justify-center gap-1">
+                <span className="text-5xl font-black tracking-tight tabular-nums sm:text-6xl">$99</span>
+                <span className={`mb-2 text-lg font-bold ${t.priceMuted}`}>/month</span>
+              </div>
+              <p className={`mt-2 max-w-md text-sm font-semibold leading-6 ${t.priceMuted}`}>
+                3 days free, then $99/month for your first 12 months. $199/month after that. Cancel anytime.
+              </p>
+              <button
+                onClick={onSignUp}
+                className="mt-7 flex w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 py-3.5 text-base font-black text-white shadow-lg shadow-blue-600/30 transition hover:-translate-y-0.5 hover:bg-blue-500"
+              >
+                Start 3-day free trial <ArrowRight className="h-5 w-5" />
+              </button>
+              <p className={`mt-3 text-xs font-semibold ${t.priceMuted}`}>
+                Encrypted data · Cancel anytime · Export or delete your data whenever you want
+              </p>
+            </div>
+
+            <div className={`mt-8 border-t pt-8 ${t.priceRule}`}>
+              <p className={`text-center text-xs font-black uppercase tracking-wider ${t.priceMuted}`}>Everything included</p>
+              <ul className="mx-auto mt-5 grid max-w-xl gap-3 sm:grid-cols-2">
+                {PRICING_INCLUDES.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2.5">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
+                    <span className={`text-sm font-semibold leading-6 ${t.priceFeature}`}>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- FAQ ---------- */}
+        <section className="mx-auto max-w-3xl px-5 pb-16 lg:px-8 lg:pb-24">
+          <div className="text-center">
+            <p className={`text-xs font-black uppercase tracking-wider ${t.aiLabel}`}>FAQ</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Straight answers.</h2>
+          </div>
+          <div className="mt-8 space-y-3">
+            {FAQS.map((item) => (
+              <details key={item.q} className={`group rounded-2xl border p-5 transition ${t.faqItem}`}>
+                <summary className={`flex cursor-pointer list-none items-center justify-between gap-4 text-base font-black [&::-webkit-details-marker]:hidden ${t.faqQ}`}>
+                  {item.q}
+                  <ArrowRight aria-hidden="true" className={`h-4 w-4 shrink-0 transition-transform group-open:rotate-90 ${t.priceMuted}`} />
+                </summary>
+                <p className={`mt-3 text-sm font-semibold leading-6 ${t.faqA}`}>{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
         {/* ---------- CLOSING CTA ---------- */}
         <section className="mx-auto max-w-6xl px-5 pb-20 lg:px-8">
           <div className={`overflow-hidden rounded-3xl border p-8 text-center sm:p-14 ${t.ctaBox}`}>
             <h2 className="text-3xl font-black tracking-tight sm:text-4xl">Ready to stop guessing where the money went?</h2>
-            <p className={`mx-auto mt-3 max-w-xl text-base font-semibold ${t.ctaPara}`}>Sign in and let the numbers do the talking while you run the routes.</p>
+            <p className={`mx-auto mt-3 max-w-xl text-base font-semibold ${t.ctaPara}`}>Start your free trial and let the numbers do the talking while you run the routes.</p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <button
                 onClick={onSignUp}
