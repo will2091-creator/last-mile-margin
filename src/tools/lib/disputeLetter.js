@@ -14,6 +14,7 @@ export const FAULT_OPTIONS = [
   { value: "no", label: "Not our fault" },
   { value: "unsure", label: "Not sure" },
   { value: "partial", label: "Partly our fault" },
+  { value: "yes", label: "Our fault" },
 ];
 
 export const EVIDENCE = [
@@ -50,20 +51,20 @@ const EVIDENCE_SENTENCES = {
     Penalty: "The customer signed the proof of delivery for this stop.",
   },
   photos: {
-    Cargo: "Our delivery photos show the product in good condition when we completed the delivery.",
-    Property: "Our photos show the condition of the delivery area when we completed the job.",
-    Penalty: "Our delivery photos document the completed stop.",
+    Cargo: "We have photos from the delivery.",
+    Property: "We have photos from the delivery.",
+    Penalty: "We have photos from the delivery.",
   },
   pickup: {
-    Cargo: "Damage was noted on the exception report at pickup, before the item was in our care.",
+    Cargo: "Damage was documented at pickup.",
   },
   statement: { any: "We have a written statement from our crew about this delivery." },
   scans: {
-    Cargo: "Our scan, GPS, and timestamp records for this stop are available.",
-    Property: "Our scan, GPS, and timestamp records for this stop are available.",
-    Penalty: "Our scan, GPS, and timestamp records show when we arrived and when the stop was completed.",
+    Cargo: "We have scan, GPS, or timestamp records for this stop.",
+    Property: "We have scan, GPS, or timestamp records for this stop.",
+    Penalty: "We have scan, GPS, or timestamp records for this stop.",
   },
-  contact: { any: "Our call-ahead and contact log documents our contact with the customer." },
+  contact: { any: "We have a call-ahead or customer contact log for this stop." },
 };
 
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -106,7 +107,8 @@ export function buildDisputeLetter(input) {
 
   const evidence = forCategory(EVIDENCE, category).filter((item) => (input.evidence || []).includes(item.id));
   const requests = forCategory(REQUESTS, category).filter((item) => (input.requests || []).includes(item.id));
-  const fault = ["no", "unsure", "partial"].includes(input.fault) ? input.fault : "no";
+  const fault = FAULT_OPTIONS.some((option) => option.value === input.fault) ? input.fault : "unsure";
+  const reviewAmount = fault === "partial" || fault === "yes";
 
   const paragraphs = [];
   paragraphs.push(`Dear ${clean(input.recipient) || "Claims Department"},`);
@@ -118,26 +120,13 @@ export function buildDisputeLetter(input) {
     }${orderRef ? ` (reference ${orderRef})` : ""}.`,
   );
 
-  const position = {
-    no: {
-      Cargo: "Our crew delivered this item in good condition, and we do not accept responsibility for this damage.",
-      Property: "Our crew completed this delivery without damaging the customer's home or property, and we do not accept responsibility for this claim.",
-      Penalty: "Our records do not support this penalty, and we do not accept it.",
-    },
-    unsure: {
-      Cargo: "We have not seen evidence that this damage happened during our delivery. Until responsibility is shown, this deduction is premature.",
-      Property: "We have not seen evidence that this damage happened during our delivery. Until responsibility is shown, this deduction is premature.",
-      Penalty: "We have not seen records that support this penalty. Until they are provided, this deduction is premature.",
-    },
-    partial: {
-      Cargo:
-        "Before any amount is deducted, the charge should be supported by documentation of the actual cost. Any deduction should reflect the documented repair or replacement cost, not an estimate or the full retail price.",
-      Property:
-        "Before any amount is deducted, the charge should be supported by documentation of the actual cost. Any deduction should reflect the documented repair cost, not an estimate.",
-      Penalty: "Before any amount is deducted, please share the records this penalty is based on and how the amount was calculated.",
-    },
-  };
-  paragraphs.push(position[fault][category]);
+  if (reviewAmount) {
+    paragraphs.push(`Please provide the basis for this ${noun} and an itemized explanation of how it was calculated.`);
+  } else if (fault === "no") {
+    paragraphs.push(`We dispute the basis for this ${noun}. Please provide the records you relied on when applying it.`);
+  } else {
+    paragraphs.push(`Please provide the records needed to review whether this ${noun} is supported.`);
+  }
 
   if (evidence.length) {
     const sentences = evidence.map((item) => EVIDENCE_SENTENCES[item.id][category] || EVIDENCE_SENTENCES[item.id].any).filter(Boolean);
@@ -146,7 +135,7 @@ export function buildDisputeLetter(input) {
 
   if (!isPenalty && daysLater != null && daysLater >= 2) {
     paragraphs.push(
-      `This was first reported ${daysLater} days after our delivery. Nothing provided so far shows that the damage happened during our delivery rather than before or after it.`,
+      `The report date is ${daysLater} days after delivery. Please include any records that establish when the damage occurred.`,
     );
   }
 
@@ -156,8 +145,8 @@ export function buildDisputeLetter(input) {
 
   const days = Math.round(Number(clean(input.responseDays)));
   const deadline = Number.isFinite(days) && days > 0 ? ` We would appreciate a response within ${days} business ${days === 1 ? "day" : "days"}.` : "";
-  if (fault === "partial") {
-    paragraphs.push(`Please hold this ${noun} until the documentation is provided, and limit any deduction to the documented cost.${deadline}`);
+  if (reviewAmount) {
+    paragraphs.push(`Please reverse any unsupported portion of the ${amount} ${noun} on our next settlement and provide the documentation for any amount you maintain is due.${deadline}`);
   } else {
     paragraphs.push(
       `We ask that the ${amount} ${noun} be reversed and refunded on our next settlement. If you believe the charge is valid, please send ${
@@ -188,17 +177,17 @@ export function buildDisputeLetter(input) {
 
 function pickAngle({ category, fault, evidence, requests, daysLater }) {
   const has = (id) => evidence.includes(id);
-  if (fault === "no" && category !== "Penalty" && (has("pod") || has("photos"))) {
-    return "Proof of a clean delivery. A signed POD or photos put the burden on them to show the damage happened on your watch.";
-  }
+  if (fault === "partial" || fault === "yes") return "Review the amount charged. Ask for an itemized calculation and reversal of any unsupported amount.";
+  if (has("pickup")) return "The damage was documented at pickup. Include the record that shows when it was noted.";
+  if (category !== "Penalty" && has("pod")) return "The customer signed the proof of delivery with no damage noted. Include a copy.";
   if (category !== "Penalty" && daysLater != null && daysLater >= 2) {
-    return `Timing. It was reported ${daysLater} days after delivery, so nothing ties it to your crew yet.`;
+    return `The report came ${daysLater} days after delivery. Ask for records that establish when the damage occurred.`;
   }
-  if (has("pickup")) return "The damage was documented at pickup, before the item was in your care.";
-  if (category === "Penalty" && (has("scans") || has("contact"))) return "Your own records contradict the reason for the penalty.";
-  if (fault === "partial") return "Limit it to the documented cost. Ask for the itemized invoice before anything is deducted.";
-  if (requests > 0) return "The claim isn't backed up yet. Ask for their proof before accepting the deduction.";
-  return "Responsibility hasn't been shown. Ask them to prove it before anything is deducted.";
+  if (has("photos")) return "Include the delivery photos so the claims team can review what they show.";
+  if (category === "Penalty" && (has("scans") || has("contact"))) return "Include the records you have for the stop and ask how the penalty was assessed.";
+
+  if (requests > 0) return "Ask the claims team for the records you selected.";
+  return "Ask the claims team to explain the basis for the deduction.";
 }
 
 function findGaps({ category, input, evidence, requests }) {

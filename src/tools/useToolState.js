@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 
-// Form state for a public tool. Starts from a shared link (?field=value) if there is
+// Form state for a public tool. Starts from a shared link (#calc?field=value) if there is
 // one, else the numbers this visitor entered last time (localStorage), else defaults.
 // Nothing is sent anywhere: the link is only built when the visitor copies it.
 //
 // Field values are strings, booleans, or arrays of strings (encoded "a,b" in links).
 
-export function useToolState(storageKey, defaults) {
-  const [values, setValues] = useState(() => readInitial(storageKey, defaults));
+const SHARE_PREFIX = "#calc?";
+
+export function useToolState(storageKey, defaults, { useSharedInputs = true } = {}) {
+  const [values, setValues] = useState(() => readInitial(storageKey, defaults, useSharedInputs));
 
   useEffect(() => {
     try {
@@ -20,8 +22,10 @@ export function useToolState(storageKey, defaults) {
   // Drop the shared-link fields from the address bar once they're loaded, so a
   // reload shows the visitor's own edits rather than the original link.
   useEffect(() => {
+    if (!useSharedInputs) return;
     const url = new URL(window.location.href);
-    let changed = false;
+    let changed = url.hash.startsWith(SHARE_PREFIX);
+    if (changed) url.hash = "";
     for (const key of Object.keys(defaults)) {
       if (url.searchParams.has(key)) {
         url.searchParams.delete(key);
@@ -46,15 +50,19 @@ function coerce(raw, fallback) {
   return String(raw).slice(0, 40);
 }
 
-function readInitial(storageKey, defaults) {
+function readInitial(storageKey, defaults, useSharedInputs) {
   if (typeof window === "undefined") return { ...defaults };
 
-  const params = new URLSearchParams(window.location.search);
-  const fromLink = {};
-  for (const [key, fallback] of Object.entries(defaults)) {
-    if (params.has(key)) fromLink[key] = coerce(params.get(key), fallback);
+  if (useSharedInputs) {
+    const { hash, search } = window.location;
+    const shared = hash.startsWith(SHARE_PREFIX);
+    const params = new URLSearchParams(shared ? hash.slice(SHARE_PREFIX.length) : search);
+    const fromLink = {};
+    for (const [key, fallback] of Object.entries(defaults)) {
+      if (params.has(key)) fromLink[key] = coerce(params.get(key), fallback);
+    }
+    if (shared || Object.keys(fromLink).length) return { ...defaults, ...fromLink };
   }
-  if (Object.keys(fromLink).length) return { ...defaults, ...fromLink };
 
   try {
     const saved = JSON.parse(window.localStorage.getItem(storageKey) || "null");
@@ -85,6 +93,5 @@ function buildShareUrl(values, defaults) {
       params.set(key, String(value));
     }
   }
-  const query = params.toString();
-  return `${window.location.origin}${window.location.pathname}${query ? `?${query}` : ""}`;
+  return `${window.location.origin}${window.location.pathname}${SHARE_PREFIX}${params}`;
 }

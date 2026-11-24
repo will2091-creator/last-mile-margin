@@ -17,7 +17,7 @@ const CLAIM_DEFAULTS = {
   orderRef: "",
   recipient: "Claims Department",
   recipientEmail: "",
-  fault: "no",
+  fault: "unsure",
   evidence: [],
   requests: [],
   responseDays: "10",
@@ -26,7 +26,7 @@ const CLAIM_DEFAULTS = {
 const fileSafe = (text) => String(text || "claim").replace(/[^a-z0-9-]+/gi, "-").slice(0, 40);
 
 export default function DisputeLetterTool() {
-  const sender = useToolState("lmm-tool-dispute-sender", SENDER_DEFAULTS);
+  const sender = useToolState("lmm-tool-dispute-sender", SENDER_DEFAULTS, { useSharedInputs: false });
   const [claim, setClaim] = useState(CLAIM_DEFAULTS);
   const [override, setOverride] = useState(null);
   const [status, setStatus] = useState("");
@@ -99,7 +99,7 @@ export default function DisputeLetterTool() {
                   type="date"
                   value={claim.reportedDate}
                   onChange={(value) => setField("reportedDate", value)}
-                  hint="A late report helps your case."
+                  hint="Include the date shown on the claim notice."
                 />
               )}
             </FieldGrid>
@@ -108,9 +108,9 @@ export default function DisputeLetterTool() {
 
         <Panel title="What happened">
           <Segmented label="Was your crew at fault?" value={claim.fault} onChange={(value) => setField("fault", value)} options={FAULT_OPTIONS} />
-          {claim.fault === "partial" && (
+          {["partial", "yes"].includes(claim.fault) && (
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              The letter won't admit fault. It asks them to prove the actual cost and limit the deduction to it.
+              The letter asks them to reverse any unsupported charge and document the basis and amount of any remaining charge.
             </p>
           )}
         </Panel>
