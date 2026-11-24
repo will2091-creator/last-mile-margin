@@ -15,14 +15,6 @@ const STORAGE_KEYS = {
 
 export const setupSteps = [
   {
-    id: "profile",
-    label: "Profile",
-    title: "Confirm company profile",
-    outcome: "Names the workspace and sets owner targets.",
-    tab: "Settings",
-    actionLabel: "Open Settings",
-  },
-  {
     id: "contract",
     label: "Contract",
     title: "Add your first contract",
@@ -53,6 +45,14 @@ export const setupSteps = [
     outcome: "Loads contracts, claim emails, receipts, or route notes.",
     tab: "Intake",
     actionLabel: "Open Intake",
+  },
+  {
+    id: "profile",
+    label: "Profile",
+    title: "Confirm company profile",
+    outcome: "Names the workspace and sets owner targets.",
+    tab: "Settings",
+    actionLabel: "Open Settings",
   },
 ];
 

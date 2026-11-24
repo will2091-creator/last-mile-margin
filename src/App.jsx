@@ -31,6 +31,7 @@ import { useToast } from "./components/Toast";
 import { loadAppStateFromSupabase, saveAppStateToSupabase } from "./lib/appStateRepository";
 import { loadClaimsFromSupabase, syncClaimsToSupabase } from "./lib/claimsRepository";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
+import { applySyncedLocalData, claimLocalDataFor, readSyncedLocalData, syncedLocalFingerprint } from "./lib/localDataSync";
 import { addTeamMember, loadTeamAccess, updateTeamMemberRole } from "./lib/teamAccessRepository";
 import { getSetupStatus, getNextBestSetupAction } from "./lib/onboarding";
 import {
@@ -43,8 +44,6 @@ import {
   defaultForm,
   defaultSettings,
   getGrade,
-  initialClaims,
-  initialTeams,
   LayoutDashboard,
   number,
   Settings,
@@ -216,14 +215,14 @@ export default function App() {
     return new Date(date.getFullYear(), date.getMonth(), 1);
   });
   const [claims, setClaims] = useState(() =>
-    loadFromLocalStorage("finalMileClaims", initialClaims)
+    loadFromLocalStorage("finalMileClaims", [])
   );
-  const [claimsBackendStatus, setClaimsBackendStatus] = useState("Local claims ready.");
+  const [claimsBackendStatus, setClaimsBackendStatus] = useState("Loading your claims...");
   const [hasLoadedRemoteClaims, setHasLoadedRemoteClaims] = useState(false);
-  const [appStateBackendStatus, setAppStateBackendStatus] = useState("Local app state ready.");
+  const [appStateBackendStatus, setAppStateBackendStatus] = useState("Loading your workspace...");
   const [hasLoadedRemoteAppState, setHasLoadedRemoteAppState] = useState(false);
   const [teams, setTeams] = useState(() =>
-    loadFromLocalStorage("finalMileTeams", initialTeams)
+    loadFromLocalStorage("finalMileTeams", [])
   );
   const [appSettings, setAppSettings] = useState(() => {
     const savedSettings = loadFromLocalStorage("finalMileSettings", defaultSettings);
@@ -385,11 +384,30 @@ export default function App() {
   // a fresh load whenever the signed-in user changes, and saves stay held until
   // that user's data has actually arrived.
   const authUserId = authUser?.id || null;
+  const signupCompanyName = `${authUser?.user_metadata?.company_name || ""}`.trim();
+  // Bumped whenever the browser's stored workspace is replaced underneath the
+  // pages (account switch, or a restore from the cloud). Pages that read
+  // localStorage on mount are keyed on it so they re-read.
+  const [workspaceEpoch, setWorkspaceEpoch] = useState(0);
+  const [localDataVersion, setLocalDataVersion] = useState(0);
+  const localFingerprintRef = useRef("");
 
   useEffect(() => {
     setHasLoadedRemoteAppState(false);
     if (!authUserId) return undefined;
     let isMounted = true;
+
+    // A different account used this browser last: start this user clean rather
+    // than showing (and then saving) the previous person's workspace.
+    if (claimLocalDataFor(authUserId)) {
+      setClaims([]);
+      setTeams([]);
+      setSavedDays([]);
+      setSavedScenarios([]);
+      setForm(defaultForm);
+      setAppSettings((current) => ({ ...defaultSettings, themeMode: current.themeMode }));
+      setWorkspaceEpoch((epoch) => epoch + 1);
+    }
 
     const loadRemoteAppState = async () => {
       const result = await loadAppStateFromSupabase();
@@ -397,6 +415,10 @@ export default function App() {
 
       if (result.ok && result.state) {
         const remoteState = result.state;
+
+        if (applySyncedLocalData(remoteState.localData)) {
+          setWorkspaceEpoch((epoch) => epoch + 1);
+        }
 
         if (remoteState.form) setForm({ ...defaultForm, ...remoteState.form });
         if (Array.isArray(remoteState.teams)) setTeams(remoteState.teams);
@@ -434,9 +456,14 @@ export default function App() {
 
         setAppStateBackendStatus("App settings and history loaded from Supabase.");
       } else if (result.ok) {
-        setAppStateBackendStatus("Supabase app state ready. Local settings will sync after your next change.");
+        setAppStateBackendStatus("Connected. Your workspace saves to your account automatically.");
       } else {
         setAppStateBackendStatus(`Using local app state. Supabase sync unavailable: ${result.error}`);
+      }
+
+      // Name entered at sign-up, if the workspace doesn't have one yet.
+      if (signupCompanyName) {
+        setAppSettings((current) => (current.companyName ? current : { ...current, companyName: signupCompanyName }));
       }
 
       setHasLoadedRemoteAppState(true);
@@ -446,7 +473,7 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, [authUserId]);
+  }, [authUserId, signupCompanyName]);
 
   useEffect(() => {
     setHasLoadedRemoteClaims(false);
@@ -461,7 +488,7 @@ export default function App() {
         setClaims(result.claims);
         setClaimsBackendStatus(`Loaded ${result.claims.length} claim${result.claims.length === 1 ? "" : "s"} from Supabase.`);
       } else if (result.ok) {
-        setClaimsBackendStatus("Supabase connected. Local claims will sync after your next claim change.");
+        setClaimsBackendStatus("Connected. Claims save to your account automatically.");
       } else {
         setClaimsBackendStatus(`Using local claims. Supabase sync unavailable: ${result.error}`);
       }
@@ -517,6 +544,7 @@ export default function App() {
         savedDays,
         currentWorkDate,
         globalDateRange,
+        localData: readSyncedLocalData(),
       });
 
       if (!isMounted) return;
@@ -531,7 +559,22 @@ export default function App() {
       isMounted = false;
       window.clearTimeout(syncTimer);
     };
-  }, [appSettings, currentWorkDate, form, globalDateRange, hasLoadedRemoteAppState, savedDays, savedScenarios, teams, tourActive]);
+  }, [appSettings, currentWorkDate, form, globalDateRange, hasLoadedRemoteAppState, localDataVersion, savedDays, savedScenarios, teams, tourActive]);
+
+  // Pages write contracts, receipts, reminders, etc. straight to localStorage,
+  // so App can't see those edits through React state. Poll the synced keys and
+  // bump a version when they change, which re-arms the save above (and refreshes
+  // the setup status that depends on them).
+  useEffect(() => {
+    localFingerprintRef.current = syncedLocalFingerprint();
+    const timer = window.setInterval(() => {
+      const next = syncedLocalFingerprint();
+      if (next === localFingerprintRef.current) return;
+      localFingerprintRef.current = next;
+      setLocalDataVersion((version) => version + 1);
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (tourActive) return;
@@ -768,7 +811,9 @@ export default function App() {
       isBlankDemo: isBlankDemoWorkspace,
       isDemoMode,
     }),
-    [teams, claims, savedScenarios, savedDays, appSettings, isBlankDemoWorkspace, isDemoMode]
+    // localDataVersion: contracts/imports live in localStorage, so re-read when they change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [teams, claims, savedScenarios, savedDays, appSettings, isBlankDemoWorkspace, isDemoMode, localDataVersion, workspaceEpoch]
   );
 
   const saveScenario = () => {
@@ -1215,7 +1260,12 @@ export default function App() {
       password,
       // When email confirmation is enabled in Supabase, the verification link
       // returns the user to the app rather than a stale/localhost default.
-      options: { emailRedirectTo: window.location.origin },
+      // company_name rides along on the account so it survives confirming the
+      // email in a different tab (where this tab's local state isn't present).
+      options: {
+        emailRedirectTo: window.location.origin,
+        ...(companyName ? { data: { company_name: companyName } } : {}),
+      },
     });
     if (error) return { ok: false, error: error.message };
 
@@ -1612,7 +1662,7 @@ export default function App() {
             collapsible
           />
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1600px]">
-            <ErrorBoundary key={activeTab} variant="page">
+            <ErrorBoundary key={`${activeTab}:${workspaceEpoch}`} variant="page">
             <Suspense fallback={<PageFallback />}>
             {activeTab === "Dashboard" ? (
               <DashboardHome key={tourActive ? "dash-tour" : "dash-live"} teams={teams} claims={claims} setTeams={setTeams} setClaims={setClaims} setActiveTab={navigateToTab} isDark={isDark} appSettings={appSettings} savedDaySnapshot={loadedSavedDay} savedDays={savedDays} isBlankDemo={isBlankDemoWorkspace} isDemoMode={isDemoMode} onSaveSnapshot={saveCurrentDay} onApplyDayLog={applyDayLog} ownerName={ownerName} canAccess={(tab) => canAccessTab(currentUserRole, tab)} />

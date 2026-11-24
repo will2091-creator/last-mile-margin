@@ -52,7 +52,7 @@ export default function ContractModal({
               name="contract"
               value={contractDraft.contract}
               onChange={(event) => updateContractDraft("contract", event.target.value)}
-              placeholder="Example: Will's Delivery"
+              placeholder="Example: Lowe's Appliance Delivery"
               className={modalInputClass}
               autoFocus
             />

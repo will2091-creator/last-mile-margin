@@ -73,7 +73,7 @@ const fromSupabaseDocument = (doc) => ({
   required: Boolean(doc.required),
   status: doc.status || "Uploaded",
   expiration: doc.expiration || "N/A",
-  owner: doc.owner || "Will's Fleet",
+  owner: doc.owner || "Owner",
   notes: doc.notes || "",
   uploadedFileName: doc.file_name || doc.name,
   uploadedAt: doc.uploaded_at,
@@ -190,7 +190,7 @@ export function DocumentVaultTable({ documents, isDark }) {
       const result = await uploadVaultDocument({
         file,
         category: "Other Documents",
-        owner: "Will's Fleet",
+        owner: "Owner",
       });
 
       if (result.ok) {
@@ -506,7 +506,7 @@ export function DocumentVaultTable({ documents, isDark }) {
                   <div className="mt-10 flex items-end justify-between border-t border-slate-200 pt-6">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Verified By</p>
-                      <p className="mt-2 font-black">Will's Fleet Admin</p>
+                      <p className="mt-2 font-black">Workspace admin</p>
                     </div>
                     <div className="rounded-xl border-2 border-emerald-600 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-emerald-700">
                       Mock File

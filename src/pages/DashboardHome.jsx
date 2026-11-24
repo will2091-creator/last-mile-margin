@@ -773,18 +773,6 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
   const setupSteps = [
     {
-      id: "profile",
-      shortLabel: "Profile",
-      title: "Confirm company profile",
-      detail: "Set the company name, owner targets, and dashboard preferences so the workspace feels like your business.",
-      cta: "Open Settings",
-      Icon: Settings,
-      onClick: () => setActiveTab("Settings"),
-      complete: Boolean(appSettings?.companyName),
-      skipped: false,
-      tone: "blue",
-    },
-    {
       id: "contract",
       shortLabel: "Contract",
       title: "Add your first contract",
@@ -832,6 +820,18 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
       skipped: Boolean(setupWizard.skipped.data),
       tone: "amber",
     },
+    {
+      id: "profile",
+      shortLabel: "Profile",
+      title: "Confirm company profile",
+      detail: "Set the company name, owner targets, and dashboard preferences so the workspace feels like your business.",
+      cta: "Open Settings",
+      Icon: Settings,
+      onClick: () => setActiveTab("Settings"),
+      complete: Boolean(appSettings?.companyName),
+      skipped: false,
+      tone: "blue",
+    },
   ];
   const setupCompleteCount = setupSteps.filter((step) => step.complete).length;
   const setupSkippedCount = setupSteps.filter((step) => step.skipped && !step.complete).length;
@@ -842,7 +842,7 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
   // Once the contractor has started setup, demote the full launch center to a
   // compact progress strip so the dashboard leads with business numbers, not a
   // wizard. Brand-new/empty workspaces still get the full guided experience.
-  const showFullWizard = showGuidedSetup && (setupCompleteCount === 0 || setupExpanded);
+  const showFullWizard = showGuidedSetup && (setupCompleteCount === 0 || !hasStartedWorkspace || setupExpanded);
   const showCompactSetup = showGuidedSetup && !showFullWizard;
   const setupTourTargets = {
     profile: "settings",
@@ -1158,6 +1158,10 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
 
       {!isCleanBlankWorkspace && <ActionFeed isDark={isDark} items={actionFeedItems} onExecute={onExecute} aiSummary={appSettings?.notifications?.dailySummary !== false} />}
 
+      {/* Money cards wait for real data: a brand-new workspace would show a wall of
+          $0.00 above the setup steps, so the guided setup leads instead. */}
+      {!isCleanBlankWorkspace && (
+      <>
       {/* NET PROFIT — the hero number + trend */}
       <div>
         <button
@@ -1249,6 +1253,8 @@ function DashboardHome({ teams, claims, setTeams, setClaims, setActiveTab, isDar
           )}
         </button>
       </div>
+      </>
+      )}
 
       {/* INSIGHTS — forward-looking + reference, demoted below the action surface */}
       {!isCleanBlankWorkspace && (

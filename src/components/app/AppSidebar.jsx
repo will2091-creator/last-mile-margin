@@ -129,7 +129,7 @@ export default function AppSidebar({
         )}
 
         <div className="mt-3 text-sm text-slate-500">
-          <p className="truncate">{appSettings.companyName}</p>
+          <p className="truncate">{appSettings.companyName || "Your company"}</p>
           <p className="truncate">{authUser?.email || "Owner Account"}</p>
           <p className="mt-1 text-xs font-semibold uppercase tracking-wide">{roleLabel || currentUserRole}</p>
           <button onClick={signOut} className="mt-2 rounded-lg px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-500/10">Sign Out</button>

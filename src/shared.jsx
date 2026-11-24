@@ -311,7 +311,7 @@ export const claimTypeOptions = {
 };
 
 export const defaultSettings = {
-  companyName: "Will's Fleet",
+  companyName: "",
   themeMode: "light",
   accentColor: "blue",
   tourCompleted: false,
