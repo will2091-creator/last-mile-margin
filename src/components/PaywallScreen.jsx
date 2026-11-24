@@ -1,3 +1,6 @@
+import { confirmAccount } from "../journey/confirmAccount";
+import { DraftSummary } from "../journey/WorkspaceResult";
+import { readDraft } from "../journey/draft";
 import { useState } from "react";
 import { ArrowRight, CheckCircle2, Lock, LogOut, ShieldCheck } from "lucide-react";
 import lastMileMarginLogo from "../assets/last-mile-margin-logo.png";
@@ -13,7 +16,7 @@ const PERKS = [
   "Email dispute letters straight from the app",
 ];
 
-export default function PaywallScreen({ subscription, onSignOut, isDark }) {
+export default function PaywallScreen({ draftId, user, subscription, onSignOut, isDark }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,8 +27,11 @@ export default function PaywallScreen({ subscription, onSignOut, isDark }) {
   const handleCheckout = async () => {
     setLoading(true);
     setError("");
-    const result = await startCheckout();
-    if (result?.error) { setError(result.error); setLoading(false); }
+    try {
+      if (draftId && readDraft(draftId)) await confirmAccount(draftId,user.id);
+      const result = await startCheckout(draftId);
+      if (result?.error) throw new Error(result.error);
+    } catch (failure) { setError(failure.message || "Couldn’t start checkout. Try again."); setLoading(false); }
     // on success, window.location.href fires → no need to setLoading(false)
   };
 
@@ -67,6 +73,8 @@ export default function PaywallScreen({ subscription, onSignOut, isDark }) {
           )}
         </div>
 
+        <DraftSummary id={draftId} owner={user?.id} showTerms={false}/>
+        {draftId && <p className="text-sm">Workspace account · {user?.email}</p>}
         {/* Pricing callout */}
         {!isPastDue && (
           <div className={`mt-6 rounded-2xl border p-5 ${isDark ? "border-white/10 bg-white/5" : "border-blue-100 bg-blue-50"}`}>

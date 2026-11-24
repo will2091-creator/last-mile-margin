@@ -169,7 +169,11 @@ export default function DriverPayTool() {
         </Panel>
 
         <ToolActions getShareUrl={shareUrl} onReset={reset} />
-        <ToolUpgrade source="driver-pay-calculator" />
+        <ToolUpgrade source="driver-pay-calculator" example={JSON.stringify(v) === JSON.stringify(DEFAULTS)} payload={{
+          kind: "crew plan", title: "Driver and helper plan", inputs: v,
+          routeForm: { routePay: n.routeRevenue, stops: n.stops, routeHours: n.hours, driverPay: n.days ? c.driver.week * (1 + n.burdenPct / 100) / n.days : 0, helperPay: n.days ? c.helpers * c.helper.week * (1 + n.burdenPct / 100) / n.days : 0 },
+          metrics: [["Driver", money2(n.driverRate) + " " + UNIT[n.driverType]], ["Helpers", c.helpers ? c.helpers + " × " + money2(n.helperRate) + " " + UNIT[n.helperType] : "Solo driver"], ["Loaded daily cost", money2(c.dailyCost)]],
+        }} />
 
         <Panel title="What to watch">
           <Notes items={notes} tone={heavyLabor || (c.otHours > 0 && !n.overtime) ? "warn" : "info"} />

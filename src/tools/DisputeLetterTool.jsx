@@ -1,3 +1,5 @@
+import { editingDraft } from "../journey/draft";
+import { cleanNum, money2 } from "./format";
 import { useRef, useState } from "react";
 import { claimTypeOptions } from "../lib/claimTypes";
 import { CATEGORIES, EVIDENCE, FAULT_OPTIONS, REQUESTS, buildDisputeLetter, forCategory } from "./lib/disputeLetter";
@@ -29,8 +31,8 @@ const fileSafe = (text) => String(text || "claim").replace(/[^a-z0-9-]+/gi, "-")
 
 export default function DisputeLetterTool() {
   const sender = useToolState("lmm-tool-dispute-sender", SENDER_DEFAULTS, { useSharedInputs: false });
-  const [claim, setClaim] = useState(CLAIM_DEFAULTS);
-  const [override, setOverride] = useState(null);
+  const [claim, setClaim] = useState(() => editingDraft()?.payload.inputs || CLAIM_DEFAULTS);
+  const [override, setOverride] = useState(() => editingDraft()?.payload.editedLetter ?? null);
   const [status, setStatus] = useState("");
   const resultsRef = useRef(null);
   const resultsInView = useInView(resultsRef);
@@ -200,7 +202,10 @@ export default function DisputeLetterTool() {
           </p>
         </Panel>
 
-        <ToolUpgrade source="chargeback-dispute-letter" />
+        <ToolUpgrade source="chargeback-dispute-letter" example={JSON.stringify(claim) === JSON.stringify(CLAIM_DEFAULTS) && JSON.stringify(sender.values) === JSON.stringify(SENDER_DEFAULTS) && override == null} payload={{
+          kind: "claim", title: claim.claimId ? "Claim " + claim.claimId : "Chargeback dispute", inputs: claim, letter: text, editedLetter: override, subject: letter.subject,
+          metrics: [["Claim reference", claim.claimId || "Unassigned"], ["Disputed amount", claim.amount ? money2(cleanNum(claim.amount)) : "Unspecified"]],
+        }} />
 
         <Panel title="Your strongest argument">
           <p className="text-sm leading-6 text-slate-700">{letter.angle}</p>

@@ -1,3 +1,4 @@
+import { editingDraft } from "../journey/draft";
 import { useEffect, useState } from "react";
 
 // Form state for a public tool. Starts from a shared link (#calc?field=value) if there is
@@ -52,6 +53,9 @@ function coerce(raw, fallback) {
 
 function readInitial(storageKey, defaults, useSharedInputs) {
   if (typeof window === "undefined") return { ...defaults };
+
+  const edit = editingDraft();
+  if (edit && useSharedInputs) return { ...defaults, ...edit.payload.inputs };
 
   if (useSharedInputs) {
     const { hash, search } = window.location;

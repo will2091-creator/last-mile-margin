@@ -181,7 +181,10 @@ export default function RouteProfitTool() {
         </Panel>
 
         <ToolActions getShareUrl={shareUrl} onReset={reset} />
-        <ToolUpgrade source="route-profit-calculator" />
+        <ToolUpgrade source="route-profit-calculator" example={JSON.stringify(v) === JSON.stringify(ROUTE_EXAMPLE)} payload={{
+          kind: "route scenario", title: "Route profit scenario", inputs: v, routeForm: n,
+          metrics: [["Daily revenue", money(r.totalRevenue)], ["Daily cost", money(r.totalCost)], ["Net profit", money(r.netProfit)]],
+        }} />
 
         <Panel title="Where the money goes" description="Each cost as a share of the day's revenue.">
           <BarList items={costItems} total={r.totalRevenue} formatValue={money} />

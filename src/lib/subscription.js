@@ -19,7 +19,7 @@ export async function fetchSubscription() {
 /**
  * Call the create-checkout-session Edge Function and redirect to Stripe Checkout.
  */
-export async function startCheckout() {
+export async function startCheckout(draftId = null) {
   if (!supabase) return { error: "Supabase not configured." };
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { error: "Not signed in." };
@@ -28,6 +28,7 @@ export async function startCheckout() {
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`,
     {
       method: "POST",
+      body: JSON.stringify({resume: typeof draftId === "string" ? draftId : null}),
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`,

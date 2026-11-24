@@ -25,6 +25,9 @@ serve(async (req) => {
     const price199 = Deno.env.get("STRIPE_PRICE_ID_199")!;
     const siteUrl  = Deno.env.get("SITE_URL") || "http://localhost:5173";
 
+    const input = await req.json().catch(() => ({}));
+    const resume = typeof input?.resume === "string" && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(input.resume) ? "?resume=" + input.resume : "";
+
     // Verify the caller is a logged-in Supabase user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
@@ -72,8 +75,8 @@ serve(async (req) => {
       },
       payment_method_collection: "always", // card required even during trial
       allow_promotion_codes: true,
-      success_url: `${siteUrl}/#/dashboard?checkout=success`,
-      cancel_url:  `${siteUrl}/#/dashboard?checkout=canceled`,
+      success_url: `${siteUrl}/${resume}#/dashboard?checkout=success`,
+      cancel_url:  `${siteUrl}/${resume}#/dashboard?checkout=canceled`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

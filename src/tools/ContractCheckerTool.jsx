@@ -246,7 +246,11 @@ export default function ContractCheckerTool() {
         )}
 
         <ToolActions getShareUrl={shareUrl} onReset={reset} />
-        <ToolUpgrade source="contract-rate-checker" />
+        <ToolUpgrade source="contract-rate-checker" example={JSON.stringify(v) === JSON.stringify(DEFAULTS)} payload={{
+          kind: "offer comparison", title: "Contract offer comparison", inputs: v,
+          metrics: [["Offer " + unit, rateLabel(check.offerRate)], ["Target " + unit, check.targetRate == null ? "—" : rateLabel(check.targetRate)], ["Verdict", verdict.label]],
+          comparison: [...ladder.map(row => [row.label, rateLabel(row.value)]), ...numbers.currentRoutes.filter(route => route.revenue > 0).map((route, index) => [route.name || "Current route " + (index + 1), money(route.revenue - route.cost) + " net per day"])],
+        }} />
 
         <Panel title="Push back on these">
           {flagged.length ? (

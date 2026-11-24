@@ -1,3 +1,5 @@
+import WorkspaceResult from "./journey/WorkspaceResult";
+import { readDraft, resumeId, returnUrl, pruneDrafts, bindDraft } from "./journey/draft";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import lastMileMarginLogo from "./assets/last-mile-margin-logo.png";
@@ -160,6 +162,14 @@ function PageFallback() {
 }
 
 export default function App() {
+  const [checkoutReturned] = useState(() => location.hash.includes("checkout=success"));
+  const [journey, setJourney] = useState(() => {
+    pruneDrafts();
+    const params = new URLSearchParams(window.location.search);
+    if (resumeId()) return { id: resumeId(), pending:true };
+    if (params.has("toolItem") || params.has("toolLibrary")) return { id:params.get("toolItem"), pending:false };
+    return null;
+  });
   const loadFromLocalStorage = (key, fallback) => {
     try {
       const saved = localStorage.getItem(key);
@@ -330,13 +340,21 @@ export default function App() {
     if (!isLoggedIn) { setSubscription(null); return; }
     let active = true;
     setIsSubscriptionLoading(true);
-    fetchSubscription().then((sub) => {
+    let timer;
+    let checks = 0;
+    async function refresh() {
+      const sub = await fetchSubscription();
       if (!active) return;
       setSubscription(sub);
-      setIsSubscriptionLoading(false);
-    });
-    return () => { active = false; };
-  }, [isLoggedIn]);
+      if (!isAccessGranted(sub) && checkoutReturned && checks++ < 12) {
+        timer = setTimeout(refresh,1500);
+      } else {
+        setIsSubscriptionLoading(false);
+      }
+    }
+    refresh();
+    return () => { active = false; clearTimeout(timer); };
+  }, [isLoggedIn, authUser?.id, checkoutReturned]);
 
   useEffect(() => {
     if (!authUser) {
@@ -1211,11 +1229,14 @@ export default function App() {
       // company_name rides along on the account so it survives confirming the
       // email in a different tab (where this tab's local state isn't present).
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: returnUrl(),
         ...(Object.keys(signupMeta).length ? { data: signupMeta } : {}),
       },
     });
     if (error) return { ok: false, error: error.message };
+
+    const original = readDraft(resumeId());
+    if (original && !original.owner && data.user?.identities?.length) bindDraft(original.id,data.user.id);
 
     // Wipe all cached local data so the new user starts with a clean workspace
     const keysToRemove = [
@@ -1258,7 +1279,7 @@ export default function App() {
     // picks up the returning session and logs the user in automatically.
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: returnUrl() },
     });
     if (error) return { ok: false, error: error.message };
     return { ok: true }; // browser is now navigating away to Google
@@ -1338,6 +1359,7 @@ export default function App() {
   if (!isLoggedIn) {
     return (
       <LoginPage
+        draftId={journey?.pending ? journey.id : null}
         onLogin={signInWithSupabase}
         onSignUp={signUpWithSupabase}
         onGoogleLogin={signInWithGoogle}
@@ -1354,11 +1376,33 @@ export default function App() {
   if (!hasCompAccess(authUser?.email) && !isSubscriptionLoading && !isAccessGranted(subscription)) {
     return (
       <PaywallScreen
+        draftId={journey?.pending ? journey.id : null}
+        user={authUser}
         subscription={subscription}
         onSignOut={signOut}
         isDark={isDark}
       />
     );
+  }
+
+  if (journey && authUser) {
+    if (isSubscriptionLoading || !hasLoadedRemoteAppState) return <p role="status" className="p-8">Opening your workspace…</p>;
+    return <WorkspaceResult key={authUser.id} {...journey} user={authUser} onPriceRoute={canAccessTab(currentUserRole,"Profitability") ? item => {
+      const values = { ...defaultForm, scenarioName:item.payload.title };
+      if (item.source === "driver-pay-calculator") {
+        // A crew plan supplies labor, hours, stops and any entered revenue. All other
+        // financial assumptions belong to the contractor pricing the new route.
+        for (const field of Object.keys(values)) {
+          if (typeof values[field] === "number" && !["mpg","weeksPerMonth","weeksPerYear"].includes(field)) values[field] = 0;
+        }
+      }
+      for (const [key,value] of Object.entries(item.payload.routeForm)) {
+        if (Object.hasOwn(defaultForm,key)) values[key]=value;
+      }
+      history.replaceState(null,"","/");
+      setJourney(null);
+      loadScenario({form:values});
+    } : null}/>;
   }
 
   return (
@@ -1537,6 +1581,7 @@ export default function App() {
         }
       `}</style>
 
+      {activeTab === "Dashboard" && <a href="/?toolLibrary=1" className="block px-5 py-2 text-sm font-semibold underline">Saved tool results</a>}
       <TrialBanner subscription={subscription} isDark={isDark} />
       <div className="flex min-h-screen overflow-x-hidden">
         <AppSidebar

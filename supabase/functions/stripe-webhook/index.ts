@@ -14,6 +14,7 @@
 //   customer.subscription.created
 //   customer.subscription.updated
 //   customer.subscription.deleted
+//   invoice.payment_succeeded
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -48,7 +49,7 @@ serve(async (req) => {
 
     if (!userId) { console.warn("No supabase_user_id for subscription", sub.id); return; }
 
-    await supabase.from("subscriptions").upsert({
+    const { error } = await supabase.from("subscriptions").upsert({
       user_id:                  userId,
       stripe_customer_id:       sub.customer as string,
       stripe_subscription_id:   sub.id,
@@ -58,6 +59,14 @@ serve(async (req) => {
       cancel_at_period_end:     sub.cancel_at_period_end,
       updated_at:               new Date().toISOString(),
     }, { onConflict: "user_id" });
+    if (error) throw error;
+    if (sub.trial_start && sub.trial_end) {
+      const { error: milestoneError } = await supabase.rpc("tool_billing_event", {
+        account: userId, started: new Date(sub.trial_start * 1000).toISOString(),
+        ends_at: new Date(sub.trial_end * 1000).toISOString(), paid: null,
+      });
+      if (milestoneError) throw milestoneError;
+    }
   };
 
   switch (event.type) {
@@ -105,6 +114,20 @@ serve(async (req) => {
       break;
     }
 
+    case "invoice.payment_succeeded": {
+      const invoice = event.data.object as Stripe.Invoice;
+      if (!invoice.subscription || invoice.amount_paid <= 0 || invoice.status !== "paid") break;
+      const sub = await stripe.subscriptions.retrieve(String(invoice.subscription));
+      const customer = await stripe.customers.retrieve(String(sub.customer));
+      const account = sub.metadata.supabase_user_id || (!customer.deleted && customer.metadata.supabase_user_id);
+      if (!account) break;
+      const { error } = await supabase.rpc("tool_billing_event", {
+        account, started: null, ends_at: null,
+        paid: new Date((invoice.status_transitions.paid_at || event.created) * 1000).toISOString(),
+      });
+      if (error) throw error;
+      break;
+    }
     case "customer.subscription.deleted": {
       const sub = event.data.object as Stripe.Subscription;
       await supabase

@@ -1,3 +1,4 @@
+import { DraftSummary } from "../journey/WorkspaceResult";
 import { useEffect, useRef, useState } from "react";
 import lastMileMarginLogo from "../assets/last-mile-margin-logo.png";
 import lastMileMarginLogoDark from "../assets/last-mile-margin-logo-darkmode.png";
@@ -133,9 +134,9 @@ function readAuthParam() {
   return value === "signup" || value === "signin" ? value : null;
 }
 
-function LoginPage({ onLogin, onSignUp, onGoogleLogin, onResetPassword, isDark, setAppSettings }) {
+function LoginPage({ draftId, onLogin, onSignUp, onGoogleLogin, onResetPassword, isDark, setAppSettings }) {
   // Links from the public tool pages open straight into sign-up/sign-in: /?auth=signup&from=<tool>
-  const [showModal, setShowModal] = useState(() => readAuthParam() !== null);
+  const [showModal, setShowModal] = useState(() => readAuthParam() !== null || Boolean(draftId));
   const [mode, setMode] = useState(() => readAuthParam() || "signin"); // "signin" | "signup"
   const [loginForm, setLoginForm] = useState({ identifier: "", password: "", remember: false });
   const [signupForm, setSignupForm] = useState({ email: "", password: "", confirm: "", companyName: "" });
@@ -347,7 +348,7 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, onResetPassword, isDark, 
               {/* Sign in / Create account tabs */}
               {!signupDone && (
                 <div className={`mt-4 flex rounded-xl p-1 ${isDark ? "bg-white/5" : "bg-slate-100"}`}>
-                  {[["signin", "Sign in"], ["signup", "Join the waitlist"]].map(([m, label]) => (
+                  {[["signin", "Sign in"], ["signup", "Create account"]].map(([m, label]) => (
                     <button
                       key={m}
                       type="button"
@@ -365,6 +366,7 @@ function LoginPage({ onLogin, onSignUp, onGoogleLogin, onResetPassword, isDark, 
               )}
             </div>
 
+            <DraftSummary id={draftId}/>
             {/* ── EMAIL CONFIRMATION STATE ── */}
             {signupDone?.needsConfirmation && (
               <div className="text-center">

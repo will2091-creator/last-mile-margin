@@ -1,34 +1,77 @@
-const offers = {
-  "route-profit-calculator": {
-    title: "See what every route earns.",
-    description: "Save route days and track margin over time, so one good day doesn’t hide a route that’s losing money.",
-  },
-  "contract-rate-checker": {
-    title: "Track margin after you sign.",
-    description: "Compare contracts against your actual route revenue, costs, and deductions as the work comes in.",
-  },
-  "chargeback-dispute-letter": {
-    title: "Stay on top of every dispute.",
-    description: "Keep claims, deadlines, and evidence together from the first deduction to the final decision.",
-  },
-  "driver-pay-calculator": {
-    title: "See what crew pay does to profit.",
-    description: "Track payroll costs alongside the revenue, fuel, and claims for every route you run.",
-  },
+import { useEffect, useRef, useState } from "react";
+import { prepareDraft, pruneDrafts, visitId } from "../journey/draft";
+import { ResultPreview } from "../journey/ResultPreview";
+import "../journey/journey.css";
+
+const actions = {
+  "route-profit-calculator": "Save this route",
+  "contract-rate-checker": "Save this offer",
+  "chargeback-dispute-letter": "Track this claim",
+  "driver-pay-calculator": "Save this crew plan",
 };
 
-export default function ToolUpgrade({ source }) {
-  const { title, description } = offers[source];
+async function record(source, event) {
+  const origin = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!origin || !key) return false;
+  try {
+    const response = await fetch(origin + "/rest/v1/rpc/record_tool_visit", {
+      method: "POST", keepalive: true, referrerPolicy: "no-referrer",
+      headers: { apikey: key, "Content-Type": "application/json" },
+      body: JSON.stringify({ visit: visitId(source), tool: source, step: event }),
+    });
+    return response.ok;
+  } catch { return false; }
+}
 
-  return (
-    <section className="tool-upgrade">
-      <p className="site-kicker">Last Mile Margin</p>
-      <h3>{title}</h3>
-      <p>{description}</p>
-      <a href={`/?auth=signup&from=${source}`} className="site-button">
-        Start 3-day free trial <span aria-hidden="true">↗</span>
-      </a>
-      <p className="upgrade-price">$99/month for your first 12 months, then $199/month. Cancel anytime.</p>
-    </section>
-  );
+export default function ToolUpgrade({ source, payload, example }) {
+  const [error, setError] = useState("");
+  const completed = useRef(false);
+  const interacted = useRef(false);
+  const root = useRef(null);
+
+  useEffect(() => {
+    pruneDrafts();
+    const input = () => { interacted.current = true; };
+    const form = document.querySelector("#inputs");
+    form?.addEventListener("input", input);
+    root.current?.closest("#results")?.addEventListener("input", input);
+    const results = root.current?.closest("#results");
+    return () => {
+      form?.removeEventListener("input", input);
+      results?.removeEventListener("input", input);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (example || !interacted.current || completed.current) return;
+    const timer = setTimeout(async () => {
+      if (!document.querySelector('[aria-invalid="true"]')) completed.current = await record(source, "completed");
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [example, payload, source]);
+
+  function start() {
+    if (document.querySelector('[aria-invalid="true"]')) {
+      setError("Correct the highlighted input before saving.");
+      return;
+    }
+    try {
+      const draft = prepareDraft(source, payload, example);
+      if (!example) void record(source, "completed");
+      void record(source, "chosen");
+      location.assign(`/?auth=signup&from=${source}&resume=${draft.id}`);
+    } catch {
+      setError("Your browser couldn’t keep this draft. Allow site storage and try again.");
+    }
+  }
+  return <section className="tool-upgrade" ref={root}>
+    <p className="site-kicker">Last Mile Margin</p>
+    <h3>{payload.title}</h3>
+    <ResultPreview payload={payload} example={example} />
+    <p>Keep this {payload.kind} in your workspace.</p>
+    <button className="site-button" onClick={start}>{actions[source]} and start my trial</button>
+    <p className="upgrade-price">3 days free. Card required. Then $99/month for 12 months, then $199/month. Cancel anytime.</p>
+    {error && <p role="alert">{error}</p>}
+  </section>;
 }

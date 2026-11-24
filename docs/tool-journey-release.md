@@ -1,0 +1,9 @@
+# Result-to-trial release
+
+Apply `supabase/migrations/202611240001_tool_journey.sql` to the test project after its existing billing schema. Deploy the updated `create-checkout-session` and `stripe-webhook` functions to the same project. Add `invoice.payment_succeeded` to the existing signed Stripe webhook alongside checkout and subscription lifecycle events. Configure the staging frontend with that project's public URL and anon key. Use Stripe test-mode keys, test prices, and the test webhook signing secret. Set SITE_URL and the Supabase Auth redirect allowlist to the staging origin, including the root URL with the opaque resume query parameter.
+
+Open a free tool, change its inputs and choose save. Confirm email if required, complete test checkout, and reopen the saved item from Dashboard → Saved tool results. The source tag remains in signup metadata for email signups. Each saved item also records its originating tool, including for existing accounts. Use the query in `docs/tool-conversion-report.sql` from the SQL editor. The report requires administrative read privileges.
+
+A tool session is one tab and tool. A changed result counts once after a user edit or explicit save of a non-example result. The report assigns a customer's trial and first positive payment to the earliest chosen completed session preceding their trial. Earlier cohorts are mature after three days and, for attributed trials, the recorded trial end. All dates are UTC. Browser telemetry can be blocked. A trial or payment becomes reportable only when the signed webhook has recorded the milestone. No backfill is performed.
+
+Once staging verification passes, apply the migration, update both functions and the Stripe event subscription, then release the frontend. Keep the original saved draft available until the database acknowledges its write. Pending local drafts are eligible for cleanup after seven days when a tool or app is opened.
